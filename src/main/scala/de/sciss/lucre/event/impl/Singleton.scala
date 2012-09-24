@@ -1,5 +1,5 @@
 /*
- *  Root.scala
+ *  Singleton.scala
  *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
@@ -25,15 +25,13 @@
 
 package de.sciss.lucre
 package event
+package impl
 
 /**
- * A rooted event does not have sources. This trait provides a simple
- * implementation of `pull` which merely checks if this event has fired or not.
+ * A `Singleton` event is one which doesn't carry any state. This is a utility trait
+ * which provides no-op implementations for `writeData` and `disposeData`.
  */
-trait Root[ S <: stm.Sys[ S ], +A ] /* extends Node[ S, A, Repr ] */ {
-   final /* private[lucre] */ def connect()(    implicit tx: S#Tx ) {}
-//   final private[lucre] def reconnect()(  implicit tx: S#Tx ) {}
-   final /* private[lucre] */ def disconnect()( implicit tx: S#Tx ) {}
-
-   final /* override */ /* private[lucre] */ def pullUpdate( pull: Pull[ S ])( implicit tx: S#Tx ) : Option[ A ] = pull.resolve[ A ]
+trait Singleton[ S <: stm.Sys[ S ] /* , A, Repr */ ] extends InvariantSelector[ S ] {
+   final protected def disposeData()( implicit tx: S#Tx ) {}
+   final protected def writeData( out: DataOutput ) {}
 }

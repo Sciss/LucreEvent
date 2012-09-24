@@ -179,7 +179,7 @@ private[event] def slot = opNotSupported
 
    private final class Trigger[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], A1 /* <: D#Update */](
       val node: Repr )( implicit protected val m: ClassManifest[ A1 ])
-   extends EventImpl[ S, D, Repr, A1 ] with impl.TriggerImpl[ S, A1, Repr ] with Root[ S, A1 ]
+   extends EventImpl[ S, D, Repr, A1 ] with impl.TriggerImpl[ S, A1, Repr ] with impl.Root[ S, A1 ]
    with InvariantEvent[ S, A1, Repr ] {
       protected def prefix = node.toString + ".event"
    }

@@ -1,5 +1,5 @@
 /*
- *  Generator.scala
+ *  Root.scala
  *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
@@ -25,11 +25,16 @@
 
 package de.sciss.lucre
 package event
+package impl
 
-trait Generator[ S <: Sys[ S ], A, Repr ] extends Event[ S, A, Repr ] {
-   final protected def fire( update: A )( implicit tx: S#Tx ) {
-      log( this.toString + " fire " + update )
-      Push( this /* select() */, update )
-   }
+/**
+ * A rooted event does not have sources. This trait provides a simple
+ * implementation of `pull` which merely checks if this event has fired or not.
+ */
+trait Root[ S <: stm.Sys[ S ], +A ] /* extends Node[ S, A, Repr ] */ {
+   final /* private[lucre] */ def connect()(    implicit tx: S#Tx ) {}
+//   final private[lucre] def reconnect()(  implicit tx: S#Tx ) {}
+   final /* private[lucre] */ def disconnect()( implicit tx: S#Tx ) {}
+
+   final /* override */ /* private[lucre] */ def pullUpdate( pull: Pull[ S ])( implicit tx: S#Tx ) : Option[ A ] = pull.resolve[ A ]
 }
-
