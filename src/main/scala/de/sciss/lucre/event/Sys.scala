@@ -43,7 +43,7 @@ trait Txn[ S <: Sys[ S ]] extends stm.Txn[ S ] {
 
 trait Var[ S <: stm.Sys[ S ], @specialized( Int ) A ] extends stm.Sink[ S#Tx, A ] with Writable with Disposable[ S#Tx ]{
    def get( implicit tx: S#Tx ) : Option[ A ]
-   def getOrElse( default: A )( implicit tx: S#Tx ) : A
+   def getOrElse( default: => A )( implicit tx: S#Tx ) : A
    def isFresh( implicit tx: S#Tx ) : Boolean
    def transform( default: => A )( f: A => A )( implicit tx: S#Tx ) : Unit
 }

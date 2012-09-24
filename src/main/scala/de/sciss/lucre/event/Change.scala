@@ -82,5 +82,5 @@ final case class Change[ @specialized A ]( before: A, now: A ) {
       val (newBefore, newNow) = fun( toTuple )
       Change( newBefore, newNow )
    }
-//   def flatMap[ B ]( fun: (A, A) => Change[ B ]) : Change[ B ] ???
+//   def flatMap[ B ]( fun: (A, A) => Change[ B ]) : Change[ B ]
 }
