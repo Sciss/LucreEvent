@@ -1,6 +1,6 @@
 /*
  *  Generator.scala
- *  (LucreSTM)
+ *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
  *
@@ -26,11 +26,9 @@
 package de.sciss.lucre
 package event
 
-import LucreSTM.logEvent
-
-trait Generator[ S <: EventSys[ S ], A, Repr ] extends Event[ S, A, Repr ] {
+trait Generator[ S <: Sys[ S ], A, Repr ] extends Event[ S, A, Repr ] {
    final protected def fire( update: A )( implicit tx: S#Tx ) {
-      logEvent( this.toString + " fire " + update )
+      log( this.toString + " fire " + update )
       Push( this /* select() */, update )
    }
 }

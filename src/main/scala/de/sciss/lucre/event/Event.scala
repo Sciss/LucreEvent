@@ -1,6 +1,6 @@
 /*
  *  Event.scala
- *  (LucreSTM)
+ *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
  *
@@ -27,19 +27,18 @@ package de.sciss.lucre
 package event
 
 import stm.InMemory
-import LucreSTM.logEvent
 import util.MurmurHash
 
 object Selector {
-   implicit def serializer[ S <: EventSys[ S ]] : stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] = new Ser[ S ]
+   implicit def serializer[ S <: Sys[ S ]] : stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] = new Ser[ S ]
 
-   private[event] def apply[ S <: EventSys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ],
+   private[event] def apply[ S <: Sys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ],
                                              invariant: Boolean ) : VirtualNodeSelector[ S ] = {
       if( invariant ) InvariantTargetsSelector( slot, node )
       else            MutatingTargetsSelector(  slot, node )
    }
 
-   private final class Ser[ S <: EventSys[ S ]] extends stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] {
+   private final class Ser[ S <: Sys[ S ]] extends stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] {
       def write( v: Selector[ S ], out: DataOutput ) {
          v.writeSelector( out )
       }
@@ -63,7 +62,7 @@ val reactor  = VirtualNode.read[ S ]( in, fullSize, access )
       }
    }
 
-   private sealed trait TargetsSelector[ S <: EventSys[ S ]] extends VirtualNodeSelector[ S ] {
+   private sealed trait TargetsSelector[ S <: Sys[ S ]] extends VirtualNodeSelector[ S ] {
 //      override protected def reactor: Targets[ S ]
 //      override private[event] def reactor: Targets[ S ]
 //      protected def data: Array[ Byte ]
@@ -87,10 +86,10 @@ val reactor  = VirtualNode.read[ S ]( in, fullSize, access )
       }
    }
 
-   private final case class InvariantTargetsSelector[ S <: EventSys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ])
+   private final case class InvariantTargetsSelector[ S <: Sys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ])
    extends TargetsSelector[ S ] with InvariantSelector[ S ]
 
-   private final case class MutatingTargetsSelector[ S <: EventSys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ])
+   private final case class MutatingTargetsSelector[ S <: Sys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ])
    extends TargetsSelector[ S ] with MutatingSelector[ S ]
 }
 
@@ -378,21 +377,21 @@ trait InvariantEvent[ S <: stm.Sys[ S ], +A, +Repr ] extends InvariantSelector[ 
    final /* private[lucre] */ def --->( r: /* MMM Expanded */ Selector[ S ])( implicit tx: S#Tx ) {
       val t = node._targets
 //      if( t.add( slot, r )) {
-//         logEvent( this.toString + " connect" )
+//         log( this.toString + " connect" )
 //         connect()
 //      } else if( t.isInvalid( slot )) {
-//         logEvent( this.toString + " re-connect" )
+//         log( this.toString + " re-connect" )
 //         disconnect()
 //         connect()
 //         t.validated( slot )
 //      }
       if( t.isInvalid( slot )) {
-         logEvent( this.toString + " re-connect" )
+         log( this.toString + " re-connect" )
          disconnect()
          t.resetAndValidate( slot, r )
          connect()
       } else if( t.add( slot, r )) {
-         logEvent( this.toString + " connect" )
+         log( this.toString + " connect" )
          connect()
       }
    }

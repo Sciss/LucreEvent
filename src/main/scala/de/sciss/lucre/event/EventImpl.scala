@@ -1,6 +1,6 @@
 /*
  *  EventImpl.scala
- *  (LucreSTM)
+ *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
  *
@@ -26,7 +26,7 @@
 package de.sciss.lucre
 package event
 
-trait EventImpl[ S <: EventSys[ S ], +A, +Repr /* <: Node[ S ] */]
+trait EventImpl[ S <: Sys[ S ], +A, +Repr /* <: Node[ S ] */]
 extends Event[ S, A, Repr ] /* with InvariantSelector[ S ] */ {
    final /* private[lucre] */ def isSource( pull: Pull[ S ]) : Boolean = pull.hasVisited( this /* select() */)
 

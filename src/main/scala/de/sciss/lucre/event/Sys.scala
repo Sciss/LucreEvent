@@ -1,5 +1,5 @@
 /*
- *  Singleton.scala
+ *  Sys.scala
  *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
@@ -26,11 +26,22 @@
 package de.sciss.lucre
 package event
 
-/**
- * A `Singleton` event is one which doesn't carry any state. This is a utility trait
- * which provides no-op implementations for `writeData` and `disposeData`.
- */
-trait Singleton[ S <: stm.Sys[ S ] /* , A, Repr */ ] extends InvariantSelector[ S ] {
-   final protected def disposeData()( implicit tx: S#Tx ) {}
-   final protected def writeData( out: DataOutput ) {}
+import stm.Disposable
+
+trait Sys[ S <: Sys[ S ]] extends stm.Sys[ S ] {
+   type Tx <: Txn[ S ]
+}
+trait Txn[ S <: Sys[ S ]] extends stm.Txn[ S ] {
+   def reactionMap: ReactionMap[ S ]
+   private[event] def newEventVar[ A ]( id: S#ID )( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ]
+   private[event] def newEventIntVar[ A ]( id: S#ID ) : Var[ S, Int ]
+   private[event] def readEventVar[ A ]( id: S#ID, in: DataInput )( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ]
+   private[event] def readEventIntVar[ A ]( id: S#ID, in: DataInput ) : Var[ S, Int ]
+}
+
+trait Var[ S <: stm.Sys[ S ], @specialized( Int ) A ] extends stm.Sink[ S#Tx, A ] with Writable with Disposable[ S#Tx ]{
+   def get( implicit tx: S#Tx ) : Option[ A ]
+   def getOrElse( default: A )( implicit tx: S#Tx ) : A
+   def isFresh( implicit tx: S#Tx ) : Boolean
+   def transform( default: => A )( f: A => A )( implicit tx: S#Tx ) : Unit
 }

@@ -1,6 +1,6 @@
 /*
  *  StandaloneLike.scala
- *  (LucreSTM)
+ *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
  *
@@ -38,7 +38,7 @@ import util.MurmurHash
  *
  * I don't know if `Reactor` still needs the `equals` implementation?
  */
-trait StandaloneLike[ S <: EventSys[ S ], +A, +Repr /* <: Node[ S ]*/] extends Node[ S ] with EventImpl[ S, A, Repr ]
+trait StandaloneLike[ S <: Sys[ S ], +A, +Repr /* <: Node[ S ]*/] extends Node[ S ] with EventImpl[ S, A, Repr ]
 with InvariantEvent[ S, A, Repr ] {
    _: Repr =>
 

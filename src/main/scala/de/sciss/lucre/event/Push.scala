@@ -1,6 +1,6 @@
 /*
  *  Push.scala
- *  (LucreSTM)
+ *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
  *
@@ -27,7 +27,6 @@ package de.sciss.lucre
 package event
 
 import collection.immutable.{IndexedSeq => IIdxSeq}
-import LucreSTM.logEvent
 import annotation.elidable
 import elidable.CONFIG
 
@@ -38,9 +37,9 @@ object Push {
    @elidable(CONFIG) private def incIndent()   { indent += "  " }
    @elidable(CONFIG) private def decIndent()   { indent = indent.substring( 2 )}
 
-   private[event] def apply[ S <: EventSys[ S ], A ]( source: Event[ S, A, Any ], update: A )( implicit tx: S#Tx ) {
+   private[event] def apply[ S <: Sys[ S ], A ]( source: Event[ S, A, Any ], update: A )( implicit tx: S#Tx ) {
       val push    = new Impl( source, update )
-      logEvent( "push begin" )
+      log( "push begin" )
       resetIndent()
 //      val inlet   = source.slot
 //      source.reactor.children.foreach { tup =>
@@ -51,9 +50,9 @@ object Push {
 //         }
 //      }
       push.visitChildren( source )
-      logEvent( "pull begin" )
+      log( "pull begin" )
       push.pull()
-      logEvent( "pull end" )
+      log( "pull end" )
    }
 
    private val NoReactions = IIdxSeq.empty[ Reaction ]
@@ -64,7 +63,7 @@ object Push {
    private def NoMutating[ S <: stm.Sys[ S ]] : Set[ MutatingSelector[ S ]] = Set.empty[ MutatingSelector[ S ]]
    private type Visited[ S <: stm.Sys[ S ]] = Map[ VirtualNodeSelector[ S ], Parents[ S ]]
 
-   private final class Impl[ S <: EventSys[ S ]]( source: VirtualNodeSelector[ S ], val update: Any )( implicit tx: S#Tx )
+   private final class Impl[ S <: Sys[ S ]]( source: VirtualNodeSelector[ S ], val update: Any )( implicit tx: S#Tx )
    extends Push[ S ] {
       private var visited     = Map( (source, NoParents[ S ])) // EmptyVisited[ S ]
       private var reactions   = NoReactions
@@ -72,7 +71,7 @@ object Push {
 
       private def addVisited( sel: VirtualNodeSelector[ S ], parent: VirtualNodeSelector[ S ]) : Boolean = {
          val parents = visited.getOrElse( sel, NoParents )
-         logEvent( indent + "visit " + sel + " (new ? " + parents.isEmpty + ")" )
+         log( indent + "visit " + sel + " (new ? " + parents.isEmpty + ")" )
          visited += ((sel, parents + parent))
          parents.isEmpty
       }
@@ -107,19 +106,19 @@ object Push {
       def parents( sel: VirtualNodeSelector[ S ]) : Parents[ S ] = visited.getOrElse( sel, NoParents )
 
       def addLeaf( leaf: ObserverKey[ S ], parent: VirtualNodeSelector[ S ]) {
-         logEvent( indent + "addLeaf " + leaf + ", parent = " + parent )
+         log( indent + "addLeaf " + leaf + ", parent = " + parent )
          tx.reactionMap.processEvent( leaf, parent, this )
       }
 
       def addReaction( r: Reaction ) { reactions :+= r }
 
       def pull() {
-         logEvent( "numReactions = " + reactions.size )
+         log( "numReactions = " + reactions.size )
          val firstPass  =    reactions.map( _.apply() )
       /* val secondPass = */ firstPass.foreach( _.apply() )
 
          if( mutating.nonEmpty ) {
-            logEvent( "numInvalid = " + mutating.size )
+            log( "numInvalid = " + mutating.size )
             mutating.foreach { sel =>
                println( "INVALIDATED: " + mutating.mkString( ", " ))
                sel.node._targets.invalidate( sel.slot )
@@ -128,12 +127,12 @@ object Push {
       }
 
       def markInvalid( evt: MutatingSelector[ S ]) {
-         logEvent( "markInvalid " + evt )
+         log( "markInvalid " + evt )
          mutating += evt
       }
 
       def clearInvalid( evt: MutatingSelector[ S ]) {
-         logEvent( "clearInvalid " + evt )
+         log( "clearInvalid " + evt )
          mutating -= evt
       }
 

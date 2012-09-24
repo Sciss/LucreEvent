@@ -1,6 +1,6 @@
 /*
  *  Bang.scala
- *  (LucreSTM)
+ *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
  *
@@ -27,14 +27,14 @@ package de.sciss.lucre
 package event
 
 object Bang {
-   def apply[ S <: EventSys[ S ]]( implicit tx: S#Tx ) : Bang[ S ] = new Impl[ S ]( Targets[ S ])
+   def apply[ S <: Sys[ S ]]( implicit tx: S#Tx ) : Bang[ S ] = new Impl[ S ]( Targets[ S ])
 
-   private final class Impl[ S <: EventSys[ S ]]( protected val targets: Targets[ S ])
+   private final class Impl[ S <: Sys[ S ]]( protected val targets: Targets[ S ])
    extends Bang[ S ] with Singleton[ S ] with Root[ S, Unit /*, Bang[ S ] */] {
       protected def reader = Bang.serializer[ S ]
    }
 
-   implicit def serializer[ S <: EventSys[ S ]] : NodeSerializer[ S, Bang[ S ]] = new NodeSerializer[ S, Bang[ S ]] {
+   implicit def serializer[ S <: Sys[ S ]] : NodeSerializer[ S, Bang[ S ]] = new NodeSerializer[ S, Bang[ S ]] {
       // note: there was a strange runtime error when using an anonymous class instead. It seems that
       // scala somehow missed to execute the body, leaving targets unassigned. Perhaps a bug
       // of scalac getting confused with the apply method?
@@ -48,7 +48,7 @@ object Bang {
  * `Unit` type as event type parameter. The `apply` method of the companion object builds a `Bang` which also
  * implements the `Observable` trait, so that the bang can be connected to a live view (e.g. a GUI).
  */
-trait Bang[ S <: EventSys[ S ]] extends Trigger.Impl[ S, Unit, Bang[ S ]] with StandaloneLike[ S, Unit, Bang[ S ]] {
+trait Bang[ S <: Sys[ S ]] extends Trigger.Impl[ S, Unit, Bang[ S ]] with StandaloneLike[ S, Unit, Bang[ S ]] {
    /**
     * A parameterless convenience version of the `Trigger`'s `apply` method.
     */

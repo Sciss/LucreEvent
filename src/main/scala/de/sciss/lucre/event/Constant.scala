@@ -1,6 +1,6 @@
 /*
  *  Constant.scala
- *  (LucreSTM)
+ *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
  *
@@ -34,7 +34,7 @@ package event
  * as there is no way to fire this event. Implementation must provide a constant value method
  * `constValue` and implement its serialization via `writeData`.
  */
-trait Constant[ S <: EventSys[ S ] /*, A */] /* extends Val[ S, A ] with Root[ S, Change[ A ]] */ {
+trait Constant {
    final def write( out: DataOutput ) {
       out.writeUnsignedByte( 3 )
       writeData( out )

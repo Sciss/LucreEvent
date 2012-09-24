@@ -1,6 +1,6 @@
 /*
  *  Compound.scala
- *  (LucreSTM)
+ *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
  *
@@ -32,7 +32,7 @@ import collection.immutable.{IndexedSeq => IIdxSeq}
 object Compound {
    private def opNotSupported = sys.error( "Operation not supported" )
 
-   final protected class EventOps1[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B ](
+   final protected class EventOps1[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B ](
       d: Repr, e: Event[ S, B, Any ]) {
       def map[ A1 /* <: D#Update */ ]( fun: B => A1 )( implicit m: ClassManifest[ A1 ]) : Event[ S, A1, Repr ] =
          new Map[ S, D, Repr, B, A1 ]( d, e, _ => fun )
@@ -44,13 +44,13 @@ object Compound {
          new MutatingMap[ S, D, Repr, B, A1 ]( d, e, fun )
    }
 
-   final protected class EventOps2[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B /* <: D#Update */ ](
+   final protected class EventOps2[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B /* <: D#Update */ ](
       d: Repr /* Compound[ S, Repr, D ] */, e: Event[ S, B, Repr ]) {
       def |[ Up >: B /* <: D#Update */, C <: Up ]( that: Event[ S, C, Repr ]) : Or[ S, D, Repr, Up ] =
          new Or[ S, D, Repr, Up ]( d, IIdxSeq[ Event[ S, Up, Repr ]]( e, that ))
    }
 
-   final class Or[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B /* <: D#Update */] private[Compound](
+   final class Or[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B /* <: D#Update */] private[Compound](
       val node: Repr, elems: IIdxSeq[ Event[ S, B, Repr ]])
    extends Event[ S, B, Repr ] with InvariantSelector[ S ] {
 
@@ -96,14 +96,14 @@ private[event] def slot = opNotSupported
       override def toString = elems.mkString( " | " )
    }
 
-   final protected class CollectionOps[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], Elem <: Node[ S ], B ](
+   final protected class CollectionOps[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], Elem <: Node[ S ], B ](
       d: Repr, elem: Elem => EventLike[ S, B, Elem ])( implicit elemReader: Reader[ S, Elem ]) {
 
       def map[ A1 /* <: D#Update */]( fun: IIdxSeq[ B ] => A1 )( implicit m: ClassManifest[ A1 ]) : CollectionEvent[ S, D, Repr, Elem, B, A1 ] =
          new CollectionEvent[ S, D, Repr, Elem, B, A1 ]( d, elem, fun )
    }
 
-   sealed trait EventImpl[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], A1 /* <: D#Update */]
+   sealed trait EventImpl[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], A1 /* <: D#Update */]
    extends event.EventImpl[ S, /* D#Update, */ A1, Repr ] {
       def node: Repr // Compound[ S, Repr, D ]
       protected def prefix : String
@@ -120,7 +120,7 @@ private[event] def slot = opNotSupported
       } + "]"
    }
 
-   final class CollectionEvent[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], Elem <: Node[ S ], B, A1 /* <: D#Update */] private[Compound](
+   final class CollectionEvent[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], Elem <: Node[ S ], B, A1 /* <: D#Update */] private[Compound](
       val node: Repr, elemEvt: Elem => EventLike[ S, B, Elem ], fun: IIdxSeq[ B ] => A1 )
    ( implicit elemReader: Reader[ S, Elem ], protected val m: ClassManifest[ A1 ])
    extends EventImpl[ S, D, Repr, A1 ] with InvariantEvent[ S, A1, Repr ] {
@@ -149,7 +149,7 @@ private[event] def slot = opNotSupported
       }
    }
 
-   private sealed trait MapLike[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B, A1 /* <: D#Update */]
+   private sealed trait MapLike[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B, A1 /* <: D#Update */]
    extends EventImpl[ S, D, Repr, A1 ] {
       protected def e: Event[ S, B, Any ]
 
@@ -157,7 +157,7 @@ private[event] def slot = opNotSupported
       private[lucre] def disconnect()( implicit tx: S#Tx ) { e -/-> this }
    }
 
-   private final class Map[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B, A1 /* <: D#Update */](
+   private final class Map[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B, A1 /* <: D#Update */](
       val node: Repr, protected val e: Event[ S, B, Any ], fun: S#Tx => B => A1 )
    ( implicit protected val m: ClassManifest[ A1 ])
    extends MapLike[ S, D, Repr, B, A1 ] with InvariantEvent[ S, A1, Repr ] {
@@ -167,7 +167,7 @@ private[event] def slot = opNotSupported
       protected def prefix = e.toString + ".map"
    }
 
-   private final class MutatingMap[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B, A1 /* <: D#Update */](
+   private final class MutatingMap[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B, A1 /* <: D#Update */](
       val node: Repr, protected val e: Event[ S, B, Any ], fun: S#Tx => B => A1 )
    ( implicit protected val m: ClassManifest[ A1 ])
    extends MapLike[ S, D, Repr, B, A1 ] with MutatingEvent[ S, A1, Repr  ] {
@@ -177,7 +177,7 @@ private[event] def slot = opNotSupported
       protected def prefix = e.toString + ".mapAndMutate"
    }
 
-   private final class Trigger[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], A1 /* <: D#Update */](
+   private final class Trigger[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], A1 /* <: D#Update */](
       val node: Repr )( implicit protected val m: ClassManifest[ A1 ])
    extends EventImpl[ S, D, Repr, A1 ] with event.Trigger.Impl[ S, A1, Repr ] with Root[ S, A1 ]
    with InvariantEvent[ S, A1, Repr ] {
@@ -185,7 +185,7 @@ private[event] def slot = opNotSupported
    }
 }
 //trait Compound[ S <: Sys[ S ], Repr <: Compound[ S, Repr, D ], D <: Decl[ S, Repr ]] extends Node[ S ]
-trait Compound[ S <: EventSys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ]] extends Node[ S ] {
+trait Compound[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ]] extends Node[ S ] {
    me: Repr =>
 
    import de.sciss.lucre.{event => evt}

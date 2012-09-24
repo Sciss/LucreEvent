@@ -6,7 +6,7 @@ import stm.Durable
 import java.io.File
 
 object EventTest extends App {
-   trait EDurable extends EventSys[ EDurable ] with stm.Cursor[ EDurable ]
+   trait EDurable extends event.Sys[ EDurable ] with stm.Cursor[ EDurable ]
    def ??? : Nothing = sys.error( "TODO" )
 
 //   val system  = ConfluentSkel()
