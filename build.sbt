@@ -1,12 +1,12 @@
-name := "LucreSTM"
+name := "LucreEvent"
 
-version := "1.2.0"
+version := "1.3.0-SNAPSHOT"
 
 organization := "de.sciss"
 
-description := "Combination of Scala-STM, a persistent key-value store, and observer-pattern based reactors"
+description := "Reactive event-system for LucreSTM"
 
-homepage := Some( url( "https://github.com/Sciss/LucreSTM" ))
+homepage := Some( url( "https://github.com/Sciss/LucreEvent" ))
 
 licenses := Seq( "GPL v2+" -> url( "http://www.gnu.org/licenses/gpl-2.0.txt" ))
 
@@ -14,14 +14,8 @@ scalaVersion := "2.9.2"
 
 // crossScalaVersions := Seq( "2.10.0-M6", "2.9.2" )
 
-resolvers ++= Seq(
-   "Oracle Repository" at "http://download.oracle.com/maven",
-   "Sonatype OSS Releases" at "https://oss.sonatype.org/content/groups/public"
-)
-
 libraryDependencies ++= Seq(
-   "org.scala-tools" %% "scala-stm" % "0.6",
-   "com.sleepycat" % "je" % "5.0.58"
+   "de.sciss" %% "lucrestm" % "1.3.0-SNAPSHOT"
 )
 
 retrieveManaged := true
@@ -45,7 +39,7 @@ buildInfoKeys := Seq( name, organization, version, scalaVersion, description,
    BuildInfoKey.map( licenses ) { case (_, Seq( (lic, _) )) => "license" -> lic }
 )
 
-buildInfoPackage := "de.sciss.lucre.stm"
+buildInfoPackage := "de.sciss.lucre.event"
 
 // ---- publishing ----
 
@@ -80,11 +74,11 @@ pomExtra :=
 
 seq( lsSettings :_* )
 
-(LsKeys.tags in LsKeys.lsync) := Seq( "stm", "software-transactional-memory", "reactive", "event", "persistent" )
+(LsKeys.tags in LsKeys.lsync) := Seq( "stm", "software-transactional-memory", "reactive", "event" )
 
 (LsKeys.ghUser in LsKeys.lsync) := Some( "Sciss" )
 
-(LsKeys.ghRepo in LsKeys.lsync) := Some( "LucreSTM" )
+(LsKeys.ghRepo in LsKeys.lsync) := Some( "LucreEvent" )
 
 // bug in ls -- doesn't find the licenses from global scope
 (licenses in LsKeys.lsync) := Seq( "GPL v2+" -> url( "http://www.gnu.org/licenses/gpl-2.0.txt" ))
