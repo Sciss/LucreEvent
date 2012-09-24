@@ -26,7 +26,6 @@
 package de.sciss.lucre
 package event
 
-import stm.Sys
 import util.MurmurHash
 
 /**

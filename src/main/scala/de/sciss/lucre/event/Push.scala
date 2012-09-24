@@ -26,7 +26,6 @@
 package de.sciss.lucre
 package event
 
-import stm.Sys
 import collection.immutable.{IndexedSeq => IIdxSeq}
 import LucreSTM.logEvent
 import annotation.elidable
@@ -60,10 +59,10 @@ object Push {
    private val NoReactions = IIdxSeq.empty[ Reaction ]
 //   private val emptySet = Set.empty[ Nothing ]
 //   private val emptyMap = Map.empty[ Nothing, Nothing ]
-   type Parents[ S <: Sys[ S ]] = Set[ VirtualNodeSelector[ S ]]
-   private def NoParents[ S <: Sys[ S ]] : Parents[ S ] = Set.empty[ VirtualNodeSelector[ S ]]
-   private def NoMutating[ S <: Sys[ S ]] : Set[ MutatingSelector[ S ]] = Set.empty[ MutatingSelector[ S ]]
-   private type Visited[ S <: Sys[ S ]] = Map[ VirtualNodeSelector[ S ], Parents[ S ]]
+   type Parents[ S <: stm.Sys[ S ]] = Set[ VirtualNodeSelector[ S ]]
+   private def NoParents[ S <: stm.Sys[ S ]] : Parents[ S ] = Set.empty[ VirtualNodeSelector[ S ]]
+   private def NoMutating[ S <: stm.Sys[ S ]] : Set[ MutatingSelector[ S ]] = Set.empty[ MutatingSelector[ S ]]
+   private type Visited[ S <: stm.Sys[ S ]] = Map[ VirtualNodeSelector[ S ], Parents[ S ]]
 
    private final class Impl[ S <: EventSys[ S ]]( source: VirtualNodeSelector[ S ], val update: Any )( implicit tx: S#Tx )
    extends Push[ S ] {
@@ -141,14 +140,14 @@ object Push {
       def resolve[ A ] : Option[ A ] = Some( update.asInstanceOf[ A ])
    }
 }
-sealed trait Pull[ S <: Sys[ S ]] {
+sealed trait Pull[ S <: stm.Sys[ S ]] {
    def resolve[ A ]: Option[ A ]
    def update: Any
    def hasVisited( sel: VirtualNodeSelector[ S ]) : Boolean
    def parents( sel: VirtualNodeSelector[ S ]) : Push.Parents[ S ]
    def clearInvalid( evt: MutatingSelector[ S ])
 }
-sealed trait Push[ S <: Sys[ S ]] extends Pull[ S ] {
+sealed trait Push[ S <: stm.Sys[ S ]] extends Pull[ S ] {
    def visit( sel: VirtualNodeSelector[ S ], parent: VirtualNodeSelector[ S ]) : Unit
 //   def visit( sel: MutatingSelector[ S ],  parent: VirtualNodeSelector[ S ]) : Unit
 //   def mutatingVisit( sel: VirtualNodeSelector[ S ], parent: VirtualNodeSelector[ S ]) : Unit

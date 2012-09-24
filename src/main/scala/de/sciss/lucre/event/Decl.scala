@@ -26,7 +26,6 @@
 package de.sciss.lucre
 package event
 
-import stm.Sys
 import collection.breakOut
 import collection.immutable.{IndexedSeq => IIdxSeq}
 
@@ -42,7 +41,7 @@ import collection.immutable.{IndexedSeq => IIdxSeq}
  * the order of their calls is not changed, as these calls
  * associate incremental identifiers with the declared events.
  */
-trait Decl[ S <: Sys[ S ], Impl <: Node[ S ]] {
+trait Decl[ S <: stm.Sys[ S ], Impl <: Node[ S ]] {
    private var cnt      = 0
    private var keyMap   = Map.empty[ Class[ _ ], Int ]
    private var idMap    = Map.empty[ Int, Declaration[ Update ]]

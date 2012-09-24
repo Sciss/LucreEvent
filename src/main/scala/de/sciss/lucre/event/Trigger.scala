@@ -26,8 +26,6 @@
 package de.sciss.lucre
 package event
 
-import stm.Sys
-
 object Trigger {
    trait Impl[ S <: EventSys[ S ], A, Repr <: Node[ S ]]
    extends Trigger[ S, A, Repr ] with event.EventImpl[ S, A, Repr ]
@@ -59,6 +57,6 @@ object Trigger {
  * A `Trigger` event is one which can be publically fired. One can think of it as the
  * imperative event in EScala.
  */
-trait Trigger[ S <: Sys[ S ], A, +Repr ] extends Event[ S, A, Repr ] {
+trait Trigger[ S <: stm.Sys[ S ], A, +Repr ] extends Event[ S, A, Repr ] {
    def apply( update: A )( implicit tx: S#Tx ) : Unit
 }

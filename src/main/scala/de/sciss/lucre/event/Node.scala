@@ -27,18 +27,18 @@ package de.sciss.lucre
 package event
 
 import collection.immutable.{IndexedSeq => IIdxSeq}
-import stm.{Sys, Mutable}
+import stm.Mutable
 import annotation.switch
 import LucreSTM.logEvent
 
 /**
  * An abstract trait uniting invariant and mutating readers.
  */
-/* sealed */ trait Reader[ S <: Sys[ S ], +Repr ] {
+/* sealed */ trait Reader[ S <: stm.Sys[ S ], +Repr ] {
    def read( in: DataInput, access: S#Acc, targets: Targets[ S ])( implicit tx: S#Tx ) : Repr with Node[ S ]
 }
 
-trait NodeSerializer[ S <: Sys[ S ], Repr <: Node[ S ]]
+trait NodeSerializer[ S <: EventSys[ S ], Repr <: Node[ S ]]
 extends Reader[ S, Repr ] with stm.Serializer[ S#Tx, S#Acc, Repr ] {
    final def write( v: Repr, out: DataOutput ) { v.write( out )}
 
@@ -49,21 +49,35 @@ extends Reader[ S, Repr ] with stm.Serializer[ S#Tx, S#Acc, Repr ] {
 }
 
 object Targets {
-   def apply[ S <: Sys[ S ]]( implicit tx: S#Tx ) : Targets[ S ] = {
+//   private type I = InMemory
+//
+//   private implicit def childrenSer[ S <: EventSys[ S ]] : stm.Serializer[ S#Tx, S#Acc, Children[ S ]] =
+//      anyChildrenSer.asInstanceOf[ stm.Serializer[ S#Tx, S#Acc, Children[ S ]]]
+//
+//   private val anyChildrenSer = stm.Serializer.indexedSeq[ I#Tx, I#Acc, (Int, Selector[ I ])](
+//      stm.Serializer.tuple2[ I#Tx, I#Acc, Int, Selector[ I ]](
+//         stm.Serializer.Int, Selector.serializer[ I ]
+//      )
+//   )
+
+   def apply[ S <: EventSys[ S ]]( implicit tx: S#Tx ) : Targets[ S ] = {
       val id         = tx.newID()
-      val children   = tx.newVar[ Children[ S ]]( id, NoChildren )
-      val invalid    = tx.newIntVar( id, 0 )
+//      val children   = tx.newVar[ Children[ S ]]( id, NoChildren )
+//      val invalid    = tx.newIntVar( id, 0 )
+      val children   = tx.newEventVar[ Children[ S ]]( id )
+      val invalid    = tx.newEventIntVar( id )
       new Impl( 0, id, children, invalid )
    }
 
-   def partial[ S <: Sys[ S ]]( implicit tx: S#Tx ) : Targets[ S ] = {
-      val id         = tx.newPartialID()
-      val children   = tx.newPartialVar[ Children[ S ]]( id, NoChildren )
-      val invalid    = tx.newIntVar( id, 0 ) // XXX should this be removed? or partial?
-      new Impl( 1, id, children, invalid )
+   def partial[ S <: EventSys[ S ]]( implicit tx: S#Tx ) : Targets[ S ] = {
+apply[ S ]
+//      val id         = tx.newPartialID()
+//      val children   = tx.newPartialVar[ Children[ S ]]( id, NoChildren )
+//      val invalid    = tx.newIntVar( id, 0 ) // XXX should this be removed? or partial?
+//      new Impl( 1, id, children, invalid )
    }
 
-   /* private[lucre] */ def read[ S <: Sys[ S ]]( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Targets[ S ] = {
+   /* private[lucre] */ def read[ S <: EventSys[ S ]]( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Targets[ S ] = {
       (in.readUnsignedByte(): @switch) match {
          case 0      => readIdentified( in, access )
          case 1      => readIdentifiedPartial( in, access )
@@ -71,25 +85,28 @@ object Targets {
       }
    }
 
-   private[event] def readIdentified[ S <: Sys[ S ]]( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Targets[ S ] = {
+   private[event] def readIdentified[ S <: EventSys[ S ]]( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Targets[ S ] = {
       val id            = tx.readID( in, access )
-      val children      = tx.readVar[ Children[ S ]]( id, in )
-      val invalid       = tx.readIntVar( id, in )
+//      val children      = tx.readVar[ Children[ S ]]( id, in )
+//      val invalid       = tx.readIntVar( id, in )
+      val children      = tx.readEventVar[ Children[ S ]]( id, in )
+      val invalid       = tx.readEventIntVar( id, in )
       new Impl[ S ]( 0, id, children, invalid )
    }
 
-   private[event] def readIdentifiedPartial[ S <: Sys[ S ]]( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Targets[ S ] = {
-      val id            = tx.readPartialID( in, access )
-      val children      = tx.readPartialVar[ Children[ S ]]( id, in )
-      val invalid       = tx.readIntVar( id, in )
-      new Impl[ S ]( 1, id, children, invalid )
+   private[event] def readIdentifiedPartial[ S <: EventSys[ S ]]( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Targets[ S ] = {
+readIdentified( in, access )
+//      val id            = tx.readPartialID( in, access )
+//      val children      = tx.readPartialVar[ Children[ S ]]( id, in )
+//      val invalid       = tx.readIntVar( id, in )
+//      new Impl[ S ]( 1, id, children, invalid )
    }
 
 //   private[event] def apply[ S <: Sys[ S ]]( id: S#ID, children: S#Var[ Children[ S ]]) : Targets[ S ] =
 //      new EventImpl( id, children )
 
-   private final class Impl[ S <: Sys[ S ]]( cookie: Int,
-      val id: S#ID, childrenVar: S#Var[ Children[ S ]], invalidVar: S#Var[ Int ])
+   private final class Impl[ S <: EventSys[ S ]]( cookie: Int,
+      val id: S#ID, childrenVar: EventVar[ S, Children[ S ]], invalidVar: EventVar[ S, Int ])
    extends Targets[ S ] {
       def write( out: DataOutput ) {
          out.writeUnsignedByte( cookie )
@@ -109,7 +126,7 @@ object Targets {
 
 //      def select( slot: Int, invariant: Boolean ) : VirtualNodeSelector[ S ] = Selector( slot, this, invariant )
 
-      private[event] def children( implicit tx: S#Tx ) : Children[ S ] = childrenVar.get
+      private[event] def children( implicit tx: S#Tx ) : Children[ S ] = childrenVar.getOrElse( NoChildren )
 
       override def toString = "Targets" + id
 
@@ -120,8 +137,17 @@ object Targets {
          logEvent( this.toString + " old children = " + old )
 // MMM
 //         sel.writeValue()
-         childrenVar.set( old :+ tup )
-         !old.exists( _._1 == slot )
+         old match {
+            case Some( seq ) =>
+               childrenVar.set( seq :+ tup )
+               seq.exists( _._1 == slot )
+            case _ =>
+               childrenVar.set( IIdxSeq( tup ))
+               false
+         }
+//
+//         childrenVar.set( old :+ tup )
+//         !old.exists( _._1 == slot )
       }
 
       private[event] def resetAndValidate( slot: Int, sel: /* MMM Expanded */ Selector[ S ])( implicit tx: S#Tx ) {
@@ -129,7 +155,7 @@ object Targets {
          val tup  = (slot, sel)
 // MMM
 //         sel.writeValue()
-         val old  = if( isPartial ) childrenVar.get else NoChildren[ S ]
+         val old  = if( isPartial ) childrenVar.getOrElse( NoChildren[ S ]) else NoChildren[ S ]
          childrenVar.set( old :+ tup )
          validated( slot )
       }
@@ -137,7 +163,7 @@ object Targets {
       private[event] def remove( slot: Int, sel: /* MMM Expanded */ Selector[ S ])( implicit tx: S#Tx ) : Boolean = {
          logEvent( this.toString + " remove( " + slot + ", " + sel + ")" )
          val tup  = (slot, sel)
-         val xs   = childrenVar.get
+         val xs   = childrenVar.getOrElse( NoChildren )
          logEvent( this.toString + " old children = " + xs )
          val i    = xs.indexOf( tup )
          if( i >= 0 ) {
@@ -163,11 +189,12 @@ object Targets {
       private[event] def isInvalid( implicit tx: S#Tx ) : Boolean = !invalidVar.isFresh || (invalidVar.get != 0)
 
       private[event] def isInvalid( slot: Int  )( implicit tx: S#Tx ) : Boolean =
-         !invalidVar.isFresh || ((invalidVar.get & slot) != 0)
+         !invalidVar.isFresh || ((invalidVar.getOrElse( 0 ) & slot) != 0)
 
       private[event] def validated( slot: Int )( implicit tx: S#Tx ) {
          if( invalidVar.isFresh ) {
-            invalidVar.transform( _ & ~slot )
+//            invalidVar.transform( _ & ~slot )
+            invalidVar.transform( 0 )( _ & ~slot )
          } else {
             invalidVar.set( ~slot )
          }
@@ -175,7 +202,7 @@ object Targets {
 
       private[event] def invalidate( slot: Int )( implicit tx: S#Tx ) {
          if( invalidVar.isFresh ) {
-            invalidVar.transform( _ | slot )
+            invalidVar.transform( 0 )( _ | slot )
          } else {
             invalidVar.set( 0xFFFFFFFF )
          }
@@ -197,7 +224,7 @@ object Targets {
  * object, sharing the same `id` as its targets. As a `Reactor`, it has a method to
  * `propagate` a fired event.
  */
-sealed trait Targets[ S <: Sys[ S ]] extends Reactor[ S ] /* extends Writable with Disposable[ S#Tx ] */ {
+sealed trait Targets[ S <: stm.Sys[ S ]] extends Reactor[ S ] /* extends Writable with Disposable[ S#Tx ] */ {
 //   /* private[event] */ def id: S#ID
 
 //   private[event] def children( implicit tx: S#Tx ) : Children[ S ]
@@ -260,7 +287,7 @@ sealed trait Targets[ S <: Sys[ S ]] extends Reactor[ S ] /* extends Writable wi
  * This trait also implements `equals` and `hashCode` in terms of the `id` inherited from the
  * targets.
  */
-/* sealed */ trait Node[ S <: Sys[ S ]] extends /* Reactor[ S ] with */ VirtualNode[ S ] /* with Dispatcher[ S, A ] */ {
+/* sealed */ trait Node[ S <: stm.Sys[ S ]] extends /* Reactor[ S ] with */ VirtualNode[ S ] /* with Dispatcher[ S, A ] */ {
    override def toString = "Node" + id
 
    protected def targets: Targets[ S ]
@@ -297,7 +324,7 @@ sealed trait Targets[ S <: Sys[ S ]] extends Reactor[ S ] /* extends Writable wi
  * either a persisted event `Node` or a registered `ObserverKey` which is resolved through the transaction
  * as pointing to a live view.
  */
-sealed trait Reactor[ S <: Sys[ S ]] extends Mutable[ S#ID, S#Tx ] {
+sealed trait Reactor[ S <: stm.Sys[ S ]] extends Mutable[ S#ID, S#Tx ] {
    private[event] def _targets : Targets[ S ]
 
    override def equals( that: Any ) : Boolean = {
@@ -310,7 +337,7 @@ sealed trait Reactor[ S <: Sys[ S ]] extends Mutable[ S#ID, S#Tx ] {
 }
 
 object VirtualNode {
-   private[event] def read[ S <: Sys[ S ]]( in: DataInput, fullSize: Int, access: S#Acc )( implicit tx: S#Tx ) : Raw[ S ] = {
+   private[event] def read[ S <: EventSys[ S ]]( in: DataInput, fullSize: Int, access: S#Acc )( implicit tx: S#Tx ) : Raw[ S ] = {
       val off        = in.getBufferOffset
       val targets    = Targets.read( in, access )
       val dataSize   = fullSize - (in.getBufferOffset - off)
@@ -319,7 +346,7 @@ object VirtualNode {
       new Raw( targets, data, access )
    }
 
-   private[event] final class Raw[ S <: Sys[ S ]]( private[event] val _targets: Targets[ S ], data: Array[ Byte ], access: S#Acc )
+   private[event] final class Raw[ S <: EventSys[ S ]]( private[event] val _targets: Targets[ S ], data: Array[ Byte ], access: S#Acc )
    extends VirtualNode[ S ] {
       def id: S#ID = _targets.id
 
@@ -344,7 +371,7 @@ object VirtualNode {
 }
 //private[event] final case class VirtualNode[ S <: Sys[ S ]]( targets: Targets[ S ], data: Array[ Byte ])
 
-sealed trait VirtualNode[ S <: Sys[ S ]] extends Reactor[ S ] {
+sealed trait VirtualNode[ S <: stm.Sys[ S ]] extends Reactor[ S ] {
 //   def id: S#ID
    private[event] def select( slot: Int, invariant: Boolean ) : VirtualNodeSelector[ S ]
 //   private[event] def devirtualize( reader: Reader[ S, Node[ S ]])( implicit tx: S#Tx ) : Node[ S ]

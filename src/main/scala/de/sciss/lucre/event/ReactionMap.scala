@@ -27,8 +27,6 @@ package de.sciss.lucre
 package event
 
 import concurrent.stm.TMap
-import stm.Sys
-import collection.immutable.{IndexedSeq => IIdxSeq}
 
 object ReactionMap {
 //   type Reaction  = () => () => Unit
@@ -36,15 +34,15 @@ object ReactionMap {
 //   type Reactions = Buffer[ Reaction ]
 
    private val noOpEval                   = () => ()
-   private type AnyObsFun[ S <: Sys[ S ]] =  S#Tx => AnyRef => Unit
+   private type AnyObsFun[ S <: stm.Sys[ S ]] =  S#Tx => AnyRef => Unit
 
-   def apply[ S <: Sys[ S ], T <: Sys[ T ]]( cnt: T#Var[ Int ])( implicit sysConv: S#Tx => T#Tx ) : ReactionMap[ S ] =
+   def apply[ S <: stm.Sys[ S ], T <: stm.Sys[ T ]]( cnt: T#Var[ Int ])( implicit sysConv: S#Tx => T#Tx ) : ReactionMap[ S ] =
       new Impl[ S, T ]( cnt )
 
 //   private final case class StateObservation[ S <: Sys[ S ], A, Repr <: State[ S, A ]](
 //      reader: State.Reader[ S, Repr ], fun: (S#Tx, A) => Unit )
 
-   private final case class EventObservation[ S <: Sys[ S ], -A ](
+   private final case class EventObservation[ S <: stm.Sys[ S ], -A ](
       reader: event.Reader[ S, Any ], fun: S#Tx => A => Unit ) {
 
       def reaction( parent: VirtualNodeSelector[ S ], push: Push[ S ])( implicit tx: S#Tx ) : Reaction = {
@@ -59,7 +57,7 @@ object ReactionMap {
       }
    }
 
-   private final class Impl[ S <: Sys[ S ], T <: Sys[ T ]]( cnt: T#Var[ Int ])( implicit sysConv: S#Tx => T#Tx )
+   private final class Impl[ S <: stm.Sys[ S ], T <: stm.Sys[ T ]]( cnt: T#Var[ Int ])( implicit sysConv: S#Tx => T#Tx )
    extends ReactionMap[ S ] {
       private val eventMap = TMap.empty[ Int, EventObservation[ S, Nothing ]]
 
@@ -86,7 +84,7 @@ object ReactionMap {
    }
 }
 
-trait ReactionMap[ S <: Sys[ S ]] {
+trait ReactionMap[ S <: stm.Sys[ S ]] {
    def addEventReaction[ A, Repr /* <: Node[ S ] */]( reader: event.Reader[ S, Repr ], fun: S#Tx => A => Unit )
                                               ( implicit tx: S#Tx ) : ObserverKey[ S ]
 

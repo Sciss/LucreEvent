@@ -26,8 +26,6 @@
 package de.sciss.lucre
 package event
 
-import stm.Sys
-
 /**
  * A constant "event" is one which doesn't actually fire. It thus arguably isn't really an event,
  * but it can be used to implement the constant type of an expression system which can use a unified
@@ -36,7 +34,7 @@ import stm.Sys
  * as there is no way to fire this event. Implementation must provide a constant value method
  * `constValue` and implement its serialization via `writeData`.
  */
-trait Constant[ S <: Sys[ S ] /*, A */] /* extends Val[ S, A ] with Root[ S, Change[ A ]] */ {
+trait Constant[ S <: EventSys[ S ] /*, A */] /* extends Val[ S, A ] with Root[ S, Change[ A ]] */ {
    final def write( out: DataOutput ) {
       out.writeUnsignedByte( 3 )
       writeData( out )

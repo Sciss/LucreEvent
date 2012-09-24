@@ -26,7 +26,6 @@
 package de.sciss.lucre
 package event
 
-import stm.Sys
 import LucreSTM.logEvent
 
 trait Generator[ S <: EventSys[ S ], A, Repr ] extends Event[ S, A, Repr ] {

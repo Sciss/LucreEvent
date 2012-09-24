@@ -26,20 +26,20 @@
 package de.sciss.lucre
 package event
 
-import stm.{InMemory, Sys}
+import stm.InMemory
 import LucreSTM.logEvent
 import util.MurmurHash
 
 object Selector {
-   implicit def serializer[ S <: Sys[ S ]] : stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] = new Ser[ S ]
+   implicit def serializer[ S <: EventSys[ S ]] : stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] = new Ser[ S ]
 
-   private[event] def apply[ S <: Sys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ],
+   private[event] def apply[ S <: EventSys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ],
                                              invariant: Boolean ) : VirtualNodeSelector[ S ] = {
       if( invariant ) InvariantTargetsSelector( slot, node )
       else            MutatingTargetsSelector(  slot, node )
    }
 
-   private final class Ser[ S <: Sys[ S ]] extends stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] {
+   private final class Ser[ S <: EventSys[ S ]] extends stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] {
       def write( v: Selector[ S ], out: DataOutput ) {
          v.writeSelector( out )
       }
@@ -63,7 +63,7 @@ val reactor  = VirtualNode.read[ S ]( in, fullSize, access )
       }
    }
 
-   private sealed trait TargetsSelector[ S <: Sys[ S ]] extends VirtualNodeSelector[ S ] {
+   private sealed trait TargetsSelector[ S <: EventSys[ S ]] extends VirtualNodeSelector[ S ] {
 //      override protected def reactor: Targets[ S ]
 //      override private[event] def reactor: Targets[ S ]
 //      protected def data: Array[ Byte ]
@@ -87,14 +87,14 @@ val reactor  = VirtualNode.read[ S ]( in, fullSize, access )
       }
    }
 
-   private final case class InvariantTargetsSelector[ S <: Sys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ])
+   private final case class InvariantTargetsSelector[ S <: EventSys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ])
    extends TargetsSelector[ S ] with InvariantSelector[ S ]
 
-   private final case class MutatingTargetsSelector[ S <: Sys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ])
+   private final case class MutatingTargetsSelector[ S <: EventSys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ])
    extends TargetsSelector[ S ] with MutatingSelector[ S ]
 }
 
-sealed trait Selector[ S <: Sys[ S ]] /* extends Writable */ {
+sealed trait Selector[ S <: stm.Sys[ S ]] /* extends Writable */ {
    protected def cookie: Int
 
    final def writeSelector( out: DataOutput ) {
@@ -108,7 +108,7 @@ sealed trait Selector[ S <: Sys[ S ]] /* extends Writable */ {
    private[event] def toObserverKey : Option[ ObserverKey[ S ]] // Option[ Int ]
 }
 
-sealed trait VirtualNodeSelector[ S <: Sys[ S ]] extends Selector[ S ] {
+sealed trait VirtualNodeSelector[ S <: stm.Sys[ S ]] extends Selector[ S ] {
 //   private[event] def reactor: Reactor[ S ]
 
    private[lucre] def node: VirtualNode[ S ]
@@ -191,7 +191,7 @@ sealed trait VirtualNodeSelector[ S <: Sys[ S ]] extends Selector[ S ] {
 ////   }
 //}
 
-trait InvariantSelector[ S <: Sys[ S ]] extends VirtualNodeSelector[ S ] {
+trait InvariantSelector[ S <: stm.Sys[ S ]] extends VirtualNodeSelector[ S ] {
    final protected def cookie: Int = 0
 
    final private[event] def pushUpdate( parent: VirtualNodeSelector[ S ], push: Push[ S ]) {
@@ -199,7 +199,7 @@ trait InvariantSelector[ S <: Sys[ S ]] extends VirtualNodeSelector[ S ] {
    }
 }
 
-trait MutatingSelector[ S <: Sys[ S ]] extends VirtualNodeSelector[ S ] {
+trait MutatingSelector[ S <: stm.Sys[ S ]] extends VirtualNodeSelector[ S ] {
    final protected def cookie: Int = 1
 
 //   final private[event] def _invalidate()( implicit tx: S#Tx ) {
@@ -224,7 +224,7 @@ trait MutatingSelector[ S <: Sys[ S ]] extends VirtualNodeSelector[ S ] {
  * the observing function is not persisted, the slot will be used for lookup (again through the transaction)
  * of the reacting function during the first reaction gathering phase of event propagation.
  */
-final case class ObserverKey[ S <: Sys[ S ]] private[lucre] ( id: Int ) extends /* MMM Expanded */ Selector[ S ] {
+final case class ObserverKey[ S <: stm.Sys[ S ]] private[lucre] ( id: Int ) extends /* MMM Expanded */ Selector[ S ] {
    protected def cookie: Int = 2
 
    private[event] def toObserverKey : Option[ ObserverKey[ S ]] = Some( this )
@@ -249,7 +249,7 @@ final case class ObserverKey[ S <: Sys[ S ]] private[lucre] ( id: Int ) extends 
    }
 }
 
-/* sealed */ trait EventLike[ S <: Sys[ S ], +A, +Repr ] {
+/* sealed */ trait EventLike[ S <: stm.Sys[ S ], +A, +Repr ] {
    /**
     * Connects the given selector to this event. That is, this event will
     * adds the selector to its propagation targets.
@@ -324,17 +324,17 @@ object Dummy {
    /**
     * This method is cheap.
     */
-   def apply[ S <: Sys[ S ], A, Repr ] : Dummy[ S, A, Repr ] = anyDummy.asInstanceOf[ Dummy[ S, A, Repr ]]
+   def apply[ S <: stm.Sys[ S ], A, Repr ] : Dummy[ S, A, Repr ] = anyDummy.asInstanceOf[ Dummy[ S, A, Repr ]]
 
    private val anyDummy = new Impl[ InMemory ]
 
-   private final class Impl[ S <: Sys[ S ]] extends Dummy[ S, Any, Any ] {
+   private final class Impl[ S <: stm.Sys[ S ]] extends Dummy[ S, Any, Any ] {
       override def toString = "event.Dummy"
    }
 
    private def opNotSupported = sys.error( "Operation not supported ")
 }
-trait Dummy[ S <: Sys[ S ], +A, +Repr ] extends EventLike[ S, A, Repr ] {
+trait Dummy[ S <: stm.Sys[ S ], +A, +Repr ] extends EventLike[ S, A, Repr ] {
    import Dummy._
 
    final /* private[lucre] */ def --->( r: /* MMM Expanded */ Selector[ S ])( implicit tx: S#Tx ) {}
@@ -365,7 +365,7 @@ trait Dummy[ S <: Sys[ S ], +A, +Repr ] extends EventLike[ S, A, Repr ] {
  * implementations should extend either of `Event.Constant` or `Event.Node` (which itself is sealed and
  * split into `Event.Invariant` and `Event.Mutating`.
  */
-trait Event[ S <: Sys[ S ], +A, +Repr ] extends EventLike[ S, A, Repr ] with VirtualNodeSelector[ S ] { // with NodeSelector[ S, A ]
+trait Event[ S <: stm.Sys[ S ], +A, +Repr ] extends EventLike[ S, A, Repr ] with VirtualNodeSelector[ S ] { // with NodeSelector[ S, A ]
    /* private[lucre] */ def node: Repr with Node[ S ]
 //   final def devirtualize[ Evt <: Event[ S, Any, Any ]]( reader: Reader[ S, Any ])( implicit tx: S#Tx ) : Evt =
    final def devirtualize[ A1, R1 ]( reader: Reader[ S, R1 ])( implicit tx: S#Tx ) : Event[ S, A1, R1 with Node[ S ]] =
@@ -374,7 +374,7 @@ trait Event[ S <: Sys[ S ], +A, +Repr ] extends EventLike[ S, A, Repr ] with Vir
 //   final private[lucre] def devirtualize( reader: Reader[ S, Node[ S ]])( implicit tx: S#Tx ) : Event[ S, A, Repr ] = this
 }
 
-trait InvariantEvent[ S <: Sys[ S ], +A, +Repr ] extends InvariantSelector[ S ] with Event[ S, A, Repr ] {
+trait InvariantEvent[ S <: stm.Sys[ S ], +A, +Repr ] extends InvariantSelector[ S ] with Event[ S, A, Repr ] {
    final /* private[lucre] */ def --->( r: /* MMM Expanded */ Selector[ S ])( implicit tx: S#Tx ) {
       val t = node._targets
 //      if( t.add( slot, r )) {
@@ -402,7 +402,7 @@ trait InvariantEvent[ S <: Sys[ S ], +A, +Repr ] extends InvariantSelector[ S ] 
    }
 }
 
-trait MutatingEvent[ S <: Sys[ S ], +A, +Repr ] extends MutatingSelector[ S ] with Event[ S, A, Repr ] {
+trait MutatingEvent[ S <: stm.Sys[ S ], +A, +Repr ] extends MutatingSelector[ S ] with Event[ S, A, Repr ] {
    final /* private[lucre] */ def --->( r: /* MMM Expanded */ Selector[ S ])( implicit tx: S#Tx ) {
       node._targets.add( slot, r )
    }

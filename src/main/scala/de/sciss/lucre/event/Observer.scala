@@ -26,7 +26,7 @@
 package de.sciss.lucre
 package event
 
-import stm.{InMemory, Disposable, Sys}
+import stm.{InMemory, Disposable}
 
 object Observer {
    def apply[ S <: EventSys[ S ], A, Repr /* <: Node[ S ] */](
@@ -57,11 +57,11 @@ object Observer {
    /**
     * This method is cheap.
     */
-   def dummy[ S <: Sys[ S ], A, Repr ] : Observer[ S, A, Repr ] = dummyVal.asInstanceOf[ Observer[ S, A, Repr ]]
+   def dummy[ S <: stm.Sys[ S ], A, Repr ] : Observer[ S, A, Repr ] = dummyVal.asInstanceOf[ Observer[ S, A, Repr ]]
 
    private val dummyVal = new Dummy[ InMemory ]
 
-   private final class Dummy[ S <: Sys[ S ]] extends Observer[ S, Any, Nothing ] {
+   private final class Dummy[ S <: stm.Sys[ S ]] extends Observer[ S, Any, Nothing ] {
       override def toString = "Observer.Dummy"
 
       def add[    R1 /* <: Node[ S ] */]( event: EventLike[ S, Any, R1 ])( implicit tx: S#Tx ) {}
@@ -74,7 +74,7 @@ object Observer {
  * `Observer` instances are returned by the `observe` method of classes implementing
  * `Observable`. The observe can be registered and unregistered with events.
  */
-sealed trait Observer[ S <: Sys[ S ], -A, +Repr ] extends Disposable[ S#Tx ] {
+sealed trait Observer[ S <: stm.Sys[ S ], -A, +Repr ] extends Disposable[ S#Tx ] {
    def add[    R1 >: Repr /* <: Node[ S ] */]( event: EventLike[ S, A, R1 ])( implicit tx: S#Tx ) : Unit
    def remove[ R1 >: Repr /* <: Node[ S ] */]( event: EventLike[ S, A, R1 ])( implicit tx: S#Tx ) : Unit
 }
