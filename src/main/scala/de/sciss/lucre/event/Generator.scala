@@ -29,7 +29,7 @@ package event
 import stm.Sys
 import LucreSTM.logEvent
 
-trait Generator[ S <: Sys[ S ], A, Repr ] extends Event[ S, A, Repr ] {
+trait Generator[ S <: EventSys[ S ], A, Repr ] extends Event[ S, A, Repr ] {
    final protected def fire( update: A )( implicit tx: S#Tx ) {
       logEvent( this.toString + " fire " + update )
       Push( this /* select() */, update )

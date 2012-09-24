@@ -39,7 +39,7 @@ object Push {
    @elidable(CONFIG) private def incIndent()   { indent += "  " }
    @elidable(CONFIG) private def decIndent()   { indent = indent.substring( 2 )}
 
-   private[event] def apply[ S <: Sys[ S ], A ]( source: Event[ S, A, Any ], update: A )( implicit tx: S#Tx ) {
+   private[event] def apply[ S <: EventSys[ S ], A ]( source: Event[ S, A, Any ], update: A )( implicit tx: S#Tx ) {
       val push    = new Impl( source, update )
       logEvent( "push begin" )
       resetIndent()
@@ -65,7 +65,7 @@ object Push {
    private def NoMutating[ S <: Sys[ S ]] : Set[ MutatingSelector[ S ]] = Set.empty[ MutatingSelector[ S ]]
    private type Visited[ S <: Sys[ S ]] = Map[ VirtualNodeSelector[ S ], Parents[ S ]]
 
-   private final class Impl[ S <: Sys[ S ]]( source: VirtualNodeSelector[ S ], val update: Any )( implicit tx: S#Tx )
+   private final class Impl[ S <: EventSys[ S ]]( source: VirtualNodeSelector[ S ], val update: Any )( implicit tx: S#Tx )
    extends Push[ S ] {
       private var visited     = Map( (source, NoParents[ S ])) // EmptyVisited[ S ]
       private var reactions   = NoReactions

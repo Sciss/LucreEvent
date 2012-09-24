@@ -1,0 +1,48 @@
+Expr.Var[ A ] {
+   targets: Targets[ S ]
+   S#Var[ Expr[ S, A ]]
+}
+
+Targets[ S ] {
+   id: S#ID
+   childrenVar: S#Var[ IIdxSeq[ (Int, Selector[ S ])]]
+   invalidVar: S#Var[ Int ]
+}
+
+:::::: Targets[ S ] needs to change into ::::::
+
+   childrenVar: S#Event#Var[ IIdxSeq[ (Int, Selector[ S ])]] // Selector[ S#Event ] ???
+   invalidVar: S#Event#Var[ Int ]
+
+Selector[ S ]
+   cookie: Int
+
+VirtualNodeSelector[ S ] extends Selector[ S ]
+   node: VirtualNode[ S ]
+   slot: Int
+
+ObserverKey[ S ] extends Selector[ S ]
+   id: Int
+
+
+Event[ S, A, Repr ] extends VirtualNodeSelector[ S ]
+
+::::::::::
+
+selector serializer
+
+::::::::::
+
+wouldn't it be sufficient if we had
+
+EventTxn[ S ] extends Txn[ S ] {
+   private[event] def newEventVar[ A ]: EventVar[ S, A ]
+   private[event] def addEventReaction( ... )
+   private[event] def removeEventReaction( ... )
+   private[event] def processEvent( leaf, parent, this )
+
+where EventVar[ S, A ] {
+   def getOrElse( default: A )( implicit tx: S#Tx ) : A
+   def set( v: A )( implicit tx: S#Tx ) : A
+}
+

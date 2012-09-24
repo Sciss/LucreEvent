@@ -6,11 +6,14 @@ import stm.Durable
 import java.io.File
 
 object EventTest extends App {
+   trait EDurable extends EventSys[ EDurable ] with stm.Cursor[ EDurable ]
+   def ??? : Nothing = sys.error( "TODO" )
+
 //   val system  = ConfluentSkel()
 //   type S      = ConfluentSkel
    val store   = BerkeleyDB.factory({ val f = File.createTempFile( "event_test", "db" ); f.delete(); f })
-   val system  = Durable( store )
-   type S      = Durable
+   type S      = EDurable // EventSys[ _ <: EventSys[ _ ]] // forSome { type X <: EventSys[ X ]} // Durable with EventSys[ Durable ]
+   val system: S = ??? //  = Durable( store )
 
    val bang = system.step { implicit tx => Bang[ S ]}
 

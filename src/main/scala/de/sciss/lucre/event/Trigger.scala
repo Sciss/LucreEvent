@@ -29,18 +29,18 @@ package event
 import stm.Sys
 
 object Trigger {
-   trait Impl[ S <: Sys[ S ], A, Repr <: Node[ S ]]
+   trait Impl[ S <: EventSys[ S ], A, Repr <: Node[ S ]]
    extends Trigger[ S, A, Repr ] with event.EventImpl[ S, A, Repr ]
    with Generator[ S, A, Repr ] {
       final def apply( update: A )( implicit tx: S#Tx ) { fire( update )}
    }
 
-   def apply[ S <: Sys[ S ], A ]( implicit tx: S#Tx ) : Standalone[ S, A ] = new Standalone[ S, A ] {
+   def apply[ S <: EventSys[ S ], A ]( implicit tx: S#Tx ) : Standalone[ S, A ] = new Standalone[ S, A ] {
       protected val targets = Targets[ S ]
    }
 
    object Standalone {
-      implicit def serializer[ S <: Sys[ S ], A ] : NodeSerializer[ S, Standalone[ S, A ]] =
+      implicit def serializer[ S <: EventSys[ S ], A ] : NodeSerializer[ S, Standalone[ S, A ]] =
          new NodeSerializer[ S, Standalone[ S, A ]] {
             def read( in: DataInput, access: S#Acc, _targets: Targets[ S ])( implicit tx: S#Tx ) : Standalone[ S, A ] =
                new Standalone[ S, A ] {
@@ -48,7 +48,7 @@ object Trigger {
                }
          }
    }
-   trait Standalone[ S <: Sys[ S ], A ] extends Impl[ S, A, Standalone[ S, A ]]
+   trait Standalone[ S <: EventSys[ S ], A ] extends Impl[ S, A, Standalone[ S, A ]]
    with StandaloneLike[ S, A, Standalone[ S, A ]] with Singleton[ S ] /* with EarlyBinding[ S, A ] */
    with Root[ S, A /*, Standalone[ S, A ] */ ] {
       final protected def reader: Reader[ S, Standalone[ S, A ]] = Standalone.serializer[ S, A ]

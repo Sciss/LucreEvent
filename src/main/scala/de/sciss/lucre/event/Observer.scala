@@ -29,14 +29,14 @@ package event
 import stm.{InMemory, Disposable, Sys}
 
 object Observer {
-   def apply[ S <: Sys[ S ], A, Repr /* <: Node[ S ] */](
+   def apply[ S <: EventSys[ S ], A, Repr /* <: Node[ S ] */](
       reader: Reader[ S, Repr ], fun: S#Tx => A => Unit )( implicit tx: S#Tx ) : Observer[ S, A, Repr ] = {
 
       val key = tx.reactionMap.addEventReaction[ A, Repr ]( reader, fun )
       new Impl[ S, A, Repr ]( key )
    }
 
-   private final class Impl[ S <: Sys[ S ], A, Repr ](
+   private final class Impl[ S <: EventSys[ S ], A, Repr ](
       key: ObserverKey[ S ])
    extends Observer[ S, A, Repr ] {
       override def toString = "Observer<" + key.id + ">"
