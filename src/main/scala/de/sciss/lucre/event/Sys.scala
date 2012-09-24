@@ -30,9 +30,11 @@ import stm.Disposable
 
 trait Sys[ S <: Sys[ S ]] extends stm.Sys[ S ] {
    type Tx <: Txn[ S ]
+
+   private[event] def reactionMap: ReactionMap[ S ]
 }
 trait Txn[ S <: Sys[ S ]] extends stm.Txn[ S ] {
-   def reactionMap: ReactionMap[ S ]
+   private[event] def reactionMap: ReactionMap[ S ]
    private[event] def newEventVar[ A ]( id: S#ID )( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ]
    private[event] def newEventIntVar[ A ]( id: S#ID ) : Var[ S, Int ]
    private[event] def readEventVar[ A ]( id: S#ID, in: DataInput )( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ]

@@ -26,7 +26,7 @@
 package de.sciss.lucre
 package event
 
-import stm.{InMemory, Disposable}
+import stm.Disposable
 
 object Observer {
    def apply[ S <: Sys[ S ], A, Repr /* <: Node[ S ] */](
@@ -59,7 +59,7 @@ object Observer {
     */
    def dummy[ S <: stm.Sys[ S ], A, Repr ] : Observer[ S, A, Repr ] = dummyVal.asInstanceOf[ Observer[ S, A, Repr ]]
 
-   private val dummyVal = new Dummy[ InMemory ]
+   private val dummyVal = new Dummy[ stm.InMemory ]
 
    private final class Dummy[ S <: stm.Sys[ S ]] extends Observer[ S, Any, Nothing ] {
       override def toString = "Observer.Dummy"

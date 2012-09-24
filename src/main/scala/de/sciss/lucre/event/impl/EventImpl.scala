@@ -1,5 +1,5 @@
 /*
- *  ReactionMap.scala
+ *  EventImpl.scala
  *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
@@ -25,18 +25,28 @@
 
 package de.sciss.lucre
 package event
+package impl
 
-import impl.{ReactionMapImpl => Impl}
+trait EventImpl[ S <: Sys[ S ], +A, +Repr /* <: Node[ S ] */]
+extends Event[ S, A, Repr ] /* with InvariantSelector[ S ] */ {
+   final /* private[lucre] */ def isSource( pull: Pull[ S ]) : Boolean = pull.hasVisited( this /* select() */)
 
-object ReactionMap {
-   def apply[ S <: stm.Sys[ S ]]() : ReactionMap[ S ] = Impl[ S ]
-}
+   protected def reader: Reader[ S, Repr ]
 
-trait ReactionMap[ S <: stm.Sys[ S ]] {
-   def addEventReaction[ A, Repr ]( reader: event.Reader[ S, Repr ], fun: S#Tx => A => Unit )
-                                  ( implicit tx: S#Tx ) : ObserverKey[ S ]
+//   final /* private[lucre] */ def --->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ) {
+//      if( reactor._targets.add( slot, r )) connect()
+//   }
+//
+//   final /* private[lucre] */ def -/->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ) {
+//      if( reactor._targets.remove( slot, r )) disconnect()
+//   }
 
-   def removeEventReaction( key: ObserverKey[ S ])( implicit tx: S#Tx ) : Unit
+   final def react[ A1 >: A ]( fun: A1 => Unit )( implicit tx: S#Tx ) : Observer[ S, A1, Repr ] =
+      reactTx( _ => fun )
 
-   def processEvent( leaf: ObserverKey[ S ], parent: VirtualNodeSelector[ S ], push: Push[ S ])( implicit tx: S#Tx ) : Unit
+   final def reactTx[ A1 >: A ]( fun: S#Tx => A1 => Unit )( implicit tx: S#Tx ) : Observer[ S, A1, Repr ] = {
+      val res = Observer[ S, A1, Repr ]( reader, fun )
+      res.add( this )
+      res
+   }
 }

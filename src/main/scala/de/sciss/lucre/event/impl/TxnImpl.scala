@@ -1,5 +1,5 @@
 /*
- *  ReactionMap.scala
+ *  TxnImpl.scala
  *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
@@ -25,18 +25,33 @@
 
 package de.sciss.lucre
 package event
+package impl
 
-import impl.{ReactionMapImpl => Impl}
+import stm.Serializer
 
-object ReactionMap {
-   def apply[ S <: stm.Sys[ S ]]() : ReactionMap[ S ] = Impl[ S ]
-}
+object TxnImpl {
 
-trait ReactionMap[ S <: stm.Sys[ S ]] {
-   def addEventReaction[ A, Repr ]( reader: event.Reader[ S, Repr ], fun: S#Tx => A => Unit )
-                                  ( implicit tx: S#Tx ) : ObserverKey[ S ]
+   trait Mixin[ S <: Sys[ S ]] extends Txn[ S ] {
+      def ??? : Nothing = sys.error( "TODO" )
 
-   def removeEventReaction( key: ObserverKey[ S ])( implicit tx: S#Tx ) : Unit
+      final private[event] def reactionMap : ReactionMap[ S ] = system.reactionMap
 
-   def processEvent( leaf: ObserverKey[ S ], parent: VirtualNodeSelector[ S ], push: Push[ S ])( implicit tx: S#Tx ) : Unit
+      final private[event] def newEventVar[ A ]( id: S#ID )
+                                               ( implicit serializer: Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ] = {
+         ???
+      }
+
+      final private[event] def newEventIntVar[ A ]( id: S#ID ) : Var[ S, Int ] = {
+         ???
+      }
+
+      final private[event] def readEventVar[ A ]( id: S#ID, in: DataInput )
+                                                ( implicit serializer: Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ] = {
+         ???
+      }
+
+      final private[event] def readEventIntVar[ A ]( id: S#ID, in: DataInput ) : Var[ S, Int ] = {
+         ???
+      }
+   }
 }

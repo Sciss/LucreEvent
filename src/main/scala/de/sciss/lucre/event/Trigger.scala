@@ -27,30 +27,13 @@ package de.sciss.lucre
 package event
 
 object Trigger {
-   trait Impl[ S <: Sys[ S ], A, Repr <: Node[ S ]]
-   extends Trigger[ S, A, Repr ] with event.EventImpl[ S, A, Repr ]
-   with Generator[ S, A, Repr ] {
-      final def apply( update: A )( implicit tx: S#Tx ) { fire( update )}
-   }
-
-   def apply[ S <: Sys[ S ], A ]( implicit tx: S#Tx ) : Standalone[ S, A ] = new Standalone[ S, A ] {
-      protected val targets = Targets[ S ]
-   }
+   def apply[ S <: Sys[ S ], A ]( implicit tx: S#Tx ) : Standalone[ S, A ] = impl.TriggerImpl.apply[ S, A ]
 
    object Standalone {
       implicit def serializer[ S <: Sys[ S ], A ] : NodeSerializer[ S, Standalone[ S, A ]] =
-         new NodeSerializer[ S, Standalone[ S, A ]] {
-            def read( in: DataInput, access: S#Acc, _targets: Targets[ S ])( implicit tx: S#Tx ) : Standalone[ S, A ] =
-               new Standalone[ S, A ] {
-                  protected val targets = _targets
-               }
-         }
+         impl.TriggerImpl.standaloneSerializer[ S, A ]
    }
-   trait Standalone[ S <: Sys[ S ], A ] extends Impl[ S, A, Standalone[ S, A ]]
-   with StandaloneLike[ S, A, Standalone[ S, A ]] with Singleton[ S ] /* with EarlyBinding[ S, A ] */
-   with Root[ S, A /*, Standalone[ S, A ] */ ] {
-      final protected def reader: Reader[ S, Standalone[ S, A ]] = Standalone.serializer[ S, A ]
-   }
+   trait Standalone[ S <: Sys[ S ], A ] extends Trigger[ S, A, Standalone[ S, A ]] with Node[ S ]
 }
 
 /**

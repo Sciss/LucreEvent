@@ -1,5 +1,5 @@
 /*
- *  ReactionMap.scala
+ *  InMemoryImpl.scala
  *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
@@ -25,18 +25,23 @@
 
 package de.sciss.lucre
 package event
+package impl
 
-import impl.{ReactionMapImpl => Impl}
+import concurrent.stm.InTxn
+import stm.impl.{InMemoryImpl => STMImpl}
 
-object ReactionMap {
-   def apply[ S <: stm.Sys[ S ]]() : ReactionMap[ S ] = Impl[ S ]
-}
+object InMemoryImpl {
+   private type S = InMemory
 
-trait ReactionMap[ S <: stm.Sys[ S ]] {
-   def addEventReaction[ A, Repr ]( reader: event.Reader[ S, Repr ], fun: S#Tx => A => Unit )
-                                  ( implicit tx: S#Tx ) : ObserverKey[ S ]
+   def apply() : InMemory = new System
 
-   def removeEventReaction( key: ObserverKey[ S ])( implicit tx: S#Tx ) : Unit
+   private final class TxnImpl( val system: S, val peer: InTxn )
+   extends STMImpl.TxnMixin[ S ] with impl.TxnImpl.Mixin[ S ] {
+      override def toString = "event.InMemory#Tx@" + hashCode.toHexString
+   }
 
-   def processEvent( leaf: ObserverKey[ S ], parent: VirtualNodeSelector[ S ], push: Push[ S ])( implicit tx: S#Tx ) : Unit
+   private final class System extends STMImpl.Mixin[ S ] with InMemory with ReactionMapImpl.Mixin[ S ] {
+      def wrap( peer: InTxn ) : S#Tx = sys.error( "" )
+      override def toString = "event.InMemory@" + hashCode.toHexString
+   }
 }

@@ -30,8 +30,12 @@ object Bang {
    def apply[ S <: Sys[ S ]]( implicit tx: S#Tx ) : Bang[ S ] = new Impl[ S ]( Targets[ S ])
 
    private final class Impl[ S <: Sys[ S ]]( protected val targets: Targets[ S ])
-   extends Bang[ S ] with Singleton[ S ] with Root[ S, Unit /*, Bang[ S ] */] {
+   extends Bang[ S ] with impl.StandaloneLike[ S, Unit, Bang[ S ]] with Singleton[ S ] with Root[ S, Unit ]
+   with Generator[ S, Unit, Bang[ S ]] {
       protected def reader = Bang.serializer[ S ]
+      override def toString = "Bang"
+      def apply()( implicit tx: S#Tx ) { fire( () )}
+      def apply( unit: Unit )( implicit tx: S#Tx ) { apply( () )}
    }
 
    implicit def serializer[ S <: Sys[ S ]] : NodeSerializer[ S, Bang[ S ]] = new NodeSerializer[ S, Bang[ S ]] {
@@ -48,11 +52,9 @@ object Bang {
  * `Unit` type as event type parameter. The `apply` method of the companion object builds a `Bang` which also
  * implements the `Observable` trait, so that the bang can be connected to a live view (e.g. a GUI).
  */
-trait Bang[ S <: Sys[ S ]] extends Trigger.Impl[ S, Unit, Bang[ S ]] with StandaloneLike[ S, Unit, Bang[ S ]] {
+trait Bang[ S <: Sys[ S ]] extends Trigger[ S, Unit, Bang[ S ]] with Node[ S ] {
    /**
     * A parameterless convenience version of the `Trigger`'s `apply` method.
     */
-   def apply()( implicit tx: S#Tx ) { apply( () )}
-
-   override def toString = "Bang"
+   def apply()( implicit tx: S#Tx ) : Unit // { apply( () )}
 }

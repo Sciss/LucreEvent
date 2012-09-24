@@ -104,7 +104,7 @@ private[event] def slot = opNotSupported
    }
 
    sealed trait EventImpl[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], A1 /* <: D#Update */]
-   extends event.EventImpl[ S, /* D#Update, */ A1, Repr ] {
+   extends impl.EventImpl[ S, /* D#Update, */ A1, Repr ] {
       def node: Repr // Compound[ S, Repr, D ]
       protected def prefix : String
       implicit protected def m: ClassManifest[ A1 ]
@@ -179,7 +179,7 @@ private[event] def slot = opNotSupported
 
    private final class Trigger[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], A1 /* <: D#Update */](
       val node: Repr )( implicit protected val m: ClassManifest[ A1 ])
-   extends EventImpl[ S, D, Repr, A1 ] with event.Trigger.Impl[ S, A1, Repr ] with Root[ S, A1 ]
+   extends EventImpl[ S, D, Repr, A1 ] with impl.TriggerImpl[ S, A1, Repr ] with Root[ S, A1 ]
    with InvariantEvent[ S, A1, Repr ] {
       protected def prefix = node.toString + ".event"
    }

@@ -1,5 +1,5 @@
 /*
- *  EventImpl.scala
+ *  InMemory.scala
  *  (LucreEvent)
  *
  *  Copyright (c) 2011-2012 Hanns Holger Rutz. All rights reserved.
@@ -26,26 +26,11 @@
 package de.sciss.lucre
 package event
 
-trait EventImpl[ S <: Sys[ S ], +A, +Repr /* <: Node[ S ] */]
-extends Event[ S, A, Repr ] /* with InvariantSelector[ S ] */ {
-   final /* private[lucre] */ def isSource( pull: Pull[ S ]) : Boolean = pull.hasVisited( this /* select() */)
+import impl.{InMemoryImpl => Impl}
 
-   protected def reader: Reader[ S, Repr ]
-
-//   final /* private[lucre] */ def --->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ) {
-//      if( reactor._targets.add( slot, r )) connect()
-//   }
-//
-//   final /* private[lucre] */ def -/->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ) {
-//      if( reactor._targets.remove( slot, r )) disconnect()
-//   }
-
-   final def react[ A1 >: A ]( fun: A1 => Unit )( implicit tx: S#Tx ) : Observer[ S, A1, Repr ] =
-      reactTx( _ => fun )
-
-   final def reactTx[ A1 >: A ]( fun: S#Tx => A1 => Unit )( implicit tx: S#Tx ) : Observer[ S, A1, Repr ] = {
-      val res = Observer[ S, A1, Repr ]( reader, fun )
-      res.add( this )
-      res
-   }
+object InMemory {
+   def apply() : InMemory = Impl()
+}
+trait InMemory extends stm.InMemoryLike[ InMemory ] with Sys[ InMemory ] {
+   type Tx = Txn[ InMemory ]
 }

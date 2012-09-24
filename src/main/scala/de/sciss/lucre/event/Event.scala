@@ -26,7 +26,6 @@
 package de.sciss.lucre
 package event
 
-import stm.InMemory
 import util.MurmurHash
 
 object Selector {
@@ -325,7 +324,7 @@ object Dummy {
     */
    def apply[ S <: stm.Sys[ S ], A, Repr ] : Dummy[ S, A, Repr ] = anyDummy.asInstanceOf[ Dummy[ S, A, Repr ]]
 
-   private val anyDummy = new Impl[ InMemory ]
+   private val anyDummy = new Impl[ stm.InMemory ]
 
    private final class Impl[ S <: stm.Sys[ S ]] extends Dummy[ S, Any, Any ] {
       override def toString = "event.Dummy"
