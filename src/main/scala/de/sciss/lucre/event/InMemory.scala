@@ -32,5 +32,6 @@ object InMemory {
    def apply() : InMemory = Impl()
 }
 trait InMemory extends stm.InMemoryLike[ InMemory ] with Sys[ InMemory ] {
-   type Tx = Txn[ InMemory ]
+   final type Tx     = Txn[ InMemory ]
+   final type IM     = InMemory
 }
