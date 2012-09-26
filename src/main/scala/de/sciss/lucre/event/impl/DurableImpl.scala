@@ -22,7 +22,7 @@ object DurableImpl {
 
    private type D[ S <: DurableLike[ S ]] = DurableLike[ S ]
 
-   private sealed trait DurableSource[ S <: DurableMixin[ S ], @specialized( Int ) A ] extends event.Var[ S, A ] {
+   private sealed trait DurableSource[ S <: D[ S ], @specialized( Int ) A ] extends event.Var[ S, A ] {
       protected def id: Int
 
       final def write( out: DataOutput ) {
@@ -40,7 +40,7 @@ object DurableImpl {
       final def isFresh( implicit tx: S#Tx ) : Boolean = true
    }
 
-   private final class DurableVarImpl[ S <: DurableMixin[ S ], A ]( protected val id: Int,
+   private final class DurableVarImpl[ S <: D[ S ], A ]( protected val id: Int,
                                                   protected val ser: stm.Serializer[ S#Tx, S#Acc, A ])
    extends DurableSource[ S, A ] {
       def get( implicit tx: S#Tx ) : Option[ A ] = tx.system.tryReadEvent[ A ]( id )( ser.read( _, () ))
@@ -52,7 +52,7 @@ object DurableImpl {
       override def toString = "event.Var(" + id + ")"
    }
 
-   private final class DurableIntVar[ S <: DurableMixin[ S ]]( protected val id: Int )
+   private final class DurableIntVar[ S <: D[ S ]]( protected val id: Int )
    extends DurableSource[ S, Int ] {
       def get( implicit tx: S#Tx ) : Option[ Int ] = {
          tx.system.tryReadEvent[ Int ]( id )( _.readInt() )
@@ -87,16 +87,12 @@ object DurableImpl {
    trait DurableTxnMixin[ S <: D[ S ]] extends DurableLike.Txn[ S ] {
       _: S#Tx =>
 
-      private type SD = S with DurableMixin[ S ]
-
-      override def system : SD
-
       final private[event] def reactionMap : ReactionMap[ S ] = system.reactionMap
 
       final private[event] def newEventVar[ A ]( id: S#ID )
                                                ( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ] = {
 //         new VarImpl( Ref.make[ A ])
-         new DurableVarImpl[ SD, A ]( system.newEventIDValue()( this ), serializer )
+         new DurableVarImpl[ S, A ]( system.newEventIDValue()( this ), serializer )
       }
 
       final private[event] def newEventIntVar[ A ]( id: S#ID ) : Var[ S, Int ] = {
