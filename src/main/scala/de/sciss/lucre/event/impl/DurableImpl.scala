@@ -3,7 +3,7 @@ package event
 package impl
 
 import stm.{DataStoreFactory, DataStore}
-import concurrent.stm.InTxn
+import concurrent.stm.{Ref, InTxn}
 
 object DurableImpl {
    def ??? : Nothing = sys.error( "TODO" )
@@ -15,7 +15,7 @@ object DurableImpl {
          apply( factory.open( name ))
    }
 
-   def apply( mainStore: DataStore, eventStore: DataStore ) : Durable = ???
+   def apply( mainStore: DataStore, eventStore: DataStore ) : Durable = new DurableSystem( mainStore, eventStore )
 
    def apply( factory: DataStoreFactory[ DataStore ], mainName: String, eventName: String ) : Durable =
       apply( factory.open( mainName ), factory.open( eventName ))
@@ -69,18 +69,34 @@ object DurableImpl {
 ////      override val inMemory: InMemory = InMemory()
 //   }
 
-   trait DurableMixin[ S <: D[ S ] /* , I <: Sys[ I ] */] extends /* stm.impl.DurableImpl.Mixin[ S, I ] with */ DurableLike[ S ] {
+   trait DurableMixin[ S <: D[ S ], I <: Sys[ I ]] extends stm.impl.DurableImpl.Mixin[ S, I ] with DurableLike[ S ] {
+      private val idCntVar = Ref( 0 )
+
+      protected def eventStore: DataStore
+
+      override def close() {
+         super.close()
+         eventStore.close()
+      }
+
       private[event] def tryReadEvent[ A ]( id: Int )( valueFun: DataInput => A )( implicit tx: S#Tx ): Option[ A ] = {
-         ???
+         log( "readE  <" + id + ">" )
+         eventStore.get( _.writeInt( id ))( valueFun )
       }
       private[event] def writeEvent( id: Int )( valueFun: DataOutput => Unit )( implicit tx: S#Tx ) {
-         ???
+         log( "writE <" + id + ">" )
+         eventStore.put( _.writeInt( id ))( valueFun )
       }
       private[event] def removeEvent( id: Int )( implicit tx: S#Tx ) {
-         ???
+         log( "remoE <" + id + ">" )
+         eventStore.remove( _.writeInt( id ))
       }
       private[event] def newEventIDValue()( implicit tx: S#Tx ) : Int = {
-         ???
+         implicit val itx = tx.peer
+         val id = idCntVar.get + 1
+         log( "newE  <" + id + ">" )
+         idCntVar.set( id )
+         id
       }
    }
 
@@ -117,9 +133,11 @@ object DurableImpl {
       override def toString = "event.Durable#Tx@" + hashCode.toHexString
    }
 
-   private final class DurableSystem( protected val store: DataStore )
-   extends stm.impl.DurableImpl.Mixin[ Durable, InMemory ]
-   with DurableMixin[ Durable] with Durable
+   // OBSOLETE: (( Important: DurableMixin after stm.impl.DurableImpl.Mixin, so that
+   // it can properly override `close` to include the second store ))
+   private final class DurableSystem( protected val store: DataStore, protected val eventStore: DataStore )
+//   extends stm.impl.DurableImpl.Mixin[ Durable, InMemory ]
+   extends DurableMixin[ Durable, InMemory ] with Durable
    with ReactionMapImpl.Mixin[ Durable ] {
       private type S = Durable
       val inMemory: InMemory = InMemory()
