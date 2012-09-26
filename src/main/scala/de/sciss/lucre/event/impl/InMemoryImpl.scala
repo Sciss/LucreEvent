@@ -31,8 +31,6 @@ import concurrent.stm.{Ref, InTxn}
 import stm.impl.{InMemoryImpl => STMImpl}
 
 object InMemoryImpl {
-   private type S = InMemory
-
    def apply() : InMemory = new System
 
    private def opNotSupported( name: String ) : Nothing = sys.error( "Operation not supported: " + name )
@@ -110,14 +108,15 @@ object InMemoryImpl {
       }
    }
 
-   private final class TxnImpl( val system: S, val peer: InTxn )
-   extends STMImpl.TxnMixin[ S ] with TxnMixin[ S ] {
+   private final class TxnImpl( val system: InMemory, val peer: InTxn )
+   extends STMImpl.TxnMixin[ InMemory ] with TxnMixin[ InMemory ] {
       override def toString = "event.InMemory#Tx@" + hashCode.toHexString
 
       def inMemory : InMemory#Tx = this
    }
 
-   private final class System extends STMImpl.Mixin[ S ] with InMemory with ReactionMapImpl.Mixin[ S ] {
+   private final class System extends STMImpl.Mixin[ InMemory ] with InMemory with ReactionMapImpl.Mixin[ InMemory ] {
+      private type S = InMemory
       def wrap( peer: InTxn ) : S#Tx = new TxnImpl( this, peer )
       override def toString = "event.InMemory@" + hashCode.toHexString
    }
