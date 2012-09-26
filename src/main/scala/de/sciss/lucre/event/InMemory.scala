@@ -33,12 +33,12 @@ object InMemory {
 }
 trait InMemory extends stm.InMemoryLike[ InMemory ] with Sys[ InMemory ] {
    final type Tx     = Txn[ InMemory ]
-   final type IM     = InMemory
+//   final type IM     = InMemory
 
 //   final def inMemory[ A ]( fun: InMemory#IM#Tx => A )( implicit tx: InMemory#Tx ) : A = fun( tx )
 
-   private type S = InMemory
-
-   final def im( tx: S#Tx ) : IM#Tx = tx.inMemory
-   final def imVar[ A ]( v: Var[ A ]) : Var[ A ] = v
+//   private type S = InMemory
+//
+//   final def im( tx: S#Tx ) : IM#Tx = tx.inMemory
+//   final def imVar[ A ]( v: Var[ A ]) : Var[ A ] = v
 }

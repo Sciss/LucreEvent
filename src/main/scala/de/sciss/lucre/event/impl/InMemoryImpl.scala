@@ -114,7 +114,7 @@ object InMemoryImpl {
    extends STMImpl.TxnMixin[ S ] with TxnMixin[ S ] {
       override def toString = "event.InMemory#Tx@" + hashCode.toHexString
 
-      def inMemory : S#IM#Tx = this
+      def inMemory : InMemory#Tx = this
    }
 
    private final class System extends STMImpl.Mixin[ S ] with InMemory with ReactionMapImpl.Mixin[ S ] {
