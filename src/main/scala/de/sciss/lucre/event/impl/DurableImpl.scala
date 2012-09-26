@@ -15,10 +15,14 @@ object DurableImpl {
          apply( factory.open( name ))
    }
 
-   def apply( mainStore: DataStore, eventStore: DataStore ) : Durable = new DurableSystem( mainStore, eventStore )
+//   def apply( mainStore: DataStore, eventStore: DataStore ) : Durable = new DurableSystem( mainStore, eventStore )
 
-   def apply( factory: DataStoreFactory[ DataStore ], mainName: String, eventName: String ) : Durable =
-      apply( factory.open( mainName ), factory.open( eventName ))
+   def apply( factory: DataStoreFactory[ DataStore ], mainName: String, eventName: String ) : Durable = {
+//      apply( factory.open( mainName ), factory.open( eventName ))
+      val mainStore  = factory.open( mainName )
+      val eventStore = factory.open( eventName )
+      new DurableSystem( mainStore, eventStore )
+   }
 
    private type D[ S <: DurableLike[ S ]] = DurableLike[ S ]
 

@@ -14,7 +14,7 @@ object Durable {
          Impl( factory, mainName, eventName )
    }
 
-   def apply( mainStore: DataStore, eventStore: DataStore ) : S = Impl( mainStore, eventStore )
+//   def apply( mainStore: DataStore, eventStore: DataStore ) : S = Impl( mainStore, eventStore )
 
    def apply( factory: DataStoreFactory[ DataStore ], mainName: String = "data", eventName: String = "event" ) : S =
       Impl( factory, mainName, eventName )
