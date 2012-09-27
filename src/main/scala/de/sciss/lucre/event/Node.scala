@@ -139,10 +139,10 @@ readIdentified( in, access )
          old match {
             case Some( seq ) =>
                childrenVar.set( seq :+ tup )
-               seq.exists( _._1 == slot )
+               !seq.exists( _._1 == slot )
             case _ =>
                childrenVar.set( IIdxSeq( tup ))
-               false
+               true
          }
 //
 //         childrenVar.set( old :+ tup )
