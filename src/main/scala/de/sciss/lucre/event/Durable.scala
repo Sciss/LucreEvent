@@ -38,6 +38,8 @@ trait DurableLike[ S <: DurableLike[ S ]] extends stm.DurableLike[ S ] with Sys[
    private[event] def newEventIDValue()( implicit tx: S#Tx ) : Int
 }
 trait Durable extends DurableLike[ Durable ] {
+   final type I = InMemory
+
    private type S = Durable
 
    final type Tx = DurableLike.Txn[ Durable ]

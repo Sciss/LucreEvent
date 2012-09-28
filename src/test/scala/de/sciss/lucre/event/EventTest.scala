@@ -1,10 +1,6 @@
 package de.sciss.lucre
 package event
 
-import stm.impl.{BerkeleyDB, ConfluentSkel}
-import stm.Durable
-import java.io.File
-
 object EventTest extends App {
 //   trait EDurable extends event.Sys[ EDurable ] with stm.Cursor[ EDurable ]
 //   def ??? : Nothing = sys.error( "TODO" )
