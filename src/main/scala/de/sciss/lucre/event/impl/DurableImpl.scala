@@ -107,7 +107,7 @@ object DurableImpl {
    trait DurableTxnMixin[ S <: D[ S ]] extends DurableLike.Txn[ S ] {
       _: S#Tx =>
 
-      final private[event] def reactionMap : ReactionMap[ S ] = system.reactionMap
+      final private[lucre] def reactionMap : ReactionMap[ S ] = system.reactionMap
 
       final private[event] def newEventVar[ A ]( id: S#ID )
                                                ( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ] = {

@@ -87,7 +87,7 @@ object InMemoryImpl {
    }
 
    trait TxnMixin[ S <: Sys[ S ]] extends Txn[ S ] {
-      final private[event] def reactionMap : ReactionMap[ S ] = system.reactionMap
+      final private[lucre] def reactionMap : ReactionMap[ S ] = system.reactionMap
 
       final private[event] def newEventVar[ A ]( id: S#ID )
                                                ( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ] = {
