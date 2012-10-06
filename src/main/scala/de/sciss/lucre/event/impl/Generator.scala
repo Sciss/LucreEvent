@@ -27,7 +27,7 @@ package de.sciss.lucre
 package event
 package impl
 
-trait Generator[ S <: Sys[ S ], A, Repr ] extends Event[ S, A, Repr ] {
+trait Generator[ S <: Sys[ S ], A, +Repr ] extends Event[ S, A, Repr ] {
    final protected def fire( update: A )( implicit tx: S#Tx ) {
       log( this.toString + " fire " + update )
       Push( this /* select() */, update )

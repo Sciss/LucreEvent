@@ -27,7 +27,7 @@ object TriggerImpl {
       final protected def reader: Reader[ S, Trigger.Standalone[ S, A ]] = standaloneSerializer[ S, A ]
    }
 }
-trait TriggerImpl[ S <: Sys[ S ], A, Repr <: Node[ S ]]
+trait TriggerImpl[ S <: Sys[ S ], A, +Repr ]
 extends Trigger[ S, A, Repr ] with EventImpl[ S, A, Repr ]
 with Generator[ S, A, Repr ] {
    final def apply( update: A )( implicit tx: S#Tx ) { fire( update )}
