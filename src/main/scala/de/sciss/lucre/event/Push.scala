@@ -77,17 +77,20 @@ object Push {
       }
 
       def visitChildren( sel: VirtualNodeSelector[ S ]) {
-         val inlet   = sel.slot
+         val inlet = sel.slot
          incIndent()
-         val ch      = sel.node._targets.children
-         ch.foreach { tup =>
-            val inlet2 = tup._1
-            if( inlet2 == inlet ) {
-               val selChild = tup._2
-               selChild.pushUpdate( sel, this )
+         try {
+            val ch = sel.node._targets.children
+            ch.foreach { tup =>
+               val inlet2 = tup._1
+               if( inlet2 == inlet ) {
+                  val selChild = tup._2
+                  selChild.pushUpdate( sel, this )
+               }
             }
+         } finally {
+            decIndent()
          }
-         decIndent()
       }
 
       def visit( sel: VirtualNodeSelector[ S ], parent: VirtualNodeSelector[ S ]) {
