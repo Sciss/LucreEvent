@@ -31,16 +31,10 @@ import annotation.elidable
 import elidable.CONFIG
 
 object Push {
-   private var indent = ""
-
-   @elidable(CONFIG) private def resetIndent() { indent = "" }
-   @elidable(CONFIG) private def incIndent()   { indent += "  " }
-   @elidable(CONFIG) private def decIndent()   { indent = indent.substring( 2 )}
-
    private[event] def apply[ S <: Sys[ S ], A ]( source: Event[ S, A, Any ], update: A )( implicit tx: S#Tx ) {
       val push    = new Impl( source, update )
       log( "push begin" )
-      resetIndent()
+//      resetIndent()
 //      val inlet   = source.slot
 //      source.reactor.children.foreach { tup =>
 //         val inlet2 = tup._1
@@ -68,6 +62,12 @@ object Push {
       private var visited     = Map( (source, NoParents[ S ])) // EmptyVisited[ S ]
       private var reactions   = NoReactions
       private var mutating    = NoMutating[ S ]
+
+      private var indent = ""
+
+//      @elidable(CONFIG) private def resetIndent() { indent = "" }
+      @elidable(CONFIG) private def incIndent()   { indent += "  " }
+      @elidable(CONFIG) private def decIndent()   { indent = indent.substring( 2 )}
 
       private def addVisited( sel: VirtualNodeSelector[ S ], parent: VirtualNodeSelector[ S ]) : Boolean = {
          val parents = visited.getOrElse( sel, NoParents )
