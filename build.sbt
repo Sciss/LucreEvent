@@ -1,6 +1,6 @@
 name := "LucreEvent"
 
-version := "1.3.0-SNAPSHOT"
+version := "1.3.0"
 
 organization := "de.sciss"
 
@@ -15,7 +15,7 @@ scalaVersion := "2.9.2"
 // crossScalaVersions := Seq( "2.10.0-M6", "2.9.2" )
 
 libraryDependencies ++= Seq(
-   "de.sciss" %% "lucrestm" % "1.3.0-SNAPSHOT"
+   "de.sciss" %% "lucrestm" % "1.3.0"
 )
 
 retrieveManaged := true
