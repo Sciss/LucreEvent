@@ -19,7 +19,7 @@ LucreEvent builds with sbt 0.12 against Scala 2.9.2. It depends on [LucreSTM](ht
 
 The following dependency is necessary:
 
-    "de.sciss" %% "lucreevent" % "1.3.+"
+    "de.sciss" %% "lucreevent" % "1.4.+"
 
 ## documentation
 
