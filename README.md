@@ -19,6 +19,8 @@ LucreEvent builds with sbt 0.12 against Scala 2.9.2. It depends on [LucreSTM](ht
 
 The following dependency is necessary:
 
+    resolvers += "Oracle Repository" at "http://download.oracle.com/maven"
+    
     "de.sciss" %% "lucreevent" % "1.4.+"
 
 ## documentation
