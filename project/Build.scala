@@ -16,7 +16,6 @@ object Build extends sbt.Build {
          libraryDependencies ++= Seq(
             "de.sciss" %% "lucrestm-core" % "1.6.+"
          ),
-         // buildInfoSettings
          sourceGenerators in Compile <+= buildInfo,
          buildInfoKeys := Seq( name, organization, version, scalaVersion, description,
             BuildInfoKey.map( homepage ) { case (k, opt) => k -> opt.get },
@@ -31,7 +30,6 @@ object Build extends sbt.Build {
       base         = file( "expr" ),
       dependencies = Seq( core ),
       settings     = Project.defaultSettings ++ Seq(
-//         scalaVersion := "2.10.0",
          libraryDependencies ++= Seq(
             "de.sciss" %% "lucredata-core" % "1.6.+",
             "de.sciss" %% "lucrestm-bdb" % "1.6.+" % "test"
