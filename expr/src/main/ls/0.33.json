@@ -1,0 +1,22 @@
+
+{
+ "organization":"de.sciss",
+ "name":"LucreExpr",
+ "version":"0.33",
+ "description":"Reactive Expression Trees based on LucreSTM",
+ "site":"https://github.com/Sciss/LucreExpr",
+ "tags":["stm","software-transactional-memory","reactive","event","expression"],
+ "docs":"",
+ "licenses": [{
+   "name": "GPL v2+",
+   "url": "http://www.gnu.org/licenses/gpl-2.0.txt"
+  }],
+ "resolvers": ["https://oss.sonatype.org/content/repositories/releases"],
+ "dependencies": [{
+   "organization":"de.sciss",
+   "name": "lucrestm",
+   "version": "0.33"
+  }],
+ "scalas": ["2.9.2"],
+ "sbt": false
+}
