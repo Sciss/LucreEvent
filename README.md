@@ -13,15 +13,13 @@ Further reading:
 
 ## requirements / installation
 
-LucreEvent builds with sbt 0.12 against Scala 2.9.2. It depends on [LucreSTM](https://github.com/Sciss/LucreSTM) which should be automatically found by sbt.
+LucreEvent builds with sbt 0.12 against Scala 2.10 (default) and 2.9.2. It depends on [LucreSTM](https://github.com/Sciss/LucreSTM) which should be automatically found by sbt.
 
 ## linking
 
 The following dependency is necessary:
 
-    resolvers += "Oracle Repository" at "http://download.oracle.com/maven"
-    
-    "de.sciss" %% "lucreevent" % "1.4.+"
+    "de.sciss" %% "lucreevent" % "1.6.+"
 
 ## documentation
 
