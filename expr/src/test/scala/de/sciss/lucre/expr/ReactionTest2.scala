@@ -32,7 +32,7 @@ import java.awt.{BorderLayout, Color, Dimension, Graphics2D, Graphics, GridLayou
 import javax.swing.{AbstractAction, JButton, Box, JComponent, JTextField, BorderFactory, JLabel, GroupLayout, JPanel, WindowConstants, JFrame}
 import de.sciss.lucre.{event => evt}
 import stm.{Serializer, Cursor}
-import stm.impl.{BerkeleyDB, ConfluentSkel}
+import stm.store.BerkeleyDB
 import collection.mutable
 
 //import expr.any2stringadd

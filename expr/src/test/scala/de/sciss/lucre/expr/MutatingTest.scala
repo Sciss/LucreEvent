@@ -3,7 +3,7 @@ package expr
 
 import collection.immutable.{IndexedSeq => IIdxSeq}
 import java.io.File
-import stm.impl.{BerkeleyDB, ConfluentSkel}
+import stm.store.BerkeleyDB
 import de.sciss.lucre.{event => evt}
 
 object MutatingTest extends App {
