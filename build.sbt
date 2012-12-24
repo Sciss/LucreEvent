@@ -14,9 +14,7 @@ scalaVersion in ThisBuild := "2.10.0"
 
 crossScalaVersions in ThisBuild := Seq( "2.10.0", "2.9.2" )
 
-// libraryDependencies ++= Seq(
-//    "de.sciss" %% "lucrestm-core" % "1.6.+"
-// )
+resolvers in ThisBuild += "Oracle Repository" at "http://download.oracle.com/maven"  // required for sleepycat
 
 retrieveManaged in ThisBuild := true
 
