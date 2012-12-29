@@ -7,12 +7,12 @@ import impl.{DurableImpl => Impl}
 object Durable {
    private type S = Durable
 
-   object InMemoryEvents {
-      def apply( store: DataStore ) : S = Impl.InMemoryEvents( store )
-
-      def apply( factory: DataStoreFactory[ DataStore ], mainName: String = "data", eventName: String = "event" ) : S =
-         Impl( factory, mainName, eventName )
-   }
+//   object InMemoryEvents {
+//      def apply( store: DataStore ) : S = Impl.InMemoryEvents( store )
+//
+//      def apply( factory: DataStoreFactory[ DataStore ], mainName: String = "data", eventName: String = "event" ) : S =
+//         Impl( factory, mainName, eventName )
+//   }
 
 //   def apply( mainStore: DataStore, eventStore: DataStore ) : S = Impl( mainStore, eventStore )
 
