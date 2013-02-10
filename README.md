@@ -19,13 +19,19 @@ LucreEvent builds with sbt 0.12 against Scala 2.10. It depends on [LucreSTM](htt
 
 The projects is divided into a `core` module (just the event layer) and an `expr` module (the expression tree layer). The following dependency is necessary:
 
-    "de.sciss" %% "lucreevent-core" % "1.7.+"
+    "de.sciss" %% "lucreevent" % v
+
+Or just for the core layer:
+
+    "de.sciss" %% "lucreevent-core" % v
 
 And for the expression layer:
 
     resolvers += "Oracle Repository" at "http://download.oracle.com/maven"
 
-    "de.sciss" %% "lucreevent-expr" % "1.7.+"
+    "de.sciss" %% "lucreevent-expr" % v
+
+The current version `v` is `"1.7.+"`.
 
 ## documentation
 

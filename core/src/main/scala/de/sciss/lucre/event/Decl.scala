@@ -28,6 +28,7 @@ package event
 
 import collection.breakOut
 import collection.immutable.{IndexedSeq => IIdxSeq}
+import reflect.ClassTag
 
 /**
  * A trait to be mixed in by event dispatching companion
@@ -46,7 +47,7 @@ trait Decl[ S <: stm.Sys[ S ], Impl <: Node[ S ]] {
    private var keyMap   = Map.empty[ Class[ _ ], Int ]
    private var idMap    = Map.empty[ Int, Declaration[ Update ]]
 
-   final private[event] def eventID[ A ]( implicit m: ClassManifest[ A ]) : Int = keyMap( m.erasure )
+   final private[event] def eventID[ A ]( implicit m: ClassTag[ A ]) : Int = keyMap( m.runtimeClass )
 
    final private[event] def getEvent( impl: Impl, id: Int ) : Event[ S, Update, Impl ] = idMap( id ).apply( impl )
 
@@ -58,14 +59,14 @@ trait Decl[ S <: stm.Sys[ S ], Impl <: Node[ S ]] {
       })( breakOut )
    }
 
-   final protected def declare[ U <: Update ]( fun: Impl => Event[ _, U, Impl ])( implicit mf: ClassManifest[ U ]) {
+   final protected def declare[ U <: Update ]( fun: Impl => Event[ _, U, Impl ])( implicit mf: ClassTag[ U ]) {
       new Declaration[ U ]( fun )
    }
 
-   private final class Declaration[ +U <: Update ]( fun: Impl => Event[ _, U, Impl ])( implicit mf: ClassManifest[ U ]) {
+   private final class Declaration[ +U <: Update ]( fun: Impl => Event[ _, U, Impl ])( implicit mf: ClassTag[ U ]) {
       val id = 1 << cnt
       cnt += 1
-      keyMap += ((mf.erasure, cnt))
+      keyMap += ((mf.runtimeClass, cnt))
       idMap += ((id, this))
 
       def apply( impl: Impl ) : Event[ S, U, Impl ] = fun( impl ).asInstanceOf[ Event[ S, U, Impl ]]
