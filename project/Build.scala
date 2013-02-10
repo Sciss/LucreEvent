@@ -14,7 +14,7 @@ object Build extends sbt.Build {
       base      = file( "core" ),
       settings     = Project.defaultSettings ++ buildInfoSettings ++ Seq(
          libraryDependencies ++= Seq(
-            "de.sciss" %% "lucrestm-core" % "1.6.+"
+            "de.sciss" %% "lucrestm-core" % "1.7.+"
          ),
          sourceGenerators in Compile <+= buildInfo,
          buildInfoKeys := Seq( name, organization, version, scalaVersion, description,
@@ -31,8 +31,8 @@ object Build extends sbt.Build {
       dependencies = Seq( core ),
       settings     = Project.defaultSettings ++ Seq(
          libraryDependencies ++= Seq(
-            "de.sciss" %% "lucredata-core" % "1.6.+",
-            "de.sciss" %% "lucrestm-bdb" % "1.6.+" % "test"
+            "de.sciss" %% "lucredata-core" % "1.7.+",
+            "de.sciss" %% "lucrestm-bdb" % "1.7.+" % "test"
          )
       )
    )

@@ -13,23 +13,19 @@ Further reading:
 
 ## requirements / installation
 
-LucreEvent builds with sbt 0.12 against Scala 2.10 (default) and 2.9.2. It depends on [LucreSTM](https://github.com/Sciss/LucreSTM) and on [LucreData](https://github.com/Sciss/LucreData) which should be automatically found by sbt.
+LucreEvent builds with sbt 0.12 against Scala 2.10. It depends on [LucreSTM](https://github.com/Sciss/LucreSTM) and on [LucreData](https://github.com/Sciss/LucreData) which should be automatically found by sbt.
 
 ## linking
 
 The projects is divided into a `core` module (just the event layer) and an `expr` module (the expression tree layer). The following dependency is necessary:
 
-    "de.sciss" %% "lucreevent" % "1.6.+"
-
-Or just for the core:
-
-    "de.sciss" %% "lucreevent-core" % "1.6.+"
+    "de.sciss" %% "lucreevent-core" % "1.7.+"
 
 And for the expression layer:
 
     resolvers += "Oracle Repository" at "http://download.oracle.com/maven"
 
-    "de.sciss" %% "lucreevent-expr" % "1.6.+"
+    "de.sciss" %% "lucreevent-expr" % "1.7.+"
 
 ## documentation
 

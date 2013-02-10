@@ -138,10 +138,10 @@ readIdentified( in, access )
 //         sel.writeValue()
          old match {
             case Some( seq ) =>
-               childrenVar.set( seq :+ tup )
+               childrenVar() = seq :+ tup
                !seq.exists( _._1 == slot )
             case _ =>
-               childrenVar.set( IIdxSeq( tup ))
+               childrenVar() = IIdxSeq(tup)
                true
          }
 //
@@ -155,7 +155,7 @@ readIdentified( in, access )
 // MMM
 //         sel.writeValue()
          val old  = if( isPartial ) childrenVar.getOrElse( NoChildren[ S ]) else NoChildren[ S ]
-         childrenVar.set( old :+ tup )
+         childrenVar() = old :+ tup
          validated( slot )
       }
 
@@ -167,7 +167,7 @@ readIdentified( in, access )
          val i    = xs.indexOf( tup )
          if( i >= 0 ) {
             val xs1 = xs.patch( i, IIdxSeq.empty, 1 ) // XXX crappy way of removing a single element
-            childrenVar.set( xs1 )
+            childrenVar() = xs1
    //         xs1.isEmpty
             !xs1.exists( _._1 == slot )
          } else {
@@ -185,17 +185,17 @@ readIdentified( in, access )
 //      private[event] def nodeOption : Option[ Node[ S ]] = None
       private[event] def _targets : Targets[ S ] = this
 
-      private[event] def isInvalid( implicit tx: S#Tx ) : Boolean = !invalidVar.isFresh || (invalidVar.get != 0)
+      private[event] def isInvalid( implicit tx: S#Tx ) : Boolean = !invalidVar.isFresh || (invalidVar.getOrElse(0) != 0)
 
       private[event] def isInvalid( slot: Int  )( implicit tx: S#Tx ) : Boolean =
-         !invalidVar.isFresh || ((invalidVar.getOrElse( 0 ) & slot) != 0)
+         !invalidVar.isFresh || ((invalidVar.getOrElse(0) & slot) != 0)
 
       private[event] def validated( slot: Int )( implicit tx: S#Tx ) {
          if( invalidVar.isFresh ) {
 //            invalidVar.transform( _ & ~slot )
             invalidVar.transform( 0 )( _ & ~slot )
          } else {
-            invalidVar.set( ~slot )
+            invalidVar() = ~slot
          }
       }
 
@@ -203,16 +203,16 @@ readIdentified( in, access )
          if( invalidVar.isFresh ) {
             invalidVar.transform( 0 )( _ | slot )
          } else {
-            invalidVar.set( 0xFFFFFFFF )
+            invalidVar() = 0xFFFFFFFF
          }
       }
 
       private[event] def validated()( implicit tx: S#Tx ) {
-         invalidVar.set( 0 )
+         invalidVar() = 0
       }
 
       private[event] def invalidate()( implicit tx: S#Tx ) {
-         invalidVar.set( 0xFFFFFFFF )
+         invalidVar() = 0xFFFFFFFF
       }
    }
 }

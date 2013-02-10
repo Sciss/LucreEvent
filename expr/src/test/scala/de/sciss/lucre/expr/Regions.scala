@@ -6,13 +6,12 @@ import annotation.tailrec
 import collection.immutable.{IndexedSeq => IIdxSeq}
 import de.sciss.lucre.{event => evt}
 import evt.{Targets, NodeSerializer, Event, Compound, Decl}
+import language.implicitConversions
 
 class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ S ], val spans: Spans[ S ]) {
    type Tx  = S#Tx
    type Acc = S#Acc
 
-//      import string.{ops => stringOps, Const => stringConst}
-//      import long.{ops => longOps, Const => longConst}
    import strings.{stringOps, Ex => StringEx}
    import longs.{longOps, Ex => LongEx}
    import spans.{spanOps, Ex => SpanEx}
@@ -53,11 +52,11 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
          def name_# : strings.Var
          def span_# : spans.Var
 
-         final def name( implicit tx: Tx ) : StringEx = name_#.get
-         final def name_=( value: StringEx )( implicit tx: Tx ) { name_#.set( value )}
+         final def name( implicit tx: Tx ) : StringEx = name_#()
+         final def name_=( value: StringEx )( implicit tx: Tx ) { name_#() = value }
 
-         final def span( implicit tx: Tx ) : SpanEx = span_#.get
-         final def span_=( value: SpanEx )( implicit tx: Tx ) { span_#.set( value )}
+         final def span( implicit tx: Tx ) : SpanEx = span_#()
+         final def span_=( value: SpanEx )( implicit tx: Tx ) { span_#() = value }
 
          final protected def writeData( out: DataOutput ) {
             name_#.write( out )
@@ -185,12 +184,12 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
             headRef.dispose()
          }
 
-         final def size( implicit tx: S#Tx ) : Int = sizeRef.get
+         final def size( implicit tx: S#Tx ) : Int = sizeRef()
 
          final def insert( idx: Int, r: Elem )( implicit tx: S#Tx ) {
             if( idx < 0 ) throw new IllegalArgumentException( idx.toString )
             @tailrec def step( i: Int, pred: S#Var[ LO ]) {
-               if( i == idx ) insert( pred, r, idx ) else pred.get match {
+               if( i == idx ) insert( pred, r, idx ) else pred() match {
                   case None => throw new IndexOutOfBoundsException( idx.toString )
                   case Some( l ) => step( i + 1, l.next_# )
                }
@@ -199,8 +198,8 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
          }
 
          private def insert( pred: S#Var[ LO ], r: Elem, idx: Int )( implicit tx: S#Tx ) {
-            val l = LinkedList[ EventRegion ]( r, pred.get )
-            pred.set( Some( l ))
+            val l = LinkedList[ EventRegion ]( r, pred() )
+            pred() = Some(l)
             sizeRef.transform( _ + 1 )
 //               r.name_#.addReactor( regionRenamed )
             elementChanged += r
@@ -210,7 +209,7 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
          final def removeAt( idx: Int )( implicit tx: S#Tx ) {
             if( idx < 0 ) throw new IllegalArgumentException( idx.toString )
             @tailrec def step( i: Int, pred: S#Var[ LO ]) {
-               pred.get match {
+               pred() match {
                   case None => throw new IndexOutOfBoundsException( idx.toString )
                   case Some( l ) =>
                      if( i == idx ) remove( pred, l, idx )
@@ -223,11 +222,11 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
          final def apply( idx: Int )( implicit tx: S#Tx ) : Elem = {
             if( idx < 0 ) throw new IllegalArgumentException( idx.toString )
             @tailrec def step( i: Int, pred: S#Var[ LO ]) : Elem = {
-               pred.get match {
+               pred() match {
                   case None => throw new IndexOutOfBoundsException( idx.toString )
                   case Some( l ) =>
-                     if( i == idx ) l.value
-                     else step( i + 1, l.next_# )
+                     if    (i == idx) l.value
+                     else step(i + 1, l.next_#)
                }
             }
             step( 0, headRef )
@@ -235,7 +234,7 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
 
          final def remove( r: Elem )( implicit tx: S#Tx ) : Boolean = {
             @tailrec def step( i: Int, pred: S#Var[ LO ]) : Boolean = {
-               pred.get match {
+               pred() match {
                   case None => false
                   case Some( l ) =>
                      if( l == r ) {
@@ -249,8 +248,8 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
          }
 
          private def remove( pred: S#Var[ LO ], lr: L, idx: Int )( implicit tx: S#Tx ) {
-            val r = lr.value
-            pred.set( lr.next )
+            val r   = lr.value
+            pred()  = lr.next
             sizeRef.transform( _ - 1 )
             elementChanged -= r
             collectionChanged( Removed( this, idx, r ))
@@ -258,7 +257,7 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
 
          final def indexOf( r: Elem )( implicit tx: S#Tx ) : Int = {
             @tailrec def step( i: Int, pred: S#Var[ LO ]) : Int = {
-               pred.get match {
+               pred() match {
                   case None => -1
                   case Some( l ) =>
                      if( l.value == r ) i else step( i + 1, l.next_# )
@@ -358,7 +357,7 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
    trait LinkedList[ A ] extends Mutable[ S#ID, S#Tx ] {
       def value: A
       def next_# : S#Var[ Option[ LinkedList[ A ]]]
-      final def next( implicit tx: Tx ) : Option[ LinkedList[ A ]] = next_#.get
-      final def next_=( elem: Option[ LinkedList[ A ]])( implicit tx: Tx ) { next_#.set( elem )}
+      final def next( implicit tx: Tx ) : Option[ LinkedList[ A ]] = next_#()
+      final def next_=( elem: Option[ LinkedList[ A ]])( implicit tx: Tx ) { next_#() = elem }
    }
 }

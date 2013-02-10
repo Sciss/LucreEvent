@@ -28,6 +28,7 @@ package event
 
 import collection.breakOut
 import collection.immutable.{IndexedSeq => IIdxSeq}
+import language.implicitConversions
 
 object Compound {
    private def opNotSupported = sys.error( "Operation not supported" )
@@ -60,8 +61,7 @@ object Compound {
 private[event] def slot = opNotSupported
 
 
-      def react[ B1 >: B ]( fun: B1 => Unit )( implicit tx: S#Tx ) : Observer[ S, B1, Repr ] =
-         reactTx( _ => fun )
+      def react[ B1 >: B ]( fun: B1 => Unit )( implicit tx: S#Tx ) : Observer[ S, B1, Repr ] = reactTx( _ => fun )
 
       def reactTx[ B1 >: B ]( fun: S#Tx => B1 => Unit )( implicit tx: S#Tx ) : Observer[ S, B1, Repr ] = {
          val obs = Observer( node.decl.serializer, fun )

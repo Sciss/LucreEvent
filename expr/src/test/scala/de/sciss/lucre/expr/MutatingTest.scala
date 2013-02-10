@@ -142,7 +142,7 @@ class MutatingTest[ S <: evt.Sys[ S ]]( val regions: Regions[ S ]) {
 
          final def toList( implicit tx: S#Tx ) : List[ Elem ] = {
             ensureValidity()
-            seq.get.toList
+            seq().toList
          }
 
          final protected def ensureValidity()( implicit tx: S#Tx ) {
@@ -160,22 +160,22 @@ println( "VALIDATING" )
 
          final protected def add( elem: Elem )( implicit tx: S#Tx ) {
 println( "ADD" )
-            val es         = seq.get
+            val es         = seq()
             val newStart   = elem.span.value.start
             // Obviously we'd have at least a binary search here in a real application...
             val idx0       = es.indexWhere( _.span.value.start > newStart )
             val idx        = if( idx0 >= 0 ) idx0 else es.size
             val esNew      = es.patch( idx, IIdxSeq( elem ), 0 )
-            seq.set( esNew )
+            seq()         = esNew
 //            collectionChanged( Added( this, elem ))
          }
 
          private def remove( elem: Elem )( implicit tx: S#Tx ) {
-            val es         = seq.get
+            val es         = seq()
             val idx        = es.indexOf( elem )
             if( idx < 0 ) return
             val esNew      = es.patch( idx, IIdxSeq.empty, 1 )
-            seq.set( esNew )
+            seq()         = esNew
          }
 
          final protected def disposeData()( implicit tx: S#Tx ) {

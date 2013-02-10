@@ -28,9 +28,10 @@ package expr
 
 import annotation.switch
 import de.sciss.lucre.{event => evt}
+import language.implicitConversions
 
 object Longs {
-   def apply[ S <: evt.Sys[ S ]] : Longs[ S ] = new Longs[ S ]
+  def apply[S <: evt.Sys[S]]: Longs[S] = new Longs[S]
 }
 
 final class Longs[ S <: evt.Sys[ S ]] extends TypeOld[ S, Long ] {
@@ -153,5 +154,5 @@ class LongTests[ S <: event.Sys[ S ] with stm.Cursor[ S ]]( system: S ) {
 
    ◊ { implicit tx => s2.changed.react { ch => println( "Observed: " + ch )}}
 
-   ◊ { implicit tx => s.set( 22 )}
+   ◊ { implicit tx => s() = 22 }
 }

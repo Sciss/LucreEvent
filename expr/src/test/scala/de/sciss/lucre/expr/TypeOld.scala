@@ -27,6 +27,7 @@ package de.sciss.lucre
 package expr
 
 import event.{EventLikeSerializer, Targets, Pull, Observer}
+import language.implicitConversions
 
 /**
  * IDs:

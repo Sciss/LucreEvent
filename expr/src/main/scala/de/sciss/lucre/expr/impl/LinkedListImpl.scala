@@ -164,7 +164,7 @@ object LinkedListImpl {
       def next()( implicit tx: S#Tx ) : Elem = {
          if( cell == null ) throw new NoSuchElementException( "next on empty iterator" )
          val res = cell.elem
-         cell = cell.succ.get
+         cell = cell.succ()
          res
       }
    }
@@ -340,11 +340,11 @@ object LinkedListImpl {
 
       final def indexOf( elem: Elem )( implicit tx: S#Tx ) : Int = {
          var idx  = 0
-         var rec  = headRef.get
+         var rec  = headRef()
          while( rec != null ) {
             if( rec.elem == elem ) return idx
             idx += 1
-            rec = rec.succ.get
+            rec = rec.succ()
          }
          -1
       }
@@ -355,36 +355,36 @@ object LinkedListImpl {
       final def get( idx: Int )( implicit tx: S#Tx ) : Option[ Elem ] = {
          if( idx < 0 ) return None
          var left = idx
-         var rec  = headRef.get
+         var rec  = headRef()
          while( rec != null && left > 0 ) {
             left -= 1
-            rec = rec.succ.get
+            rec = rec.succ()
          }
          if( rec == null ) None else Some( rec.elem )
       }
 
       final def addLast( elem: Elem )( implicit tx: S#Tx ) {
-         val pred       = lastRef.get
+         val pred       = lastRef()
          val recPred    = tx.newVar[ C ]( id, pred )
          val recSucc    = tx.newVar[ C ]( id, null )
          val rec        = new Cell( elem, recPred, recSucc )
          val predSucc   = if( pred == null ) headRef else pred.succ
-         lastRef.set( rec )
-         predSucc.set( rec )
-         val idx        = sizeRef.get
-         sizeRef.set( idx + 1 )
+         lastRef()      = rec
+         predSucc()     = rec
+         val idx        = sizeRef()
+         sizeRef()      = idx + 1
          registerElement( elem )
          fireAdded( idx, elem )
       }
 
       final def addHead( elem: Elem )( implicit tx: S#Tx ) {
-         val succ       = headRef.get
+         val succ       = headRef()
          val recPred    = tx.newVar[ C ]( id, null )
          val recSucc    = tx.newVar[ C ]( id, succ )
          val rec        = new Cell( elem, recPred, recSucc )
          val succPred   = if( succ == null ) lastRef else succ.pred
-         headRef.set( rec )
-         succPred.set( rec )
+         headRef()      = rec
+         succPred()     = rec
          sizeRef.transform( _ + 1 )
          registerElement( elem )
          fireAdded( 0, elem )
@@ -399,7 +399,7 @@ object LinkedListImpl {
       }
 
       final def remove( elem: Elem )( implicit tx: S#Tx ) : Boolean = {
-         var rec = headRef.get
+         var rec = headRef()
          var idx = 0
          while( rec != null ) {
             if( rec.elem == elem ) {
@@ -407,7 +407,7 @@ object LinkedListImpl {
                fireRemoved( idx, elem )
                return true
             }
-            rec = rec.succ.get
+            rec = rec.succ()
             idx += 1
          }
          false
@@ -415,11 +415,11 @@ object LinkedListImpl {
 
       final def removeAt( index: Int )( implicit tx: S#Tx ) : Elem = {
          if( index < 0 ) throw new IndexOutOfBoundsException( index.toString )
-         var rec = headRef.get
+         var rec = headRef()
          if( rec == null ) throw new IndexOutOfBoundsException( index.toString )
          var idx = 0
          while( idx < index ) {
-            rec = rec.succ.get
+            rec = rec.succ()
             if( rec == null ) throw new IndexOutOfBoundsException( index.toString )
             idx += 1
          }
@@ -432,131 +432,118 @@ object LinkedListImpl {
 
       // unlinks a cell and disposes it. does not fire. decrements sizeRef
       private def removeCell( cell: C )( implicit tx: S#Tx ) {
-         val pred = cell.pred.get
-         val succ = cell.succ.get
+         val pred = cell.pred()
+         val succ = cell.succ()
          if( pred != null ) {
-            pred.succ.set( succ )
+            pred.succ() = succ
          } else {
-            headRef.set( succ )
+            headRef()   = succ
          }
          if( succ != null ) {
-            succ.pred.set( pred )
+            succ.pred() = pred
          } else {
-            lastRef.set( pred )
+            lastRef()   = pred
          }
          sizeRef.transform( _ - 1 )
          disposeCell( cell )
       }
 
       final def removeLast()( implicit tx: S#Tx ) : Elem = {
-         val rec = lastRef.get
+         val rec    = lastRef()
          if( rec == null ) throw new NoSuchElementException( "last of empty list" )
 
-         val pred = rec.pred.get
-         val e    = rec.elem
-         val idx  = sizeRef.get - 1
+         val pred   = rec.pred()
+         val e      = rec.elem
+         val idx    = sizeRef() - 1
          disposeCell( rec )
-         sizeRef.set( idx )
-         lastRef.set( pred )
+         sizeRef()  = idx
+         lastRef()  = pred
          if( pred == null ) {
-            headRef.set( null )
+            headRef() = null
          } else {
-            pred.succ.set( null )
+            pred.succ() = null
          }
          fireRemoved( idx, e )
          e
       }
 
       final def removeHead()( implicit tx: S#Tx ) : Elem = {
-         val rec = headRef.get
+         val rec    = headRef()
          if( rec == null ) throw new NoSuchElementException( "head of empty list" )
 
-         val succ = rec.succ.get
-         val e    = rec.elem
+         val succ   = rec.succ()
+         val e      = rec.elem
          disposeCell( rec )
          sizeRef.transform( _ - 1 )
-         headRef.set( succ )
+         headRef()  = succ
          if( succ == null ) {
-            lastRef.set( null )
+            lastRef() = null
          } else {
-            succ.pred.set( null )
+            succ.pred() = null
          }
          fireRemoved( 0, e )
          e
       }
 
-      final def clear()( implicit tx: S#Tx ) {
-         while( nonEmpty ) removeLast()
-//         var rec = lastRef.get
-//         var idx = sizeRef.get
-//         while( rec != null ) {
-//            val tmp  = rec.pred.get
-//            val e    = rec.elem
-//            disposeCell( rec )
-//            idx -= 1
-//            sizeRef.set( idx )
-//            lastRef.set( tmp )
-//            if( tmp == null ) headRef.set( null )
-//            fireRemoved( idx, e )
-//            rec = tmp
-//         }
-      }
+     final def clear()(implicit tx: S#Tx) {
+       while (nonEmpty) removeLast()
+     }
 
-      // unregisters element event. disposes cell contents, but does not unlink, nor fire.
-      private def disposeCell( cell: C )( implicit tx: S#Tx ) {
-         unregisterElement( cell.elem )
-         cell.pred.dispose()
-         cell.succ.dispose()
-      }
+     // unregisters element event. disposes cell contents, but does not unlink, nor fire.
+     private def disposeCell(cell: C)(implicit tx: S#Tx) {
+       unregisterElement(cell.elem)
+       cell.pred.dispose()
+       cell.succ.dispose()
+     }
 
-      final protected def disposeData()( implicit tx: S#Tx ) {
-         var rec = headRef.get
-         while( rec != null ) {
-            val tmp = rec.succ.get
-            disposeCell( rec )
-            rec = tmp
-         }
-         sizeRef.dispose()
-         headRef.dispose()
-         lastRef.dispose()
-      }
+     final protected def disposeData()(implicit tx: S#Tx) {
+       var rec = headRef()
+       while (rec != null) {
+         val tmp = rec.succ()
+         disposeCell(rec)
+         rec = tmp
+       }
+       sizeRef.dispose()
+       headRef.dispose()
+       lastRef.dispose()
+     }
 
-      final protected def writeData( out: DataOutput ) {
-         sizeRef.write( out )
-         headRef.write( out )
-         lastRef.write( out )
-      }
+     final protected def writeData(out: DataOutput) {
+       sizeRef.write(out)
+       headRef.write(out)
+       lastRef.write(out)
+     }
 
-      final def isEmpty( implicit tx: S#Tx ) : Boolean = size == 0
-      final def nonEmpty( implicit tx: S#Tx ) : Boolean = size > 0
-      final def size( implicit tx: S#Tx ) : Int = sizeRef.get
+     final def isEmpty (implicit tx: S#Tx): Boolean = size == 0
+     final def nonEmpty(implicit tx: S#Tx): Boolean = size > 0
 
-      final def headOption( implicit tx: S#Tx ) : Option[ Elem ] = {
-         val rec = headRef.get
-         if( rec != null ) Some( rec.elem ) else None
-      }
+     final def size(implicit tx: S#Tx): Int = sizeRef()
 
-      final def lastOption( implicit tx: S#Tx ) : Option[ Elem ] = {
-         val rec = lastRef.get
-         if( rec != null ) Some( rec.elem ) else None
-      }
+     final def headOption(implicit tx: S#Tx): Option[Elem] = {
+       val rec = headRef()
+       if (rec != null) Some(rec.elem) else None
+     }
 
-      final def head( implicit tx: S#Tx ) : Elem = {
-         val rec = headRef.get
-         if( rec != null ) rec.elem else throw new NoSuchElementException( "head of empty list" )
-      }
+     final def lastOption(implicit tx: S#Tx): Option[Elem] = {
+       val rec = lastRef()
+       if (rec != null) Some(rec.elem) else None
+     }
 
-      final def last( implicit tx: S#Tx ) : Elem = {
-         val rec = lastRef.get
-         if( rec != null ) rec.elem else throw new NoSuchElementException( "last of empty list" )
-      }
+     final def head(implicit tx: S#Tx): Elem = {
+       val rec = headRef()
+       if (rec != null) rec.elem else throw new NoSuchElementException("head of empty list")
+     }
 
-      final def iterator( implicit tx: S#Tx ) : Iterator[ S#Tx, Elem ] = new Iter( headRef.get )
+     final def last(implicit tx: S#Tx): Elem = {
+       val rec = lastRef()
+       if (rec != null) rec.elem else throw new NoSuchElementException("last of empty list")
+     }
 
-//      final def collectionChanged : Event[ S, LinkedList.Collection[ S, Elem, U ], LinkedList[ S, Elem, U ]] = CollectionEvent
-      protected def elementChanged : EventLike[ S, LinkedList.Update[ S, Elem, U ], LinkedList[ S, Elem, U ]]
-      final def changed : EventLike[ S, LinkedList.Update[ S, Elem, U ], LinkedList[ S, Elem, U ]] = ChangeEvent
+     final def iterator(implicit tx: S#Tx): Iterator[S#Tx, Elem] = new Iter(headRef())
 
-      final def debugList()( implicit tx: S#Tx ) : List[ Elem ] = iterator.toList
+     protected def elementChanged: EventLike[S, LinkedList.Update[S, Elem, U], LinkedList[S, Elem, U]]
+     final def     changed:        EventLike[S, LinkedList.Update[S, Elem, U], LinkedList[S, Elem, U]] = ChangeEvent
+
+     final def debugList()(implicit tx: S#Tx): List[Elem] = iterator.toList
    }
 }

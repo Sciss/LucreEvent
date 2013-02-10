@@ -28,6 +28,7 @@ package event
 package impl
 
 import util.MurmurHash
+import util.hashing.MurmurHash3
 
 /**
  * Standalone events unite a node and one particular event.
@@ -55,13 +56,11 @@ with InvariantEvent[ S, A, Repr ] {
    // ---- fix mixin issues (https://github.com/Sciss/LucreSTM/issues/7) ----
 
    override def hashCode : Int = {
-      import MurmurHash._
-      var h = startHash( 2 )
-      val c = startMagicA
-      val k = startMagicB
-      h = extendHash( h, slot, c, k )
-      h = extendHash( h, /* node. */ id.##, nextMagicA( c ), nextMagicB( k ))
-      finalizeHash( h )
+     import MurmurHash3._
+     val h0 = productSeed
+     val h1 = mix(h0, slot)
+     val h2 = mixLast(h1, id.##)
+     finalizeHash(h2, 2)
    }
 
    override def equals( that: Any ) : Boolean = {

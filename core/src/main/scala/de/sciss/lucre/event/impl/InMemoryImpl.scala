@@ -31,93 +31,103 @@ import concurrent.stm.{Ref, InTxn}
 import stm.impl.{InMemoryImpl => STMImpl}
 
 object InMemoryImpl {
-   def apply() : InMemory = new System
+  def apply(): InMemory = new System
 
-   private def opNotSupported( name: String ) : Nothing = sys.error( "Operation not supported: " + name )
+  private def opNotSupported(name: String): Nothing = sys.error("Operation not supported: " + name)
 
-   private sealed trait BasicVar[ S <: Sys[ S ], @specialized( Int ) A ]
-   extends Var[ S, A ] {
-      override def toString = "event.Var<" + hashCode().toHexString + ">"
+  private sealed trait BasicVar[S <: Sys[S], @specialized(Int) A]
+    extends Var[S, A] {
 
-      final def write( out: DataOutput ) {}
-      final def isFresh( implicit tx: S#Tx ) : Boolean = true
-   }
+    override def toString = "event.Var<" + hashCode().toHexString + ">"
 
-   private final class VarImpl[ S <: Sys[ S ], A ]( peer: Ref[ A ])
-   extends BasicVar[ S, A ] {
-      def get( implicit tx: S#Tx ) : Option[ A ] = Option( peer.get( tx.peer ))
+    final def write(out: DataOutput) {}
 
-      def getOrElse( default: => A )( implicit tx: S#Tx ) : A = {
-         val v = peer.get( tx.peer )
-         if( v == null ) default else v
-      }
+    final def isFresh(implicit tx: S#Tx): Boolean = true
+  }
 
-      def transform( default: => A )( f: A => A )( implicit tx: S#Tx ) {
-         peer.transform( v => f( if( v == null ) default else v ))( tx.peer )
-      }
+  private final class VarImpl[S <: Sys[S], A](peer: Ref[A])
+    extends BasicVar[S, A] {
 
-      def set( v: A )( implicit tx: S#Tx ) { peer.set( v )( tx.peer )}
+    def get(implicit tx: S#Tx): Option[A] = Option(peer.get(tx.peer))
 
-      def dispose()( implicit tx: S#Tx ) {
-         peer.set( null.asInstanceOf[ A ])( tx.peer )
-      }
-   }
+    def getOrElse(default: => A)(implicit tx: S#Tx): A = {
+      val v = peer.get(tx.peer)
+      if (v == null) default else v
+    }
 
-   private final class IntVarImpl[ S <: Sys[ S ]]( peer: Ref[ Long ])
-   extends BasicVar[ S, Int ] {
-      def get( implicit tx: S#Tx ) : Option[ Int ] = {
-         val v = peer.get( tx.peer )
-         if( v < 0 ) None else Some( v.toInt )
-      }
+    def transform(default: => A)(f: A => A)(implicit tx: S#Tx) {
+      peer.transform(v => f(if (v == null) default else v))(tx.peer)
+    }
 
-      def getOrElse( default: => Int )( implicit tx: S#Tx ) : Int = {
-         val v = peer.get( tx.peer )
-         if( v < 0 ) default else v.toInt
-      }
+    def update(v: A)(implicit tx: S#Tx) {
+      peer.set(v)(tx.peer)
+    }
 
-      def transform( default: => Int )( f: Int => Int )( implicit tx: S#Tx ) {
-         peer.transform( v => f( if( v < 0 ) default else v.toInt ))( tx.peer )
-      }
+    def dispose()(implicit tx: S#Tx) {
+      peer.set(null.asInstanceOf[A])(tx.peer)
+    }
+  }
 
-      def set( v: Int )( implicit tx: S#Tx ) { peer.set( v.toLong & 0xFFFFFFFFL )( tx.peer )}
+  private final class IntVarImpl[S <: Sys[S]](peer: Ref[Long])
+    extends BasicVar[S, Int] {
+    def get(implicit tx: S#Tx): Option[Int] = {
+      val v = peer.get(tx.peer)
+      if (v < 0) None else Some(v.toInt)
+    }
 
-      def dispose()( implicit tx: S#Tx ) {
-         peer.set( -1L )( tx.peer )
-      }
-   }
+    def getOrElse(default: => Int)(implicit tx: S#Tx): Int = {
+      val v = peer.get(tx.peer)
+      if (v < 0) default else v.toInt
+    }
 
-   trait TxnMixin[ S <: Sys[ S ]] extends Txn[ S ] {
-      final private[lucre] def reactionMap : ReactionMap[ S ] = system.reactionMap
+    def transform(default: => Int)(f: Int => Int)(implicit tx: S#Tx) {
+      peer.transform(v => f(if (v < 0) default else v.toInt))(tx.peer)
+    }
 
-      final private[event] def newEventVar[ A ]( id: S#ID )
-                                               ( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ] = {
-         new VarImpl( Ref.make[ A ])
-      }
+    def update(v: Int)(implicit tx: S#Tx) {
+      peer.set(v.toLong & 0xFFFFFFFFL)(tx.peer)
+    }
 
-      final private[event] def newEventIntVar[ A ]( id: S#ID ) : Var[ S, Int ] = {
-         new IntVarImpl( Ref( -1L ))
-      }
+    def dispose()(implicit tx: S#Tx) {
+      peer.set(-1L)(tx.peer)
+    }
+  }
 
-      final private[event] def readEventVar[ A ]( id: S#ID, in: DataInput )
-                                                ( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ] = {
-         opNotSupported( "readEventVar" )
-      }
+  trait TxnMixin[S <: Sys[S]] extends Txn[S] {
+    final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
 
-      final private[event] def readEventIntVar[ A ]( id: S#ID, in: DataInput ) : Var[ S, Int ] = {
-         opNotSupported( "readEventIntVar" )
-      }
-   }
+    final private[event] def newEventVar[A](id: S#ID)
+                                           (implicit serializer: stm.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
+      new VarImpl(Ref.make[A])
+    }
 
-   private final class TxnImpl( val system: InMemory, val peer: InTxn )
-   extends STMImpl.TxnMixin[ InMemory ] with TxnMixin[ InMemory ] {
-      override def toString = "event.InMemory#Tx@" + hashCode.toHexString
+    final private[event] def newEventIntVar[A](id: S#ID): Var[S, Int] = {
+      new IntVarImpl(Ref(-1L))
+    }
 
-      def inMemory : InMemory#Tx = this
-   }
+    final private[event] def readEventVar[A](id: S#ID, in: DataInput)
+                                            (implicit serializer: stm.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
+      opNotSupported("readEventVar")
+    }
 
-   private final class System extends STMImpl.Mixin[ InMemory ] with InMemory with ReactionMapImpl.Mixin[ InMemory ] {
-      private type S = InMemory
-      def wrap( peer: InTxn ) : S#Tx = new TxnImpl( this, peer )
-      override def toString = "event.InMemory@" + hashCode.toHexString
-   }
+    final private[event] def readEventIntVar[A](id: S#ID, in: DataInput): Var[S, Int] = {
+      opNotSupported("readEventIntVar")
+    }
+  }
+
+  private final class TxnImpl(val system: InMemory, val peer: InTxn)
+    extends STMImpl.TxnMixin[InMemory] with TxnMixin[InMemory] {
+    override def toString = "event.InMemory#Tx@" + hashCode.toHexString
+
+    def inMemory: InMemory#Tx = this
+  }
+
+  private final class System extends STMImpl.Mixin[InMemory] with InMemory with ReactionMapImpl.Mixin[InMemory] {
+    private type S = InMemory
+
+    def wrap(peer: InTxn): S#Tx = new TxnImpl(this, peer)
+
+    override def toString = "event.InMemory@" + hashCode.toHexString
+  }
+
 }

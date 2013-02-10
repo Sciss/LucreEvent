@@ -29,6 +29,7 @@ package expr
 import annotation.switch
 import de.sciss.lucre.{event => evt}
 import stm.Cursor
+import language.implicitConversions
 
 object Strings {
    def apply[ S <: evt.Sys[ S ]] : Strings[ S ] = new Strings[ S ]
@@ -148,5 +149,5 @@ class StringTests[ S <: evt.Sys[ S ] with Cursor[ S ]]( system: S ) {
 
    ◊ { implicit tx => s2.changed.react { ch => println( "Observed: " + ch )}}
 
-   ◊ { implicit tx => s.set( "kristall".reverse )}
+   ◊ { implicit tx => s() = "kristall".reverse }
 }

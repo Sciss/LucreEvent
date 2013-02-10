@@ -27,6 +27,7 @@ package de.sciss.lucre
 package event
 
 import util.MurmurHash
+import util.hashing.MurmurHash3
 
 object Selector {
    implicit def serializer[ S <: Sys[ S ]] : stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] = new Ser[ S ]
@@ -137,13 +138,11 @@ sealed trait VirtualNodeSelector[ S <: stm.Sys[ S ]] extends Selector[ S ] {
 //   }
 
    override def hashCode : Int = {
-      import MurmurHash._
-      var h = startHash( 2 )
-      val c = startMagicA
-      val k = startMagicB
-      h = extendHash( h, slot, c, k )
-      h = extendHash( h, node.id.##, nextMagicA( c ), nextMagicB( k ))
-      finalizeHash( h )
+     import MurmurHash3._
+     val h0 = productSeed
+     val h1 = mix(h0, slot)
+     val h2 = mixLast(h1, node.id.##)
+     finalizeHash(h2, 2)
    }
 
    override def equals( that: Any ) : Boolean = {

@@ -3,6 +3,7 @@ package event
 
 import stm.{DataStoreFactory, DataStore}
 import impl.{DurableImpl => Impl}
+import language.implicitConversions
 
 object Durable {
    private type S = Durable

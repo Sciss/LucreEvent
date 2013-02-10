@@ -132,7 +132,7 @@ Usages:
 //               model( tx, s )
 //            }
             system.step { implicit tx =>
-               model( tx, rv.get, s )
+               model( tx, rv(), s )
             }
          }
 
@@ -141,7 +141,7 @@ Usages:
          }
 
          def connect()( implicit tx: Tx ) {
-            connect( rv.get )
+            connect(rv())
          }
 
          private def connect( r: R )( implicit tx: Tx ) {
@@ -222,7 +222,7 @@ Usages:
 
       system.step { implicit tx =>
          vs.foreach( _.connect() ) // { view: RegionView[ EventRegion ] => view.connect() }
-         val _r3 = r3v.get // tx.refresh( csrPos, r3v )
+         val _r3 = r3v() // tx.refresh( csrPos, r3v )
 //         _r3.renamed.react { case (_, EventRegion.Renamed( _, Change( _, newName ))) =>
 //            println( "Renamed to '" + newName + "'" )
 //         }
@@ -400,7 +400,7 @@ Usages:
                val viewChanges = changes.map { c =>
                   val r = c.r
                   val ti = new TrackItem( /* r.id, */ r.name.value, r.span.value )
-                  val idx = _collH.get.indexOf( r )
+                  val idx = _collH().indexOf( r )
                   (idx, ti)
                }
 
@@ -415,8 +415,8 @@ Usages:
       import regions._
 
       def newRegion()( implicit tx: S#Tx ) : EventRegion = {
-         val c = cnt.get + 1
-         cnt.set( c )
+         val c      = cnt() + 1
+         cnt()      = c
          val name    = "Region #" + c
          val len     = rnd.nextInt( 10 ) + 1
          val start   = rnd.nextInt( 21 - len )
@@ -430,20 +430,20 @@ Usages:
       val actionPane = Box.createHorizontalBox()
       actionPane.add( button( "Add last" ) {
          system.step { implicit tx =>
-            val coll = cv.get // tx.refresh( csrPos, cv )
+            val coll = cv()
             val r = newRegion()
             coll.add( r )
          }
       })
       actionPane.add( button( "Remove first" ) {
          system.step { implicit tx =>
-            val coll = cv.get // tx.refresh( csrPos, cv )
+            val coll = cv()
             if( coll.size > 0 ) coll.removeAt( 0 )
          }
       })
       actionPane.add( button( "Random rename" ) {
          system.step { implicit tx =>
-            val coll = cv.get // tx.refresh( csrPos, cv )
+            val coll = cv()
             if( coll.size > 0 ) {
                val r    = coll.apply( rnd.nextInt( coll.size ))
                val newName: strings.Ex = scramble( r.name.value )
@@ -453,7 +453,7 @@ Usages:
       })
       actionPane.add( button( "Random move" ) {
          system.step { implicit tx =>
-            val coll = cv.get // tx.refresh( csrPos, cv )
+            val coll = cv()
             if( coll.size > 0 ) {
                val r       = coll.apply( rnd.nextInt( coll.size ))
                val len     = (r.span.value.length / 44100L).toInt

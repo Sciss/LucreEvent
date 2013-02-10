@@ -28,8 +28,8 @@ package expr
 
 import annotation.switch
 import de.sciss.lucre.{event => evt}
+import language.implicitConversions
 
-//final case class Span[ S <: Sys[ S ]]( start: Expr[ S, Long ], stop: Expr[ S, Long ])
 final case class Span( start: Long, stop: Long ) {
    def length: Long = stop - start
 
