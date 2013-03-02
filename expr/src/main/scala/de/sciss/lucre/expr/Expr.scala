@@ -28,6 +28,7 @@ package expr
 
 import stm.{Disposable, Var => _Var, Sys}
 import event.{EventLike, Dummy, Event, Change}
+import io.Writable
 
 object Expr {
    trait Node[ S <: Sys[ S ], A ] extends Expr[ S, A ] with event.Node[ S ] {

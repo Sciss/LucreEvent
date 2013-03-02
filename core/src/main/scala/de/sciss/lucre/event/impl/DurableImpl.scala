@@ -29,6 +29,7 @@ package impl
 
 import stm.{DataStoreFactory, DataStore}
 import concurrent.stm.{Ref, InTxn}
+import io.{DataInput, DataOutput}
 
 object DurableImpl {
   def apply(factory: DataStoreFactory[DataStore], mainName: String, eventName: String): Durable = {
@@ -60,7 +61,7 @@ object DurableImpl {
   }
 
   private final class DurableVarImpl[S <: D[S], A](protected val id: Int,
-                                                   protected val ser: stm.Serializer[S#Tx, S#Acc, A])
+                                                   protected val ser: io.Serializer[S#Tx, S#Acc, A])
     extends DurableSource[S, A] {
 
     def get(implicit tx: S#Tx): Option[A] = tx.system.tryReadEvent[A](id)(ser.read(_, ()))
@@ -126,7 +127,7 @@ object DurableImpl {
     final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
 
     final private[event] def newEventVar[A](id: S#ID)
-                                           (implicit serializer: stm.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
+                                           (implicit serializer: io.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
       new DurableVarImpl[S, A](system.newEventIDValue()(this), serializer)
     }
 
@@ -135,7 +136,7 @@ object DurableImpl {
     }
 
     final private[event] def readEventVar[A](id: S#ID, in: DataInput)
-                                            (implicit serializer: stm.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
+                                            (implicit serializer: io.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
       val id = in.readInt()
       new DurableVarImpl[S, A](id, serializer)
     }

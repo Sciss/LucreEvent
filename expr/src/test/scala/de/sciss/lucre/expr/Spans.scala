@@ -28,6 +28,7 @@ package expr
 
 import annotation.switch
 import de.sciss.lucre.{event => evt}
+import io.{DataInput, DataOutput}
 import language.implicitConversions
 
 final case class Span( start: Long, stop: Long ) {

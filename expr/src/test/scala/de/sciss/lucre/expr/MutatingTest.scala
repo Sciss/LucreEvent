@@ -5,6 +5,7 @@ import collection.immutable.{IndexedSeq => IIdxSeq}
 import java.io.File
 import stm.store.BerkeleyDB
 import de.sciss.lucre.{event => evt}
+import io.{DataInput, DataOutput}
 
 object MutatingTest extends App {
    private def memorySys    : (evt.InMemory, () => Unit) = (evt.InMemory(), () => ())

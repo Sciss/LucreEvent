@@ -29,6 +29,7 @@ package expr
 import annotation.switch
 import de.sciss.lucre.{event => evt}
 import stm.Cursor
+import io.{DataInput, DataOutput}
 import language.implicitConversions
 
 object Strings {
@@ -40,8 +41,8 @@ final class Strings[ S <: evt.Sys[ S ]] private() extends TypeOld[ S, String ] {
 
    val id = 8
 
-   protected def writeValue( v: String, out: DataOutput ) { out.writeString( v )}
-   protected def readValue( in: DataInput ) : String = in.readString()
+   protected def writeValue( v: String, out: DataOutput ) { out.writeUTF( v )}
+   protected def readValue( in: DataInput ) : String = in.readUTF()
 //   type Ops = StringOps
 
    // for a stupid reason scalac doesn't eat A <% Ex

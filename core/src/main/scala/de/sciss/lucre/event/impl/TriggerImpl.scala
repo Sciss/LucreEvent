@@ -2,6 +2,8 @@ package de.sciss.lucre
 package event
 package impl
 
+import io.DataInput
+
 object TriggerImpl {
    def apply[ S <: Sys[ S ], A ]( implicit tx: S#Tx ) : Trigger.Standalone[ S, A ] = new Standalone[ S, A ] {
       protected val targets = Targets[ S ]

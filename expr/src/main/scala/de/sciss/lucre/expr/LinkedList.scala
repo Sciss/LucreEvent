@@ -27,86 +27,89 @@ package de.sciss.lucre
 package expr
 
 import de.sciss.lucre.{event => evt}
-import evt.{Event, EventLike}
-import stm.{InMemory, Serializer}
+import evt.EventLike
+import stm.InMemory
+import io.DataInput
 import impl.{LinkedListImpl => Impl}
 import data.Iterator
 import collection.immutable.{IndexedSeq => IIdxSeq}
 
 object LinkedList {
-   import de.sciss.lucre.expr.{Expr => Ex}
 
-   final case class Update[ S <: stm.Sys[ S ], Elem, U ]( list: LinkedList[ S, Elem, U ], changes: IIdxSeq[ Change[ S, Elem, U ]])
+  import de.sciss.lucre.expr.{Expr => Ex}
 
-   sealed trait Change[ S <: stm.Sys[ S ], Elem, +U ]
+  final case class Update[S <: stm.Sys[S], Elem, U](list: LinkedList[S, Elem, U], changes: IIdxSeq[Change[S, Elem, U]])
 
-   sealed trait Collection[ S <: stm.Sys[ S ], Elem ] extends Change[ S, Elem, Nothing ] {
-      def index: Int
-      def elem: Elem
-   }
-   final case class Added[ S <: stm.Sys[ S ], Elem ]( /* list: LinkedList[ S, Elem, U ], */ index: Int, elem: Elem )
-   extends Collection[ S, Elem ]
+  sealed trait Change[S <: stm.Sys[S], Elem, +U]
 
-   final case class Removed[ S <: stm.Sys[ S ], Elem ]( /* list: LinkedList[ S, Elem, U ], */ index: Int, elem: Elem )
-   extends Collection[ S, Elem ]
+  sealed trait Collection[S <: stm.Sys[S], Elem] extends Change[S, Elem, Nothing] {
+    def index: Int
+    def elem: Elem
+  }
 
-//   final case class Element[ S <: stm.Sys[ S ], Elem, U ]( /* list: LinkedList[ S, Elem, U ], */ updates: IIdxSeq[ (Elem, U) ])
-//   extends Update[ S, Elem, U ]
+  final case class Added[S <: stm.Sys[S], Elem](/* list: LinkedList[ S, Elem, U ], */ index: Int, elem: Elem)
+    extends Collection[S, Elem]
 
-   final case class Element[ S <: stm.Sys[ S ], Elem, U ]( elem: Elem, elemUpdate: U )
-   extends Change[ S, Elem, U ]
+  final case class Removed[S <: stm.Sys[S], Elem](/* list: LinkedList[ S, Elem, U ], */ index: Int, elem: Elem)
+    extends Collection[S, Elem]
 
-   object Modifiable {
-      /**
-       * Returns a serializer for a modifiable list, given the provided mapping function from elements to their events.
-       */
-      def serializer[ S <: evt.Sys[ S ], Elem, U ]( eventView: Elem => EventLike[ S, U, Elem ])(
-         implicit elemSerializer: evt.Serializer[ S, Elem ]) : Serializer[ S#Tx, S#Acc, Modifiable[ S, Elem, U ]] =
-         Impl.activeModifiableSerializer( eventView )
+  final case class Element[S <: stm.Sys[S], Elem, U](elem: Elem, elemUpdate: U)
+    extends Change[S, Elem, U]
 
-      def read[ S <: evt.Sys[ S ], Elem, U ]( eventView: Elem => EventLike[ S, U, Elem ])( in: DataInput, access: S#Acc )
-                                            ( implicit tx: S#Tx, elemSerializer: evt.Serializer[ S, Elem ]) : Modifiable[ S, Elem, U ] =
-         Impl.activeModifiableRead( eventView )( in, access )
+  object Modifiable {
+    /**
+     * Returns a serializer for a modifiable list, given the provided mapping function from elements to their events.
+     */
+    def serializer[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U, Elem])(
+      implicit elemSerializer: evt.Serializer[S, Elem]): io.Serializer[S#Tx, S#Acc, Modifiable[S, Elem, U]] =
+      Impl.activeModifiableSerializer(eventView)
 
-      /**
-       * Returns a serializer for a modifiable list of passive elements.
-       */
-      def serializer[ S <: evt.Sys[ S ], Elem ]( implicit elemSerializer: Serializer[ S#Tx, S#Acc, Elem ]) : Serializer[ S#Tx, S#Acc, Modifiable[ S, Elem, Unit ]] =
-         Impl.passiveModifiableSerializer
+    def read[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U, Elem])(in: DataInput, access: S#Acc)
+                                      (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): Modifiable[S, Elem, U] =
+      Impl.activeModifiableRead(eventView)(in, access)
 
-      def read[ S <: evt.Sys[ S ], Elem ]( in: DataInput, access: S#Acc )
-                                     ( implicit tx: S#Tx, elemSerializer: Serializer[ S#Tx, S#Acc, Elem ]) : Modifiable[ S, Elem, Unit ] =
-         Impl.passiveModifiableRead( in, access )
+    /**
+     * Returns a serializer for a modifiable list of passive elements.
+     */
+    def serializer[S <: evt.Sys[S], Elem](implicit elemSerializer: io.Serializer[S#Tx, S#Acc, Elem]): io.Serializer[S#Tx, S#Acc, Modifiable[S, Elem, Unit]] =
+      Impl.passiveModifiableSerializer
 
-      /**
-       * Creates a new empty linked list, given the provided mapping function from elements to their events.
-       */
-      def apply[ S <: evt.Sys[ S ], Elem, U ]( eventView: Elem => EventLike[ S, U, Elem ])
-                                             ( implicit tx: S#Tx, elemSerializer: evt.Serializer[ S, Elem ]) : Modifiable[ S, Elem, U ] =
-         Impl.newActiveModifiable[ S, Elem, U ]( eventView )
+    def read[S <: evt.Sys[S], Elem](in: DataInput, access: S#Acc)
+                                   (implicit tx: S#Tx, elemSerializer: io.Serializer[S#Tx, S#Acc, Elem]): Modifiable[S, Elem, Unit] =
+      Impl.passiveModifiableRead(in, access)
 
-      /**
-       * Creates a new empty linked list for passive elements.
-       */
-      def apply[ S <: evt.Sys[ S ], Elem ]( implicit tx: S#Tx, elemSerializer: Serializer[ S#Tx, S#Acc, Elem ]) : Modifiable[ S, Elem, Unit ] =
-         Impl.newPassiveModifiable[ S, Elem ]
-   }
+    /**
+     * Creates a new empty linked list, given the provided mapping function from elements to their events.
+     */
+    def apply[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U, Elem])
+                                       (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): Modifiable[S, Elem, U] =
+      Impl.newActiveModifiable[S, Elem, U](eventView)
 
-   /**
-    * Modifiable extension of the linked list. Elements can be appended or prepended in O(1).
-    * Removal of the head or last element is O(1). Arbitrary removal takes O(N).
-    */
-   trait Modifiable[ S <: stm.Sys[ S ], Elem, U ] extends LinkedList[ S, Elem, U ] {
-      def addLast( elem: Elem )( implicit tx: S#Tx ) : Unit
-      def addHead( elem: Elem )( implicit tx: S#Tx ) : Unit
-      def remove( elem: Elem )( implicit tx: S#Tx ) : Boolean
-      def removeLast()( implicit tx: S#Tx ) : Elem
-      def removeHead()( implicit tx: S#Tx ) : Elem
-      def removeAt( index : Int )( implicit tx: S#Tx ) : Elem
-      def clear()( implicit tx: S#Tx ) : Unit
-   }
+    /**
+     * Creates a new empty linked list for passive elements.
+     */
+    def apply[S <: evt.Sys[S], Elem](implicit tx: S#Tx, elemSerializer: io.Serializer[S#Tx, S#Acc, Elem]): Modifiable[S, Elem, Unit] =
+      Impl.newPassiveModifiable[S, Elem]
+  }
 
-   object Expr {
+  /**
+   * Modifiable extension of the linked list. Elements can be appended or prepended in O(1).
+   * Removal of the head or last element is O(1). Arbitrary removal takes O(N).
+   */
+  trait Modifiable[S <: stm.Sys[S], Elem, U] extends LinkedList[S, Elem, U] {
+    def addLast(elem: Elem)(implicit tx: S#Tx): Unit
+    def addHead(elem: Elem)(implicit tx: S#Tx): Unit
+    def remove (elem: Elem)(implicit tx: S#Tx): Boolean
+
+    def removeLast()(implicit tx: S#Tx): Elem
+    def removeHead()(implicit tx: S#Tx): Elem
+
+    def removeAt(index: Int)(implicit tx: S#Tx): Elem
+
+    def clear()(implicit tx: S#Tx): Unit
+  }
+
+  object Expr {
       type Modifiable[ S <: stm.Sys[ S ], A ] = LinkedList.Modifiable[ S, Ex[ S, A ], evt.Change[ A ]]
 
       private val anyChanged : Ex[ InMemory, Any ] => EventLike[ InMemory, evt.Change[ Any ], Ex[ InMemory, Any ]] = _.changed
@@ -114,14 +117,14 @@ object LinkedList {
       private def changed[ S <: stm.Sys[ S ], A ] : Ex[ S, A ] => EventLike[ S, evt.Change[ A ], Ex[ S, A ]] =
          anyChanged.asInstanceOf[ Ex[ S, A ] => EventLike[ S, evt.Change[ A ], Ex[ S, A ]]]
 
-      def serializer[ S <: evt.Sys[ S ], A ]( implicit elemType: Type[ A ]) : Serializer[ S#Tx, S#Acc, Expr[ S, A ]] =
+      def serializer[ S <: evt.Sys[ S ], A ]( implicit elemType: Type[ A ]): io.Serializer[ S#Tx, S#Acc, Expr[ S, A ]] =
          Impl.activeSerializer[ S, Ex[ S, A ], evt.Change[ A ]]( changed )( elemType.serializer[ S ])
 
       def read[ S <: evt.Sys[ S ], A ]( in: DataInput, access: S#Acc )( implicit tx: S#Tx, elemType: Type[ A ]) : Expr[ S, A ] =
          Impl.activeRead[ S, Ex[ S, A ], evt.Change[ A ]]( changed )( in, access )( tx, elemType.serializer[ S ])
 
       object Modifiable {
-         def serializer[ S <: evt.Sys[ S ], A ]( implicit elemType: Type[ A ]) : Serializer[ S#Tx, S#Acc, Expr.Modifiable[ S, A ]] =
+         def serializer[ S <: evt.Sys[ S ], A ]( implicit elemType: Type[ A ]): io.Serializer[ S#Tx, S#Acc, Expr.Modifiable[ S, A ]] =
             Impl.activeModifiableSerializer[ S, Ex[ S, A ], evt.Change[ A ]]( changed )( elemType.serializer[ S ])
 
          def read[ S <: evt.Sys[ S ], A ]( in: DataInput, access: S#Acc )( implicit tx: S#Tx, elemType: Type[ A ]) : Expr.Modifiable[ S, A ] =
@@ -134,14 +137,14 @@ object LinkedList {
    type Expr[ S <: stm.Sys[ S ], A ] = LinkedList[ S, Ex[ S, A ], evt.Change[ A ]]
 
    def serializer[ S <: evt.Sys[ S ], Elem, U ]( eventView: Elem => EventLike[ S, U, Elem ])(
-      implicit elemSerializer: evt.Serializer[ S, Elem ]) : Serializer[ S#Tx, S#Acc, LinkedList[ S, Elem, U ]] =
+      implicit elemSerializer: evt.Serializer[ S, Elem ]): io.Serializer[ S#Tx, S#Acc, LinkedList[ S, Elem, U ]] =
       Impl.activeSerializer[ S, Elem, U ]( eventView )
 
    def read[ S <: evt.Sys[ S ], Elem, U ]( eventView: Elem => EventLike[ S, U, Elem ])( in: DataInput, access: S#Acc )
                                          ( implicit tx: S#Tx, elemSerializer: evt.Serializer[ S, Elem ]) : LinkedList[ S, Elem, U ] =
       Impl.activeRead( eventView )( in, access )
 
-   def serializer[ S <: evt.Sys[ S ], Elem ]( implicit elemSerializer: Serializer[ S#Tx, S#Acc, Elem ]) : Serializer[ S#Tx, S#Acc, LinkedList[ S, Elem, Unit ]] =
+   def serializer[ S <: evt.Sys[ S ], Elem ]( implicit elemSerializer: io.Serializer[ S#Tx, S#Acc, Elem ]): io.Serializer[ S#Tx, S#Acc, LinkedList[ S, Elem, Unit ]] =
       Impl.passiveSerializer[ S, Elem ]
 
    def read[ S <: evt.Sys[ S ], Elem ]( in: DataInput, access: S#Acc )

@@ -27,11 +27,13 @@ package de.sciss.lucre
 package event
 package impl
 
+import io.DataOutput
+
 /**
  * A `Singleton` event is one which doesn't carry any state. This is a utility trait
  * which provides no-op implementations for `writeData` and `disposeData`.
  */
-trait Singleton[ S <: stm.Sys[ S ] /* , A, Repr */ ] extends InvariantSelector[ S ] {
-   final protected def disposeData()( implicit tx: S#Tx ) {}
-   final protected def writeData( out: DataOutput ) {}
+trait Singleton[S <: stm.Sys[S] /* , A, Repr */ ] extends InvariantSelector[S] {
+  final protected def disposeData()(implicit tx: S#Tx) {}
+  final protected def writeData(out: DataOutput) {}
 }

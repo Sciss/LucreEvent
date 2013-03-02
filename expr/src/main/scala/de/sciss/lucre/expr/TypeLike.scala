@@ -2,7 +2,7 @@ package de.sciss.lucre
 package expr
 
 import de.sciss.lucre.{event => evt}
-import stm.Serializer
+import io.{DataInput, DataOutput, Serializer}
 import language.higherKinds
 
 trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
@@ -54,7 +54,7 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
   private final class Ser[S <: evt.Sys[S]] extends evt.EventLikeSerializer[S, Repr[S]] {
     def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): ReprNode[S] = {
       // 0 = var, 1 = op
-      (in.readUnsignedByte() /*: @switch */) match {
+      (in.readByte() /*: @switch */) match {
         case 0      => readVar(in, access, targets)
         case cookie => readTuple(cookie, in, access, targets)
       }
@@ -95,7 +95,7 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
     def value(implicit tx: S#Tx) = op.value(_1.value)
 
     protected def writeData(out: DataOutput) {
-      out.writeUnsignedByte(1)
+      out.writeByte(1)
       out.writeInt(typeID)
       out.writeInt(op.id)
       _1.write(out)
@@ -138,7 +138,7 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
     def value(implicit tx: S#Tx) = op.value(_1.value, _2.value)
 
     protected def writeData(out: DataOutput) {
-      out.writeUnsignedByte(2)
+      out.writeByte(2)
       out.writeInt(typeID)
       out.writeInt(op.id)
       _1.write(out)

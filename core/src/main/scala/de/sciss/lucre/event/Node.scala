@@ -29,6 +29,7 @@ package event
 import collection.immutable.{IndexedSeq => IIdxSeq}
 import stm.Mutable
 import annotation.switch
+import io.{DataInput, DataOutput}
 
 /**
  * An abstract trait uniting invariant and mutating readers.
@@ -38,7 +39,7 @@ import annotation.switch
 }
 
 trait NodeSerializer[ S <: Sys[ S ], Repr <: Node[ S ]]
-extends Reader[ S, Repr ] with stm.Serializer[ S#Tx, S#Acc, Repr ] {
+extends Reader[ S, Repr ] with io.Serializer[ S#Tx, S#Acc, Repr ] {
    final def write( v: Repr, out: DataOutput ) { v.write( out )}
 
    final def read( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Repr = {
@@ -77,7 +78,7 @@ apply[ S ]
    }
 
    /* private[lucre] */ def read[ S <: Sys[ S ]]( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Targets[ S ] = {
-      (in.readUnsignedByte(): @switch) match {
+      (in.readByte(): @switch) match {
          case 0      => readIdentified( in, access )
          case 1      => readIdentifiedPartial( in, access )
          case cookie => sys.error( "Unexpected cookie " + cookie )
@@ -108,7 +109,7 @@ readIdentified( in, access )
       val id: S#ID, childrenVar: event.Var[ S, Children[ S ]], invalidVar: event.Var[ S, Int ])
    extends Targets[ S ] {
       def write( out: DataOutput ) {
-         out.writeUnsignedByte( cookie )
+         out.writeByte( cookie )
          id.write( out )
          childrenVar.write( out )
          invalidVar.write( out )
@@ -336,37 +337,38 @@ sealed trait Reactor[ S <: stm.Sys[ S ]] extends Mutable[ S#ID, S#Tx ] {
 }
 
 object VirtualNode {
-   private[event] def read[ S <: Sys[ S ]]( in: DataInput, fullSize: Int, access: S#Acc )( implicit tx: S#Tx ) : Raw[ S ] = {
-      val off        = in.getBufferOffset
-      val targets    = Targets.read( in, access )
-      val dataSize   = fullSize - (in.getBufferOffset - off)
-      val data       = new Array[ Byte ]( dataSize )
-      in.read( data )
-      new Raw( targets, data, access )
-   }
+  private[event] def read[S <: Sys[S]](in: DataInput, fullSize: Int, access: S#Acc)(implicit tx: S#Tx): Raw[S] = {
+    val off       = in.position
+    val targets   = Targets.read(in, access)
+    val dataSize  = fullSize - (in.position - off)
+    val data      = new Array[Byte](dataSize)
+    in.readFully(data)
+    new Raw(targets, data, access)
+  }
 
-   private[event] final class Raw[ S <: Sys[ S ]]( private[event] val _targets: Targets[ S ], data: Array[ Byte ], access: S#Acc )
-   extends VirtualNode[ S ] {
-      def id: S#ID = _targets.id
+  private[event] final class Raw[S <: Sys[S]](private[event] val _targets: Targets[S], data: Array[Byte], access: S#Acc)
+    extends VirtualNode[S] {
 
-      def write( out: DataOutput ) {
-         _targets.write( out )
-         out.write( data )
-      }
+    def id: S#ID = _targets.id
 
-      private[event] def select( slot: Int, invariant: Boolean ) = Selector( slot, this, invariant )
+    def write(out: DataOutput) {
+      _targets.write(out)
+      out.write(data)
+    }
 
-      private[event] def devirtualize[ Repr ]( reader: Reader[ S, Repr ])( implicit tx: S#Tx ) : Repr with Node[ S ] = {
-         val in = new DataInput( data )
-         reader.read( in, access, _targets )
-      }
+    private[event] def select(slot: Int, invariant: Boolean) = Selector(slot, this, invariant)
 
-      def dispose()( implicit tx: S#Tx ) {
-         _targets.dispose()
-      }
+    private[event] def devirtualize[Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Repr with Node[S] = {
+      val in = DataInput(data)
+      reader.read(in, access, _targets)
+    }
 
-      override def toString = "VirtualNode.Raw" + _targets.id
-   }
+    def dispose()(implicit tx: S#Tx) {
+      _targets.dispose()
+    }
+
+    override def toString = "VirtualNode.Raw" + _targets.id
+  }
 }
 //private[event] final case class VirtualNode[ S <: Sys[ S ]]( targets: Targets[ S ], data: Array[ Byte ])
 

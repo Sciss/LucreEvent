@@ -27,7 +27,7 @@ package de.sciss.lucre
 package expr
 package impl
 
-import stm.Serializer
+import io.{DataInput, DataOutput, Serializer}
 import de.sciss.lucre.{event => evt}
 import evt.{Event, EventLike, NodeSerializer, impl => eimpl}
 import data.Iterator
@@ -249,17 +249,17 @@ object LinkedListImpl {
       protected implicit object CellSer extends Serializer[ S#Tx, S#Acc, C ] {
          def write( cell: C, out: DataOutput ) {
             if( cell != null ) {
-               out.writeUnsignedByte( 1 )
+               out.writeByte( 1 )
                elemSerializer.write( cell.elem, out )
                cell.pred.write( out )
                cell.succ.write( out )
             } else {
-               out.writeUnsignedByte( 0 )
+               out.writeByte( 0 )
             }
          }
 
          def read( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : C = {
-            (in.readUnsignedByte: @switch) match {
+            (in.readByte: @switch) match {
                case 1 =>
                   val elem = elemSerializer.read( in, access )
                   val pred = tx.readVar[ C ]( id, in )

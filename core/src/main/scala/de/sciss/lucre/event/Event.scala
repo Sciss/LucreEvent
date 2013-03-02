@@ -26,11 +26,11 @@
 package de.sciss.lucre
 package event
 
-import util.MurmurHash
 import util.hashing.MurmurHash3
+import io.{DataInput, DataOutput}
 
 object Selector {
-   implicit def serializer[ S <: Sys[ S ]] : stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] = new Ser[ S ]
+   implicit def serializer[ S <: Sys[ S ]] : io.Serializer[ S#Tx, S#Acc, Selector[ S ]] = new Ser[ S ]
 
    private[event] def apply[ S <: Sys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ],
                                              invariant: Boolean ) : VirtualNodeSelector[ S ] = {
@@ -38,13 +38,13 @@ object Selector {
       else            MutatingTargetsSelector(  slot, node )
    }
 
-   private final class Ser[ S <: Sys[ S ]] extends stm.Serializer[ S#Tx, S#Acc, Selector[ S ]] {
+   private final class Ser[ S <: Sys[ S ]] extends io.Serializer[ S#Tx, S#Acc, Selector[ S ]] {
       def write( v: Selector[ S ], out: DataOutput ) {
          v.writeSelector( out )
       }
 
       def read( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Selector[ S ] = {
-         val cookie = in.readUnsignedByte()
+         val cookie = in.readByte()
          // 0 = invariant, 1 = mutating, 2 = observer
          if( cookie == 0 || cookie == 1 ) {
             val slot    = in.readInt()
@@ -97,7 +97,7 @@ sealed trait Selector[ S <: stm.Sys[ S ]] /* extends Writable */ {
    protected def cookie: Int
 
    final def writeSelector( out: DataOutput ) {
-      out.writeUnsignedByte( cookie )
+      out.writeByte( cookie )
       writeSelectorData( out )
    }
 
@@ -116,15 +116,15 @@ sealed trait VirtualNodeSelector[ S <: stm.Sys[ S ]] extends Selector[ S ] {
 //   private[event] def nodeSelectorOption: Option[ NodeSelector[ S, Any ]]
    final protected def writeSelectorData( out: DataOutput ) {
       out.writeInt( slot )
-      val sizeOffset = out.getBufferLength
+      val sizeOffset = out.position
       out.writeInt( 0 ) // will be overwritten later -- note: addSize cannot be used, because the subsequent write will be invalid!!!
       node.write( out )
-      val stop       = out.getBufferLength
-      val delta      = stop - sizeOffset
-      out.addSize( -delta )      // XXX ugly ... should have a seek method
-      val fullSize   = delta - 4
+      val stop      = out.position
+      val delta     = stop - sizeOffset
+      out.position  = sizeOffset
+      val fullSize  = delta - 4
       out.writeInt( fullSize )
-      out.addSize( fullSize )
+      out.position  = stop
    }
 
 //   private[lucre] def devirtualize( reader: Reader[ S, Node[ S ]])( implicit tx: S#Tx ) : NodeSelector[ S, Any ]

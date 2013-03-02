@@ -27,6 +27,7 @@ package de.sciss.lucre
 package expr
 
 import de.sciss.lucre.{event => evt}
+import io.{DataInput, DataOutput}
 
 trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] {
   final protected type Ex [S <: stm.Sys[S]] = Expr[S, A]
@@ -55,14 +56,14 @@ trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] 
   }
 
   final def readConst[S <: stm.Sys[S]](in: DataInput): Expr.Const[S, A] = {
-    val cookie = in.readUnsignedByte()
+    val cookie = in.readByte()
     require(cookie == 3, "Unexpected cookie " + cookie) // XXX TODO cookie should be available in lucre.event
     newConst[S](readValue(in))
   }
 
   final def readVar[S <: evt.Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Expr.Var[S, A] = {
     val targets = evt.Targets.read[S](in, access)
-    val cookie = in.readUnsignedByte
+    val cookie = in.readByte()
     require(cookie == 0, "Unexpected cookie " + cookie)
     val ref = if (targets.isPartial) {
       tx.readPartialVar[Ex[S]](targets.id, in)

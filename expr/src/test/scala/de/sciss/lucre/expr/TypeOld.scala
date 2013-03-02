@@ -27,6 +27,7 @@ package de.sciss.lucre
 package expr
 
 import event.{EventLikeSerializer, Targets, Pull, Observer}
+import io.{DataInput, DataOutput}
 import language.implicitConversions
 
 /**
@@ -56,7 +57,7 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
    implicit object serializer extends EventLikeSerializer[ S, Ex ] {
       def read( in: DataInput, access: S#Acc, targets: Targets[ S ])( implicit tx: S#Tx ) : Ex with event.Node[ S ] = {
          // 0 = var, 1 = op
-         (in.readUnsignedByte() /*: @switch */) match {
+         (in.readByte() /*: @switch */) match {
             case 0      => new VarRead( in, access, targets, tx )
             case arity  =>
                val clazz   = in.readInt()
@@ -112,7 +113,7 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
    def readVar( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Var = {
       // XXX should go somewhere else
       val targets = Targets.read[ S ]( in, access )
-      require( in.readUnsignedByte == 0 )
+      require( in.readByte == 0 )
       new VarRead( in, access, targets, tx )
    }
 
@@ -152,7 +153,7 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
       def value( implicit tx: S#Tx ) = op.value( _1.value )
 
       protected def writeData( out: DataOutput ) {
-         out.writeUnsignedByte( 1 )
+         out.writeByte( 1 )
 //         out.writeShort( op.id )
          out.writeInt( typeID /* tpe.id */)
          out.writeInt( op.id )
@@ -205,7 +206,7 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
       def value( implicit tx: S#Tx ) = op.value( _1.value, _2.value )
 
       protected def writeData( out: DataOutput ) {
-         out.writeUnsignedByte( 2 )
+         out.writeByte( 2 )
          out.writeInt( typeID /* tpe.id */)
          out.writeInt( op.id )
          _1.write( out )

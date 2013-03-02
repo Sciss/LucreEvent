@@ -27,6 +27,7 @@ package de.sciss.lucre
 package event
 
 import stm.Disposable
+import io.{DataInput, Writable}
 
 trait Sys[ S <: Sys[ S ]] extends stm.Sys[ S ] {
    type Tx <: Txn[ S ]
@@ -35,9 +36,9 @@ trait Sys[ S <: Sys[ S ]] extends stm.Sys[ S ] {
 }
 trait Txn[ S <: Sys[ S ]] extends stm.Txn[ S ] {
    private[lucre] def reactionMap: ReactionMap[ S ]
-   private[event] def newEventVar[ A ]( id: S#ID )( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ]
+   private[event] def newEventVar[ A ]( id: S#ID )( implicit serializer: io.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ]
    private[event] def newEventIntVar[ A ]( id: S#ID ) : Var[ S, Int ]
-   private[event] def readEventVar[ A ]( id: S#ID, in: DataInput )( implicit serializer: stm.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ]
+   private[event] def readEventVar[ A ]( id: S#ID, in: DataInput )( implicit serializer: io.Serializer[ S#Tx, S#Acc, A ]) : Var[ S, A ]
    private[event] def readEventIntVar[ A ]( id: S#ID, in: DataInput ) : Var[ S, Int ]
 }
 

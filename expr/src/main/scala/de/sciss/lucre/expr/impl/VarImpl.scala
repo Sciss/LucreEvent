@@ -3,6 +3,7 @@ package expr
 package impl
 
 import event.{Pull, Event, InvariantSelector, Change, impl => evti}
+import io.DataOutput
 
 trait VarImpl[S <: event.Sys[S], A]
   extends Expr.Var[S, A] with evti.StandaloneLike[S, Change[A], Expr[S, A]]
@@ -19,7 +20,7 @@ trait VarImpl[S <: event.Sys[S], A]
   protected def reader: event.Reader[S, Expr[S, A]]
 
   final protected def writeData(out: DataOutput) {
-    out.writeUnsignedByte(0)
+    out.writeByte(0)
     ref.write(out)
   }
 

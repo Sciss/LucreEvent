@@ -2,6 +2,7 @@ package de.sciss.lucre
 package event
 
 import stm.{DataStoreFactory, DataStore}
+import io.{DataInput, DataOutput}
 import impl.{DurableImpl => Impl}
 import language.implicitConversions
 

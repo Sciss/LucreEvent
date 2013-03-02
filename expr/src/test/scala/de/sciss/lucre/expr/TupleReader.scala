@@ -3,6 +3,7 @@ package expr
 
 import stm.Sys
 import event.{Targets, Node}
+import io.DataInput
 
 trait TupleReader[ S <: Sys[ S ], A ] {
    def readTuple( arity: Int, opID: Int, in: DataInput, access: S#Acc, targets: Targets[ S ])

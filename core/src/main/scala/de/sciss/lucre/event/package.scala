@@ -15,7 +15,7 @@ package object event {
 //   private[lucre] def NoSources[ S <: Sys[ S ]]  : Sources[ S ]   = emptySeq
    private[lucre] def NoChildren[ S <: stm.Sys[ S ]] : Children[ S ]  = emptySeq
 
-   type Serializer[ S <: stm.Sys[ S ], Repr ] = Reader[ S, Repr ] with stm.Serializer[ S#Tx, S#Acc, Repr ]
+   type Serializer[ S <: stm.Sys[ S ], Repr ] = Reader[ S, Repr ] with io.Serializer[ S#Tx, S#Acc, Repr ]
 
    private lazy val logHeader = new SimpleDateFormat( "[d MMM yyyy, HH:mm''ss.SSS] 'Lucre' - 'evt' ", Locale.US )
 

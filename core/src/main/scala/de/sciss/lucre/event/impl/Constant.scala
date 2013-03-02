@@ -27,6 +27,8 @@ package de.sciss.lucre
 package event
 package impl
 
+import io.DataOutput
+
 /**
  * A constant "event" is one which doesn't actually fire. It thus arguably isn't really an event,
  * but it can be used to implement the constant type of an expression system which can use a unified
@@ -36,10 +38,10 @@ package impl
  * `constValue` and implement its serialization via `writeData`.
  */
 trait Constant {
-   final def write( out: DataOutput ) {
-      out.writeUnsignedByte( 3 )
-      writeData( out )
-   }
+  final def write(out: DataOutput) {
+    out.writeByte(3)
+    writeData(out)
+  }
 
-   protected def writeData( out: DataOutput ) : Unit
+  protected def writeData(out: DataOutput): Unit
 }
