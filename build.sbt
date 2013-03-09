@@ -1,6 +1,6 @@
 name := "LucreEvent"
 
-version in ThisBuild := "1.8.0"
+version in ThisBuild := "1.9.0"
 
 organization in ThisBuild := "de.sciss"
 

@@ -3,6 +3,9 @@ import Keys._
 import sbtbuildinfo.Plugin._
 
 object Build extends sbt.Build {
+  lazy val stmVersion  = "1.8.+"
+  lazy val dataVersion = "1.9.+"
+
   lazy val root: Project = Project(
     id            = "lucreevent",
     base          = file("."),
@@ -32,9 +35,9 @@ object Build extends sbt.Build {
     id        = "lucreevent-core",
     base      = file("core"),
     settings  = Project.defaultSettings ++ buildInfoSettings ++ Seq(
-      libraryDependencies <++= version { case Compatible(v) => Seq(
-        "de.sciss" %% "lucrestm-core" % v
-      )},
+      libraryDependencies ++= Seq(
+        "de.sciss" %% "lucrestm-core" % stmVersion
+      ),
       sourceGenerators in Compile <+= buildInfo,
       buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
         BuildInfoKey.map(homepage) {
@@ -53,10 +56,10 @@ object Build extends sbt.Build {
     base          = file("expr"),
     dependencies  = Seq(core),
     settings      = Project.defaultSettings ++ Seq(
-      libraryDependencies <++= version { case Compatible(v) => Seq(
-        "de.sciss" %% "lucredata-core" % v,
-        "de.sciss" %% "lucrestm-bdb"   % v % "test"
-      )}
+      libraryDependencies ++= Seq(
+        "de.sciss" %% "lucredata-core" % dataVersion,
+        "de.sciss" %% "lucrestm-bdb"   % stmVersion % "test"
+      )
     )
   )
 }
