@@ -36,7 +36,7 @@ import collection.immutable.{IndexedSeq => IIdxSeq}
 
 object LinkedList {
 
-  import de.sciss.lucre.expr.{Expr => Ex}
+  import expr.{Expr => Ex}
 
   final case class Update[S <: stm.Sys[S], Elem, U](list: LinkedList[S, Elem, U], changes: IIdxSeq[Change[S, Elem, U]])
 

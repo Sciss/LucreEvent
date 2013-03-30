@@ -31,46 +31,55 @@ import event.{EventLike, Dummy, Event, Change}
 import io.Writable
 
 object Expr {
-   trait Node[ S <: Sys[ S ], A ] extends Expr[ S, A ] with event.Node[ S ] {
-      def changed: Event[ S, Change[ A ], Expr[ S, A ]]
-   }
+  trait Node[S <: Sys[S], +A] extends Expr[S, A] with event.Node[S] {
+    def changed: Event[S, Change[A], Expr[S, A]]
+  }
 
-   object Var {
-      def unapply[ S <: Sys[ S ], A ]( expr: Expr[ S, A ]) : Option[ Var[ S, A ]] = {
-         if( expr.isInstanceOf[ Var[ _, _ ]]) Some( expr.asInstanceOf[ Var[ S, A ]]) else None
-      }
-   }
-   trait Var[ S <: Sys[ S ], A ] extends Expr[ S, A ] with _Var[ S#Tx, Expr[ S, A ]] {
-      def changed: Event[ S, Change[ A ], Expr[ S, A ]]
-   }
+  object Var {
+    def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[Var[S, A]] = {
+      if (expr.isInstanceOf[Var[_, _]]) Some(expr.asInstanceOf[Var[S, A]]) else None
+    }
+  }
 
-   object Const {
-      def unapply[ S <: Sys[ S ], A ]( expr: Expr[ S, A ]) : Option[ A ] = {
-         if( expr.isInstanceOf[ Const[ _, _ ]]) {
-            Some( expr.asInstanceOf[ Const[ S, A ]].constValue )
-         } else None
-      }
-   }
-   trait Const[ S <: Sys[ S ], A ] extends Expr[ S, A ] {
-      final def changed = Dummy[ S, Change[ A ], Expr[ S, A ]]
-      protected def constValue : A
-      final def value( implicit tx: S#Tx ) : A = constValue
-      override def toString = constValue.toString
-      final def dispose()( implicit tx: S#Tx ) {}
-   }
-   def isConst( expr: Expr[ _, _ ]) : Boolean = expr.isInstanceOf[ Const[ _, _ ]]
+  trait Var[S <: Sys[S], A] extends Expr[S, A] with _Var[S#Tx, Expr[S, A]] {
+    def changed: Event[S, Change[A], Expr[S, A]]
+  }
+
+  object Const {
+    def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[A] = {
+      if (expr.isInstanceOf[Const[_, _]]) {
+        Some(expr.asInstanceOf[Const[S, A]].constValue)
+      } else None
+    }
+  }
+
+  trait Const[S <: Sys[S], +A] extends Expr[S, A] {
+    final def changed = Dummy[S, Change[A], Expr[S, A]]
+
+    protected def constValue: A
+    final def value(implicit tx: S#Tx): A = constValue
+
+    override def toString = constValue.toString
+
+    final def dispose()(implicit tx: S#Tx) {}
+  }
+
+  def isConst(expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const[_, _]]
 }
 
-trait Expr[ S <: Sys[ S ], A ] extends Writable with Disposable[ S#Tx ] {
-   def changed: EventLike[ S, Change[ A ], Expr[ S, A ]]
-   def value( implicit tx: S#Tx ) : A
+trait Expr[S <: Sys[S], +A] extends Writable with Disposable[S#Tx] {
+  def changed: EventLike[S, Change[A], Expr[S, A]]
 
-   final def observe( fun: A => Unit )( implicit tx: S#Tx ) : Disposable[ S#Tx ] =
-      observeTx( _ => fun )
+  def value(implicit tx: S#Tx): A
 
-   final def observeTx( fun: S#Tx => A => Unit )( implicit tx: S#Tx ) : Disposable[ S#Tx ] = {
-      val o = changed.reactTx[ Change[ A ]] { tx => change => fun( tx )( change.now )}
-      fun( tx )( value )
-      o
-   }
+  final def observe(fun: A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] =
+    observeTx(_ => fun)
+
+  final def observeTx(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
+    val o = changed.reactTx[Change[A]] { tx => change =>
+      fun(tx)(change.now)
+    }
+    fun(tx)(value)
+    o
+  }
 }
