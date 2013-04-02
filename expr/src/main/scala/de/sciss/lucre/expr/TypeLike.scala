@@ -1,8 +1,9 @@
-package de.sciss.lucre
+package de.sciss
+package lucre
 package expr
 
-import de.sciss.lucre.{event => evt}
-import io.{DataInput, DataOutput, Serializer}
+import lucre.{event => evt}
+import serial.{DataInput, DataOutput, Serializer}
 import language.higherKinds
 
 trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {

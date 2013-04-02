@@ -23,11 +23,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package event
 package impl
 
-import io.DataOutput
+import serial.DataOutput
 
 /**
  * A constant "event" is one which doesn't actually fire. It thus arguably isn't really an event,

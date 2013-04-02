@@ -23,10 +23,11 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package event
 
-import io.DataInput
+import serial.DataInput
 
 object Bang {
    def apply[ S <: Sys[ S ]]( implicit tx: S#Tx ) : Bang[ S ] = new Impl[ S ]( Targets[ S ])

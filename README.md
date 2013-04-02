@@ -31,7 +31,7 @@ And for the expression layer:
 
     "de.sciss" %% "lucreevent-expr" % v
 
-The current version `v` is `"1.9.+"`.
+The current version `v` is `"2.0.+"`.
 
 ## documentation
 

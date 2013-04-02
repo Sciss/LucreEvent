@@ -23,11 +23,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package event
 package impl
 
-import io.DataOutput
+import serial.DataOutput
 
 /**
  * A `Singleton` event is one which doesn't carry any state. This is a utility trait

@@ -23,12 +23,13 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package expr
 
 import annotation.switch
-import de.sciss.lucre.{event => evt}
-import io.{DataInput, DataOutput}
+import lucre.{event => evt}
+import serial.{DataInput, DataOutput}
 import language.implicitConversions
 
 object Longs {

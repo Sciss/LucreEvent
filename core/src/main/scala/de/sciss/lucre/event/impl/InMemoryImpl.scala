@@ -23,13 +23,14 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package event
 package impl
 
 import concurrent.stm.{Ref, InTxn}
 import stm.impl.{InMemoryImpl => STMImpl}
-import io.{DataInput, DataOutput}
+import serial.{DataInput, DataOutput}
 
 object InMemoryImpl {
   def apply(): InMemory = new System
@@ -98,7 +99,7 @@ object InMemoryImpl {
     final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
 
     final private[event] def newEventVar[A](id: S#ID)
-                                           (implicit serializer: io.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
+                                           (implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
       new VarImpl(Ref.make[A])
     }
 
@@ -107,7 +108,7 @@ object InMemoryImpl {
     }
 
     final private[event] def readEventVar[A](id: S#ID, in: DataInput)
-                                            (implicit serializer: io.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
+                                            (implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
       opNotSupported("readEventVar")
     }
 

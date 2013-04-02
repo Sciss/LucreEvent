@@ -23,13 +23,14 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package event
 package impl
 
 import stm.{DataStoreFactory, DataStore}
 import concurrent.stm.{Ref, InTxn}
-import io.{DataInput, DataOutput}
+import serial.{DataInput, DataOutput}
 
 object DurableImpl {
   def apply(factory: DataStoreFactory[DataStore], mainName: String, eventName: String): Durable = {
@@ -61,7 +62,7 @@ object DurableImpl {
   }
 
   private final class DurableVarImpl[S <: D[S], A](protected val id: Int,
-                                                   protected val ser: io.Serializer[S#Tx, S#Acc, A])
+                                                   protected val ser: serial.Serializer[S#Tx, S#Acc, A])
     extends DurableSource[S, A] {
 
     def get(implicit tx: S#Tx): Option[A] = tx.system.tryReadEvent[A](id)(ser.read(_, ()))
@@ -127,7 +128,7 @@ object DurableImpl {
     final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
 
     final private[event] def newEventVar[A](id: S#ID)
-                                           (implicit serializer: io.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
+                                           (implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
       new DurableVarImpl[S, A](system.newEventIDValue()(this), serializer)
     }
 
@@ -136,7 +137,7 @@ object DurableImpl {
     }
 
     final private[event] def readEventVar[A](id: S#ID, in: DataInput)
-                                            (implicit serializer: io.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
+                                            (implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
       val id = in.readInt()
       new DurableVarImpl[S, A](id, serializer)
     }

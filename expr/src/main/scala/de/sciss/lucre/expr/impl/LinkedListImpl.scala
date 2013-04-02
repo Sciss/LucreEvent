@@ -23,12 +23,13 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package expr
 package impl
 
-import io.{DataInput, DataOutput, Serializer}
-import de.sciss.lucre.{event => evt}
+import serial.{DataInput, DataOutput, Serializer}
+import lucre.{event => evt}
 import evt.{Event, EventLike, NodeSerializer, impl => eimpl}
 import data.Iterator
 import annotation.switch

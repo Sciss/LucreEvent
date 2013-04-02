@@ -1,8 +1,9 @@
-package de.sciss.lucre
+package de.sciss
+package lucre
 package event
 
 import stm.{DataStoreFactory, DataStore}
-import io.{DataInput, DataOutput}
+import serial.{DataInput, DataOutput}
 import impl.{DurableImpl => Impl}
 import language.implicitConversions
 

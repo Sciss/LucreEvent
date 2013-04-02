@@ -1,11 +1,12 @@
-package de.sciss.lucre
+package de.sciss
+package lucre
 package expr
 
 import stm.Mutable
-import io.{DataInput, DataOutput}
+import serial.{DataInput, DataOutput}
 import annotation.tailrec
 import collection.immutable.{IndexedSeq => IIdxSeq}
-import de.sciss.lucre.{event => evt}
+import lucre.{event => evt}
 import evt.{Targets, NodeSerializer, Event, Compound, Decl}
 import language.implicitConversions
 
@@ -41,7 +42,7 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
          val span_#  = spans.readVar(   in, acc )( tx0 )
       }
 
-      implicit val serializer : io.Serializer[ S#Tx, S#Acc, Region ] = new io.Serializer[ S#Tx, S#Acc, Region ] {
+      implicit val serializer : serial.Serializer[ S#Tx, S#Acc, Region ] = new serial.Serializer[ S#Tx, S#Acc, Region ] {
          def write( v: Region, out: DataOutput ) { v.write( out )}
          def read( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Region =
             new Read( in, access, tx )
@@ -317,11 +318,11 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
    }
 
    object LinkedList {
-      def apply[ A ]( value: A, next: Option[ LinkedList[ A ]])( implicit tx: S#Tx, peerSer: io.Serializer[ S#Tx, S#Acc, A ]) : LinkedList[ A ] =
+      def apply[ A ]( value: A, next: Option[ LinkedList[ A ]])( implicit tx: S#Tx, peerSer: serial.Serializer[ S#Tx, S#Acc, A ]) : LinkedList[ A ] =
          new New[ A ]( value, next, tx, peerSer )
 
       private sealed trait Impl[ A ] extends LinkedList[ A ] with Mutable.Impl[ S ] {
-         protected def peerSer: io.Serializer[ S#Tx, S#Acc, A ]
+         protected def peerSer: serial.Serializer[ S#Tx, S#Acc, A ]
          final protected def writeData( out: DataOutput ) {
             peerSer.write( value, out )
             next_#.write( out )
@@ -335,20 +336,20 @@ class Regions[ S <: evt.Sys[ S ]]( val strings: Strings[ S ], val longs: Longs[ 
       }
 
       private final class New[ A ]( val value: A, next0: Option[ LinkedList[ A ]], tx0: S#Tx,
-                                    protected implicit val peerSer: io.Serializer[ S#Tx, S#Acc, A ]) extends Impl[ A ] {
+                                    protected implicit val peerSer: serial.Serializer[ S#Tx, S#Acc, A ]) extends Impl[ A ] {
          val id      = tx0.newID()
          val next_#  = tx0.newVar[ Option[ LinkedList[ A ]]]( id, next0 )
       }
 
       private final class Read[ A ]( in: DataInput, acc: S#Acc, tx0: S#Tx,
-                                     protected implicit val peerSer: io.Serializer[ S#Tx, S#Acc, A ] ) extends Impl[ A ] {
+                                     protected implicit val peerSer: serial.Serializer[ S#Tx, S#Acc, A ] ) extends Impl[ A ] {
          val id      = tx0.readID( in, acc )
          val value   = peerSer.read( in, acc )( tx0 )
          val next_#  = tx0.readVar[ Option[ LinkedList[ A ]]]( id, in )
       }
 
-      implicit def serializer[ A ]( implicit peerSer: io.Serializer[ S#Tx, S#Acc, A ]) : io.Serializer[ S#Tx, S#Acc, LinkedList[ A ]] =
-         new io.Serializer[ S#Tx, S#Acc, LinkedList[ A ]] {
+      implicit def serializer[ A ]( implicit peerSer: serial.Serializer[ S#Tx, S#Acc, A ]) : serial.Serializer[ S#Tx, S#Acc, LinkedList[ A ]] =
+         new serial.Serializer[ S#Tx, S#Acc, LinkedList[ A ]] {
             def write( v: LinkedList[ A ], out: DataOutput ) { v.write( out )}
             def read( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : LinkedList[ A ] =
                new Read[ A ]( in, access, tx, peerSer )

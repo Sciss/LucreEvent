@@ -23,11 +23,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package expr
 
 import event.{EventLikeSerializer, Targets, Pull, Observer}
-import io.{DataInput, DataOutput}
+import serial.{DataInput, DataOutput}
 import language.implicitConversions
 
 /**

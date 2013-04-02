@@ -23,11 +23,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package expr
 
 import de.sciss.lucre.{event => evt}
-import io.{DataInput, DataOutput}
+import serial.{DataInput, DataOutput}
 
 trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] {
   final protected type Ex [S <: stm.Sys[S]] = Expr[S, A]

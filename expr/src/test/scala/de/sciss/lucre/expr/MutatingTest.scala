@@ -1,11 +1,12 @@
-package de.sciss.lucre
+package de.sciss
+package lucre
 package expr
 
 import collection.immutable.{IndexedSeq => IIdxSeq}
 import java.io.File
 import stm.store.BerkeleyDB
-import de.sciss.lucre.{event => evt}
-import io.{DataInput, DataOutput}
+import lucre.{event => evt}
+import serial.{DataInput, DataOutput}
 
 object MutatingTest extends App {
    private def memorySys    : (evt.InMemory, () => Unit) = (evt.InMemory(), () => ())

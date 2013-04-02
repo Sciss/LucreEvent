@@ -23,14 +23,15 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package event
 
 import util.hashing.MurmurHash3
-import io.{DataInput, DataOutput}
+import serial.{DataInput, DataOutput}
 
 object Selector {
-   implicit def serializer[ S <: Sys[ S ]] : io.Serializer[ S#Tx, S#Acc, Selector[ S ]] = new Ser[ S ]
+   implicit def serializer[ S <: Sys[ S ]] : serial.Serializer[ S#Tx, S#Acc, Selector[ S ]] = new Ser[ S ]
 
    private[event] def apply[ S <: Sys[ S ]]( slot: Int, node: VirtualNode.Raw[ S ],
                                              invariant: Boolean ) : VirtualNodeSelector[ S ] = {
@@ -38,7 +39,7 @@ object Selector {
       else            MutatingTargetsSelector(  slot, node )
    }
 
-   private final class Ser[ S <: Sys[ S ]] extends io.Serializer[ S#Tx, S#Acc, Selector[ S ]] {
+   private final class Ser[ S <: Sys[ S ]] extends serial.Serializer[ S#Tx, S#Acc, Selector[ S ]] {
       def write( v: Selector[ S ], out: DataOutput ) {
          v.writeSelector( out )
       }
@@ -110,22 +111,23 @@ sealed trait Selector[ S <: stm.Sys[ S ]] /* extends Writable */ {
 sealed trait VirtualNodeSelector[ S <: stm.Sys[ S ]] extends Selector[ S ] {
 //   private[event] def reactor: Reactor[ S ]
 
-   private[lucre] def node: VirtualNode[ S ]
-   private[event] def slot: Int
+  private[lucre] def node: VirtualNode[S]
 
-//   private[event] def nodeSelectorOption: Option[ NodeSelector[ S, Any ]]
-   final protected def writeSelectorData( out: DataOutput ) {
-      out.writeInt( slot )
-      val sizeOffset = out.position
-      out.writeInt( 0 ) // will be overwritten later -- note: addSize cannot be used, because the subsequent write will be invalid!!!
-      node.write( out )
-      val stop      = out.position
-      val delta     = stop - sizeOffset
-      out.position  = sizeOffset
-      val fullSize  = delta - 4
-      out.writeInt( fullSize )
-      out.position  = stop
-   }
+  private[event] def slot: Int
+
+  //   private[event] def nodeSelectorOption: Option[ NodeSelector[ S, Any ]]
+  final protected def writeSelectorData(out: DataOutput) {
+    out.writeInt(slot)
+    val sizeOffset  = out.position
+    out.writeInt(0) // will be overwritten later -- note: addSize cannot be used, because the subsequent write will be invalid!!!
+    node.write(out)
+    val stop        = out.position
+    val delta       = stop - sizeOffset
+    out.position    = sizeOffset
+    val fullSize    = delta - 4
+    out.writeInt(fullSize)
+    out.position    = stop
+  }
 
 //   private[lucre] def devirtualize( reader: Reader[ S, Node[ S ]])( implicit tx: S#Tx ) : NodeSelector[ S, Any ]
 //def devirtualize[ Evt <: Event[ S, Any, Any ]]( reader: Reader[ S, Any ])( implicit tx: S#Tx ) : Evt

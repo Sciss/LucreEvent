@@ -23,11 +23,12 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package event
 
 import annotation.switch
-import io.{Writable, DataInput, DataOutput}
+import serial.{Writable, DataInput, DataOutput}
 
 /**
  * A trait to serialize events which can be both constants and immutable nodes.
@@ -39,7 +40,7 @@ import io.{Writable, DataInput, DataOutput}
  * the appropriate serialization preamble.
  */
 trait EventLikeSerializer[ S <: Sys[ S ], Repr <: Writable /* Node[ S ] */]
-extends Reader[ S, Repr ] with io.Serializer[ S#Tx, S#Acc, Repr ] {
+extends Reader[ S, Repr ] with serial.Serializer[ S#Tx, S#Acc, Repr ] {
    final def write( v: Repr, out: DataOutput ) { v.write( out )}
 
    def read( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Repr = {

@@ -23,13 +23,14 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package event
 
 import collection.immutable.{IndexedSeq => IIdxSeq}
 import stm.Mutable
 import annotation.switch
-import io.{DataInput, DataOutput}
+import serial.{DataInput, DataOutput}
 
 /**
  * An abstract trait uniting invariant and mutating readers.
@@ -39,7 +40,7 @@ import io.{DataInput, DataOutput}
 }
 
 trait NodeSerializer[ S <: Sys[ S ], Repr <: Node[ S ]]
-extends Reader[ S, Repr ] with io.Serializer[ S#Tx, S#Acc, Repr ] {
+extends Reader[ S, Repr ] with serial.Serializer[ S#Tx, S#Acc, Repr ] {
    final def write( v: Repr, out: DataOutput ) { v.write( out )}
 
    final def read( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Repr = {

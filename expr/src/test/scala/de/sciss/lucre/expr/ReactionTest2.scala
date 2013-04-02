@@ -23,14 +23,15 @@
 *  contact@sciss.de
 */
 
-package de.sciss.lucre
+package de.sciss
+package lucre
 package expr
 
 import java.io.File
 import java.awt.event.{WindowAdapter, WindowEvent, ActionListener, ActionEvent}
 import java.awt.{BorderLayout, Color, Dimension, Graphics2D, Graphics, GridLayout, EventQueue}
 import javax.swing.{AbstractAction, JButton, Box, JComponent, JTextField, BorderFactory, JLabel, GroupLayout, JPanel, WindowConstants, JFrame}
-import de.sciss.lucre.{event => evt}
+import lucre.{event => evt}
 import stm.Cursor
 import stm.store.BerkeleyDB
 import collection.mutable
@@ -85,7 +86,7 @@ Usages:
       import spans.spanOps
 
       final class RegionView[ R <: RegionLike ]( /* csrPos: S#Acc, */ rv: stm.Source[ S#Tx, R ], id: String )
-                                               ( implicit ser: io.Serializer[ S#Tx, S#Acc, R ]) extends JPanel {
+                                               ( implicit ser: serial.Serializer[ S#Tx, S#Acc, R ]) extends JPanel {
          private val lay = new GroupLayout( this )
          lay.setAutoCreateContainerGaps( true )
          setLayout( lay )
