@@ -1,5 +1,5 @@
 /*
- *  EventImpl.scala
+ *  MappingGenerator.scala
  *  (LucreEvent)
  *
  *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
@@ -27,27 +27,32 @@ package de.sciss.lucre
 package event
 package impl
 
-trait EventImpl[S <: Sys[S], +A, +Repr /* <: Node[ S ] */ ]
-  extends Event[S, A, Repr] /* with InvariantSelector[ S ] */ {
+/** A trait which combined external input events with self generated events. */
+trait MappingGenerator[S <: Sys[S], A, B, +Repr]
+  extends Generator[S, A, Repr]
+  with StandaloneLike[S, A, Repr] {
+  _: Repr =>
 
-  final /* private[lucre] */ def isSource(pull: Pull[S]): Boolean = pull.hasVisited(this /* select() */)
+  protected def inputEvent: EventLike[S, B, _]
 
-  protected def reader: Reader[S, Repr]
+  def changed: Event[S, A, Repr] = this
 
-  //   final /* private[lucre] */ def --->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ) {
-  //      if( reactor._targets.add( slot, r )) connect()
-  //   }
-  //
-  //   final /* private[lucre] */ def -/->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ) {
-  //      if( reactor._targets.remove( slot, r )) disconnect()
-  //   }
+  /** Folds a new input event, by combining it with an optional previous output event. */
+  protected def foldUpdate(generated: Option[A], input: B)(implicit tx: S#Tx): Option[A]
 
-  final def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
-    reactTx(_ => fun)
+  final private[lucre] def connect()(implicit tx: S#Tx) {
+    inputEvent ---> this
+  }
 
-  final def reactTx[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] = {
-    val res = Observer[S, A1, Repr](reader, fun)
-    res.add(this)
-    res
+  final private[lucre] def disconnect()(implicit tx: S#Tx) {
+    inputEvent -/-> this
+  }
+
+  final def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
+    val gen = if (this.isSource(pull)) pull.resolve[A] else None
+    if (inputEvent.isSource(pull)) inputEvent.pullUpdate(pull) match {
+      case Some(e)  => foldUpdate(gen, e)
+      case _        => gen
+    } else gen
   }
 }

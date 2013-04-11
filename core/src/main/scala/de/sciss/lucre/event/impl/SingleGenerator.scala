@@ -1,5 +1,5 @@
 /*
- *  EventImpl.scala
+ *  SingleGenerator.scala
  *  (LucreEvent)
  *
  *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
@@ -27,27 +27,17 @@ package de.sciss.lucre
 package event
 package impl
 
-trait EventImpl[S <: Sys[S], +A, +Repr /* <: Node[ S ] */ ]
-  extends Event[S, A, Repr] /* with InvariantSelector[ S ] */ {
+/** Combines `Generator`, `Root` and `StandaloneLike` into a convenient trait that instantly
+  * sets up a self contained rooted event, dispatched via `fire`. It also adds method
+  * `changed` which is useful for distinguishing node and event on the outside facade.
+  *
+  * @tparam S     the system used
+  * @tparam A     the update type
+  * @tparam Repr  the representation type. This type mixin in this trait must conform to this (self-)type.
+  */
+trait SingleGenerator[S <: Sys[S], A, +Repr]
+  extends Generator[S, A, Repr] with Root[S, A] with StandaloneLike[S, A, Repr] {
+  _: Repr =>
 
-  final /* private[lucre] */ def isSource(pull: Pull[S]): Boolean = pull.hasVisited(this /* select() */)
-
-  protected def reader: Reader[S, Repr]
-
-  //   final /* private[lucre] */ def --->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ) {
-  //      if( reactor._targets.add( slot, r )) connect()
-  //   }
-  //
-  //   final /* private[lucre] */ def -/->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ) {
-  //      if( reactor._targets.remove( slot, r )) disconnect()
-  //   }
-
-  final def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
-    reactTx(_ => fun)
-
-  final def reactTx[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] = {
-    val res = Observer[S, A1, Repr](reader, fun)
-    res.add(this)
-    res
-  }
+  def changed: Event[S, A, Repr] = this
 }

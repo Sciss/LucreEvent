@@ -27,7 +27,6 @@ package de.sciss.lucre
 package event
 package impl
 
-import util.MurmurHash
 import util.hashing.MurmurHash3
 
 /**
@@ -40,35 +39,37 @@ import util.hashing.MurmurHash3
  *
  * I don't know if `Reactor` still needs the `equals` implementation?
  */
-trait StandaloneLike[ S <: Sys[ S ], +A, +Repr /* <: Node[ S ]*/] extends Node[ S ] with impl.EventImpl[ S, A, Repr ]
-with InvariantEvent[ S, A, Repr ] {
-   _: Repr =>
+trait StandaloneLike[S <: Sys[S], +A, +Repr]
+  extends Node[S] with impl.EventImpl[S, A, Repr]
+  with InvariantEvent[S, A, Repr] {
+  _: Repr =>
 
-   final private[event] def slot = 1
-   final /* private[lucre] */ def node: Repr with Node[ S ] = this
+  final private[event] def slot = 1
 
-   final private[event] def select( slot: Int, invariant: Boolean ) : Event[ S, Any, Any ] = {
-      require( slot == 1, "Invalid slot " + slot )
-      require( invariant, "Invalid invariant flag. Should be true" )
-      this
-   }
+  final /* private[lucre] */ def node: Repr with Node[S] = this
 
-   // ---- fix mixin issues (https://github.com/Sciss/LucreSTM/issues/7) ----
+  final private[event] def select(slot: Int, invariant: Boolean): Event[S, Any, Any] = {
+    require(slot == 1, "Invalid slot " + slot)
+    require(invariant, "Invalid invariant flag. Should be true")
+    this
+  }
 
-   override def hashCode : Int = {
-     import MurmurHash3._
-     val h0 = productSeed
-     val h1 = mix(h0, slot)
-     val h2 = mixLast(h1, id.##)
-     finalizeHash(h2, 2)
-   }
+  // ---- fix mixin issues (https://github.com/Sciss/LucreSTM/issues/7) ----
 
-   override def equals( that: Any ) : Boolean = {
-      (if( that.isInstanceOf[ VirtualNodeSelector[ _ ]]) {
-         val thatSel = that.asInstanceOf[ VirtualNodeSelector[ _ ]]
-         (slot == thatSel.slot && /* node. */ id == thatSel.node.id)
-      } else super.equals( that ))
-   }
+  override def hashCode: Int = {
+    import MurmurHash3._
+    val h0 = productSeed
+    val h1 = mix(h0, slot)
+    val h2 = mixLast(h1, id.##)
+    finalizeHash(h2, 2)
+  }
 
-   override def toString = "Node" + id
+  override def equals(that: Any): Boolean = {
+    (if (that.isInstanceOf[VirtualNodeSelector[_]]) {
+      val thatSel = that.asInstanceOf[VirtualNodeSelector[_]]
+      (slot == thatSel.slot && /* node. */ id == thatSel.node.id)
+    } else super.equals(that))
+  }
+
+  override def toString = "Node" + id
 }
