@@ -32,16 +32,18 @@ import serial.DataInput
 object Bang {
    def apply[ S <: Sys[ S ]]( implicit tx: S#Tx ) : Bang[ S ] = new Impl[ S ]( Targets[ S ])
 
-   private final class Impl[ S <: Sys[ S ]]( protected val targets: Targets[ S ])
-   extends Bang[ S ] with impl.StandaloneLike[ S, Unit, Bang[ S ]] with impl.Singleton[ S ] with impl.Root[ S, Unit ]
-   with impl.Generator[ S, Unit, Bang[ S ]] {
-      protected def reader = Bang.serializer[ S ]
-      override def toString = "Bang"
-      def apply()( implicit tx: S#Tx ) { fire( () )}
-      def apply( unit: Unit )( implicit tx: S#Tx ) { apply( () )}
-   }
+  private final class Impl[S <: Sys[S]](protected val targets: Targets[S])
+    extends Bang[S] with impl.StandaloneLike[S, Unit, Bang[S]] with impl.Singleton[S] with impl.Root[S, Unit]
+    with impl.Generator[S, Unit, Bang[S]] {
+    protected def reader = Bang.serializer[S]
 
-   implicit def serializer[ S <: Sys[ S ]] : NodeSerializer[ S, Bang[ S ]] = new NodeSerializer[ S, Bang[ S ]] {
+    override def toString = "Bang"
+
+    def apply()(implicit tx: S#Tx) { fire(())  }
+    def apply(unit: Unit)(implicit tx: S#Tx) { apply(()) }
+  }
+
+  implicit def serializer[ S <: Sys[ S ]] : NodeSerializer[ S, Bang[ S ]] = new NodeSerializer[ S, Bang[ S ]] {
       // note: there was a strange runtime error when using an anonymous class instead. It seems that
       // scala somehow missed to execute the body, leaving targets unassigned. Perhaps a bug
       // of scalac getting confused with the apply method?

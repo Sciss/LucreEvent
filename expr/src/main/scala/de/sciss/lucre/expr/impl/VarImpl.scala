@@ -60,11 +60,11 @@ trait VarImpl[S <: event.Sys[S], A]
 
   final def value(implicit tx: S#Tx): A = ref().value
 
-  final def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+  private[lucre] final def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[Change[A]] = {
     if (pull.parents(this /* select() */).isEmpty) {
       pull.resolve[Change[A]]
     } else {
-      this().changed.pullUpdate(pull)
+      pull(this().changed)
     }
   }
 

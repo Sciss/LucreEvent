@@ -70,11 +70,11 @@ private[event] def slot = opNotSupported
          obs
       }
 
-      /* private[lucre] */ def pullUpdate( pull: Pull[ S ])( implicit tx: S#Tx ) : Option[ B ] = {
-         elems.find( ev => ev.isSource( pull )).flatMap( _.pullUpdate( pull ))
-      }
+     private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[B] = {
+       elems.find(ev => ev.isSource(pull)).flatMap(pull(_))
+     }
 
-      /* private[lucre] */ def isSource( pull: Pull[ S ]) : Boolean = opNotSupported
+     /* private[lucre] */ def isSource( pull: Pull[ S ]) : Boolean = opNotSupported
 
 //      private[lucre] def select() = opNotSupported
 
@@ -140,14 +140,14 @@ private[event] def slot = opNotSupported
 
       protected def prefix = node.toString + ".event"
 
-      /* private[lucre] */ def pullUpdate( pull: Pull[ S ])( implicit tx: S#Tx ) : Option[ A1 ] = {
-         val elems: IIdxSeq[ B ] = pull.parents( this /* select() */).flatMap( sel => {
-            val evt = sel.devirtualize[ B, Any ]( elemReader )
-            evt.pullUpdate( pull )
-         })( breakOut )
+     private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A1] = {
+       val elems: IIdxSeq[B] = pull.parents(this /* select() */).flatMap(sel => {
+         val evt = sel.devirtualize[B, Any](elemReader)
+         pull(evt)
+       })(breakOut)
 
-         if( elems.isEmpty ) None else Some( fun( elems ))
-      }
+       if (elems.isEmpty) None else Some(fun(elems))
+     }
    }
 
    private sealed trait MapLike[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B, A1 /* <: D#Update */]
@@ -158,32 +158,36 @@ private[event] def slot = opNotSupported
       private[lucre] def disconnect()( implicit tx: S#Tx ) { e -/-> this }
    }
 
-   private final class Map[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B, A1 /* <: D#Update */](
-      val node: Repr, protected val e: Event[ S, B, Any ], fun: S#Tx => B => A1 )
-   ( implicit protected val m: ClassTag[ A1 ])
-   extends MapLike[ S, D, Repr, B, A1 ] with InvariantEvent[ S, A1, Repr ] {
-      /* private[lucre] */ def pullUpdate( pull: Pull[ S ])( implicit tx: S#Tx ) : Option[ A1 ] = {
-         e.pullUpdate( pull ).map( fun( tx )( _ ))
-      }
-      protected def prefix = e.toString + ".map"
-   }
+  private final class Map[S <: Sys[S], D <: Decl[S, Repr], Repr <: Compound[S, D, Repr], B, A1](
+    val node: Repr, protected val e: Event[S, B, Any], fun: S#Tx => B => A1)(implicit protected val m: ClassTag[A1])
+    extends MapLike[S, D, Repr, B, A1] with InvariantEvent[S, A1, Repr] {
 
-   private final class MutatingMap[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], B, A1 /* <: D#Update */](
-      val node: Repr, protected val e: Event[ S, B, Any ], fun: S#Tx => B => A1 )
-   ( implicit protected val m: ClassTag[ A1 ])
-   extends MapLike[ S, D, Repr, B, A1 ] with MutatingEvent[ S, A1, Repr  ] {
-      protected def processUpdate( pull: Pull[ S ])( implicit tx: S#Tx ) : Option[ A1 ] = {
-         e.pullUpdate( pull ).map( fun( tx )( _ ))
-      }
-      protected def prefix = e.toString + ".mapAndMutate"
-   }
+    private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A1] = {
+      pull(e).map(fun(tx)(_))
+    }
 
-   private final class Trigger[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ], A1 /* <: D#Update */](
-      val node: Repr )( implicit protected val m: ClassTag[ A1 ])
-   extends EventImpl[ S, D, Repr, A1 ] with impl.TriggerImpl[ S, A1, Repr ] with impl.Root[ S, A1 ]
-   with InvariantEvent[ S, A1, Repr ] {
-      protected def prefix = node.toString + ".event"
-   }
+    protected def prefix = e.toString + ".map"
+  }
+
+  private final class MutatingMap[S <: Sys[S], D <: Decl[S, Repr], Repr <: Compound[S, D, Repr], B, A1](
+    val node: Repr, protected val e: Event[S, B, Any], fun: S#Tx => B => A1)(implicit protected val m: ClassTag[A1])
+    extends MapLike[S, D, Repr, B, A1] with MutatingEvent[S, A1, Repr] {
+
+    protected def processUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A1] = {
+      pull(e).map(fun(tx)(_))
+    }
+
+    protected def prefix = e.toString + ".mapAndMutate"
+  }
+
+  private final class Trigger[S <: Sys[S], D <: Decl[S, Repr], Repr <: Compound[S, D, Repr], A1](
+    val node: Repr)(implicit protected val m: ClassTag[A1])
+    extends EventImpl[S, D, Repr, A1] with impl.TriggerImpl[S, A1, Repr] with impl.Root[S, A1]
+    with InvariantEvent[S, A1, Repr] {
+
+    protected def prefix = node.toString + ".event"
+  }
+
 }
 //trait Compound[ S <: Sys[ S ], Repr <: Compound[ S, Repr, D ], D <: Decl[ S, Repr ]] extends Node[ S ]
 trait Compound[ S <: Sys[ S ], D <: Decl[ S, Repr ], Repr <: Compound[ S, D, Repr ]] extends Node[ S ] {

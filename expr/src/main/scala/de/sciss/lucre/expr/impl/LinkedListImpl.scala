@@ -186,29 +186,29 @@ object LinkedListImpl {
          eventView( elem ) -/-> ElementEvent
       }
 
+     private object ElementEvent
+       extends eimpl.EventImpl[S, LinkedList.Update[S, Elem, U], LinkedList[S, Elem, U]]
+       with evt.InvariantEvent[S, LinkedList.Update[S, Elem, U], LinkedList[S, Elem, U]] {
 
-      private object ElementEvent
-      extends eimpl.EventImpl[ S, LinkedList.Update[ S, Elem, U ], LinkedList[ S, Elem, U ]]
-      with evt.InvariantEvent[ S, LinkedList.Update[ S, Elem, U ], LinkedList[ S, Elem, U ]] {
-         protected def reader : evt.Reader[ S, LinkedList[ S, Elem, U ]] = activeSerializer( eventView )
-         def slot: Int = 2
-         def node: LinkedList[ S, Elem, U ] = list
+       protected def reader: evt.Reader[S, LinkedList[S, Elem, U]] = activeSerializer(eventView)
+       def slot: Int = 2
+       def node: LinkedList[S, Elem, U] = list
 
-         def connect()( implicit tx: S#Tx ) {}
-         def disconnect()( implicit tx: S#Tx ) {}
+       def connect   ()(implicit tx: S#Tx) {}
+       def disconnect()(implicit tx: S#Tx) {}
 
-         def pullUpdate( pull: evt.Pull[ S ])( implicit tx: S#Tx ) : Option[ LinkedList.Update[ S, Elem, U ]] = {
-            val changes: IIdxSeq[ LinkedList.Element[ S, Elem, U ]] = pull.parents( this ).flatMap( sel => {
-               val evt = sel.devirtualize[ U, Elem ]( elemSerializer )
-               val opt: Option[ LinkedList.Element[ S, Elem, U ]] = evt.pullUpdate( pull ).map( LinkedList.Element( evt.node, _ )) // u => LinkedList.Element( list, elem, u ))
-               opt
-            })( breakOut )
+       private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[LinkedList.Update[S, Elem, U]] = {
+         val changes: IIdxSeq[LinkedList.Element[S, Elem, U]] = pull.parents(this).flatMap(sel => {
+           val evt = sel.devirtualize[U, Elem](elemSerializer)
+           val opt: Option[LinkedList.Element[S, Elem, U]] = pull(evt).map(LinkedList.Element(evt.node, _)) // u => LinkedList.Element( list, elem, u ))
+           opt
+         })(breakOut)
 
-            if( changes.isEmpty ) None else Some( LinkedList.Update( list, changes ))
-         }
-      }
+         if (changes.isEmpty) None else Some(LinkedList.Update(list, changes))
+       }
+     }
 
-      final protected def reader: evt.Reader[ S, LinkedList[ S, Elem, U ]] = activeSerializer( eventView )
+     final protected def reader: evt.Reader[ S, LinkedList[ S, Elem, U ]] = activeSerializer( eventView )
 
       final /* private[event] */ def select( slot: Int, invariant: Boolean ) : Event[ S, Any, Any ] = (slot: @switch) match {
          case 1 => CollectionEvent
@@ -304,20 +304,20 @@ object LinkedListImpl {
             elementChanged    -/-> r
          }
 
-         def pullUpdate( pull: evt.Pull[ S ])( implicit tx: S#Tx ) : Option[ LinkedList.Update[ S, Elem, U ]] = {
-            val collOpt = if( CollectionEvent.isSource( pull )) CollectionEvent.pullUpdate( pull ) else None
-            val elemOpt = if( elementChanged.isSource(  pull )) elementChanged.pullUpdate(  pull ) else None
+        private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[LinkedList.Update[S, Elem, U]] = {
+          val collOpt = if (CollectionEvent.isSource(pull)) pull(CollectionEvent) else None
+          val elemOpt = if (elementChanged .isSource(pull)) pull(elementChanged ) else None
 
-            (collOpt, elemOpt) match {
-               case (coll @ Some( _ ), None)       => coll
-               case (None, elem @ Some( _ ))       => elem
-               case (Some( LinkedList.Update( _, coll )), Some( LinkedList.Update( _, elem ))) =>
-                  Some( LinkedList.Update( list, coll ++ elem ))
-               case _                              => None
-            }
-         }
+          (collOpt, elemOpt) match {
+            case (coll @ Some(_), None) => coll
+            case (None, elem @ Some(_)) => elem
+            case (Some(LinkedList.Update(_, coll)), Some(LinkedList.Update(_, elem))) =>
+              Some(LinkedList.Update(list, coll ++ elem))
+            case _ => None
+          }
+        }
 
-         def react[ A1 >: LinkedList.Update[ S, Elem, U ]]( fun: A1 => Unit )
+        def react[ A1 >: LinkedList.Update[ S, Elem, U ]]( fun: A1 => Unit )
                   ( implicit tx: S#Tx ) : evt.Observer[ S, A1, LinkedList[ S, Elem, U ]] =
             reactTx( (_: S#Tx) => fun )
 

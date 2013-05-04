@@ -29,14 +29,14 @@ package event
 import impl.{ReactionMapImpl => Impl}
 
 object ReactionMap {
-   def apply[ S <: stm.Sys[ S ]]() : ReactionMap[ S ] = Impl[ S ]
+  def apply[S <: stm.Sys[S]](): ReactionMap[S] = Impl[S]
 }
 
-trait ReactionMap[ S <: stm.Sys[ S ]] {
-   def addEventReaction[ A, Repr ]( reader: event.Reader[ S, Repr ], fun: S#Tx => A => Unit )
-                                  ( implicit tx: S#Tx ) : ObserverKey[ S ]
+trait ReactionMap[S <: stm.Sys[S]] {
+  def addEventReaction[A, Repr](reader: event.Reader[S, Repr], fun: S#Tx => A => Unit)
+                               (implicit tx: S#Tx): ObserverKey[S]
 
-   def removeEventReaction( key: ObserverKey[ S ])( implicit tx: S#Tx ) : Unit
+  def removeEventReaction(key: ObserverKey[S])(implicit tx: S#Tx): Unit
 
-   def processEvent( leaf: ObserverKey[ S ], parent: VirtualNodeSelector[ S ], push: Push[ S ])( implicit tx: S#Tx ) : Unit
+  def processEvent(leaf: ObserverKey[S], parent: VirtualNodeSelector[S], push: Push[S])(implicit tx: S#Tx): Unit
 }

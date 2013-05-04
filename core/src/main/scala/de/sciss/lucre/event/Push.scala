@@ -61,12 +61,12 @@ object Push {
 
   private final class Impl[S <: Sys[S]](source: VirtualNodeSelector[S], val update: Any)(implicit tx: S#Tx)
     extends Push[S] {
-    private var visited = Map((source, NoParents[S]))
-    // EmptyVisited[ S ]
+    private var pushMap   = Map((source, NoParents[S]))
+    private var pullMap   = Map.empty[EventLike[S, Any, Any], Option[Any]]
     private var reactions = NoReactions
-    private var mutating = NoMutating[S]
+    private var mutating  = NoMutating[S]
 
-    private var indent = ""
+    private var indent    = ""
 
     //      @elidable(CONFIG) private def resetIndent() { indent = "" }
     @elidable(CONFIG) private def incIndent() {
@@ -78,9 +78,9 @@ object Push {
     }
 
     private def addVisited(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]): Boolean = {
-      val parents = visited.getOrElse(sel, NoParents)
+      val parents = pushMap.getOrElse(sel, NoParents)
       log(indent + "visit " + sel + " (new ? " + parents.isEmpty + ")")
-      visited += ((sel, parents + parent))
+      pushMap += ((sel, parents + parent))
       parents.isEmpty
     }
 
@@ -89,13 +89,12 @@ object Push {
       incIndent()
       try {
         val ch = sel.node._targets.children
-        ch.foreach {
-          tup =>
-            val inlet2 = tup._1
-            if (inlet2 == inlet) {
-              val selChild = tup._2
-              selChild.pushUpdate(sel, this)
-            }
+        ch.foreach { tup =>
+          val inlet2 = tup._1
+          if (inlet2 == inlet) {
+            val selChild = tup._2
+            selChild.pushUpdate(sel, this)
+          }
         }
       } finally {
         decIndent()
@@ -113,9 +112,9 @@ object Push {
     //         }
     //      }
 
-    def hasVisited(sel: VirtualNodeSelector[S]): Boolean = visited.contains(sel)
+    def hasVisited(sel: VirtualNodeSelector[S]): Boolean = pushMap.contains(sel)
 
-    def parents(sel: VirtualNodeSelector[S]): Parents[S] = visited.getOrElse(sel, NoParents)
+    def parents(sel: VirtualNodeSelector[S]): Parents[S] = pushMap.getOrElse(sel, NoParents)
 
     def addLeaf(leaf: ObserverKey[S], parent: VirtualNodeSelector[S]) {
       log(indent + "addLeaf " + leaf + ", parent = " + parent)
@@ -151,26 +150,47 @@ object Push {
     }
 
     def resolve[A]: Option[A] = Some(update.asInstanceOf[A])
+
+    // caches pulled values
+    def apply[A](source: EventLike[S, A, Any]): Option[A] = {
+      pullMap.get(source) match {
+        case Some(res: Option[_]) => res.asInstanceOf[Option[A]]
+        case _ =>
+          val res = source.pullUpdate(this)
+          pullMap += ((source, res))
+          res
+      }
+    }
   }
 }
 
 sealed trait Pull[S <: stm.Sys[S]] {
+  /** Assuming that the caller is origin of the event, resolves the update of the given type. */
   def resolve[A]: Option[A]
-  def update: Any
-  def hasVisited  (sel: VirtualNodeSelector[S]): Boolean
-  def parents     (sel: VirtualNodeSelector[S]): Push.Parents[S]
-  def clearInvalid(evt: MutatingSelector[S])
+
+  // def update: Any
+
+  /** Retrieves the immediate parents from the push phase. */
+  def parents(sel: VirtualNodeSelector[S]): Push.Parents[S]
+
+  /** Pulls the update from the given source. */
+  def apply[A](source: EventLike[S, A, Any]): Option[A]
+
+  /** Whether the selector has been visited during the push phase. */
+  private[event] def hasVisited(sel: VirtualNodeSelector[S]): Boolean
+  private[event] def clearInvalid(evt: MutatingSelector[S])
 }
 
-sealed trait Push[S <: stm.Sys[S]] extends Pull[S] {
-  def visit(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]): Unit
+private[event] sealed trait Push[S <: stm.Sys[S]] extends Pull[S] {
+  private[event] def visit(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]): Unit
 
   //   def visit( sel: MutatingSelector[ S ],  parent: VirtualNodeSelector[ S ]) : Unit
   //   def mutatingVisit( sel: VirtualNodeSelector[ S ], parent: VirtualNodeSelector[ S ]) : Unit
   //   def addMutation( sel: VirtualNodeSelector[ S ]) : Unit
-  def addLeaf(leaf: ObserverKey[S], parent: VirtualNodeSelector[S]): Unit
 
-  def addReaction(r: Reaction): Unit
+  private[event] def addLeaf(leaf: ObserverKey[S], parent: VirtualNodeSelector[S]): Unit
 
-  def markInvalid(evt: MutatingSelector[S])
+  private[event] def addReaction(r: Reaction): Unit
+
+  private[event] def markInvalid(evt: MutatingSelector[S])
 }

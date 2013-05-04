@@ -56,6 +56,7 @@ trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] {
       events.foreach(_ -/-> r)
     }
 
+    override def toString = s"$node.changed"
     def slot: Int = throw new UnsupportedOperationException
 
     def connect   ()(implicit tx: S#Tx) {}
@@ -63,11 +64,11 @@ trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] {
 
     protected def reader: Reader[S, Repr] = self.reader
 
-    def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
+    private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
       events.foldLeft(Option.empty[A]) {
         case (res, e) =>
           if (e.isSource(pull)) {
-            e.pullUpdate(pull) match {
+            pull(e) match {
               case Some(upd) => foldUpdate(res, upd)
               case _ => res
             }

@@ -167,13 +167,13 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
 //         }
 //      }
 
-      def pullUpdate( pull: Pull[ S ])( implicit tx: S#Tx ) : Option[ Change ] = {
-         _1.changed.pullUpdate( pull ).flatMap { ach =>
-            change( op.value( ach.before ), op.value( ach.now ))
-         }
-      }
+     def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[Change] = {
+       pull(_1.changed).flatMap { ach =>
+         change(op.value(ach.before), op.value(ach.now))
+       }
+     }
 
-      override def toString = op.toString( _1 )
+     override def toString = op.toString( _1 )
    }
 
    /* protected */  trait Tuple2Op[ T1, T2 ] extends TupleOp {
@@ -234,12 +234,12 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
          val _2c = _2.changed
 
          val _1ch = if( _1c.isSource( pull )) {
-            _1c.pullUpdate( pull )
+            pull(_1c)
          } else {
             None
          }
          val _2ch = if( _2c.isSource( pull )) {
-            _2c.pullUpdate( pull )
+            pull(_2c)
          } else {
             None
          }

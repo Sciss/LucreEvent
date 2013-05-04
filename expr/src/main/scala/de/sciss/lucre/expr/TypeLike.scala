@@ -75,12 +75,17 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
   trait Tuple1Op[T1] extends TupleOp {
     def value(a: T1): A
 
+    final def unapply[S <: evt.Sys[S]](ex: Expr[S, A])(implicit tx: S#Tx): Option[Expr[S, T1]] = ex match {
+      case tup: Tuple1[_, _] if tup.op == this => Some(tup._1.asInstanceOf[Expr[S, T1]])
+      case _ => None
+    }
+
     def toString[S <: evt.Sys[S]](_1: Expr[S, T1]): String
   }
 
-  final class Tuple1[S <: evt.Sys[S], T1](typeID: Int, op: Tuple1Op[T1],
+  final class Tuple1[S <: evt.Sys[S], T1](typeID: Int, val op: Tuple1Op[T1],
                                           protected val targets: evt.Targets[S],
-                                          _1: Expr[S, T1])
+                                          val _1: Expr[S, T1])
     extends impl.NodeImpl[S, A] {
 
     protected def reader = serializer[S]
@@ -102,8 +107,8 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
       _1.write(out)
     }
 
-    def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[evt.Change[A]] = {
-      _1.changed.pullUpdate(pull).flatMap { ach =>
+    private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[evt.Change[A]] = {
+      pull(_1.changed).flatMap { ach =>
         change(op.value(ach.before), op.value(ach.now))
       }
     }
@@ -116,12 +121,19 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
 
     final protected def writeTypes(out: DataOutput) {}
 
+    final def unapply[S <: evt.Sys[S]](ex: Expr[S, A])(implicit tx: S#Tx): Option[(Expr[S, T1], Expr[S, T2])] =
+      ex match {
+        case tup: Tuple2[_, _, _] if tup.op == this =>
+          Some((tup._1.asInstanceOf[Expr[S, T1]], tup._2.asInstanceOf[Expr[S, T2]]))
+        case _ => None
+      }
+
     def toString[S <: stm.Sys[S]](_1: Expr[S, T1], _2: Expr[S, T2]): String
   }
 
-  final class Tuple2[S <: evt.Sys[S], T1, T2](typeID: Int, op: Tuple2Op[T1, T2],
+  final class Tuple2[S <: evt.Sys[S], T1, T2](typeID: Int, val op: Tuple2Op[T1, T2],
                                               protected val targets: evt.Targets[S],
-                                              _1: Expr[S, T1], _2: Expr[S, T2])
+                                              val _1: Expr[S, T1], val _2: Expr[S, T2])
     extends impl.NodeImpl[S, A] {
 
     protected def reader = serializer[S]
@@ -146,20 +158,12 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
       _2.write(out)
     }
 
-    def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[evt.Change[A]] = {
+    private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[evt.Change[A]] = {
       val _1c = _1.changed
       val _2c = _2.changed
 
-      val _1ch = if (_1c.isSource(pull)) {
-        _1c.pullUpdate(pull)
-      } else {
-        None
-      }
-      val _2ch = if (_2c.isSource(pull)) {
-        _2c.pullUpdate(pull)
-      } else {
-        None
-      }
+      val _1ch = if (_1c.isSource(pull)) pull(_1c) else None
+      val _2ch = if (_2c.isSource(pull)) pull(_2c) else None
 
       (_1ch, _2ch) match {
         case (Some(ach), None) =>
@@ -176,5 +180,4 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
 
     override def toString() = op.toString(_1, _2)
   }
-
 }
