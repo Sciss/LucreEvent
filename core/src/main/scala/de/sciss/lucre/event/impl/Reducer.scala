@@ -27,6 +27,8 @@ package de.sciss.lucre
 package event
 package impl
 
+import collection.immutable.{IndexedSeq => IIdxSeq}
+
 /** A trait which reduces multiple input events into one output event.
   *
   * @tparam S     the system
@@ -39,28 +41,35 @@ trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] {
 
   /** A list of all input events. */
   protected def events: Traversable[Event[S, B, Repr]]
+  // protected def events: IIdxSeq[Event[S, B, Repr]]
+
+  protected def changedSlot: Int
 
   protected def reader: Reader[S, Repr]
 
   /** Folds a new input event, by combining it with an optional previous output event. */
   protected def foldUpdate(sum: Option[A], inc: B)(implicit tx: S#Tx): Option[A]
 
-  object changed extends impl.EventImpl[S, A, Repr] with InvariantSelector[S] {
+  object changed extends impl.EventImpl[S, A, Repr] with InvariantEvent[S, A, Repr] {
     def node: Repr with Node[S] = self
 
-    def --->(r: Selector[S])(implicit tx: S#Tx) {
-      events.foreach(_ ---> r)
-    }
-
-    def -/->(r: Selector[S])(implicit tx: S#Tx) {
-      events.foreach(_ -/-> r)
-    }
+    //    def --->(r: Selector[S])(implicit tx: S#Tx) {
+    //      events.foreach(_ ---> r)
+    //    }
+    //
+    //    def -/->(r: Selector[S])(implicit tx: S#Tx) {
+    //      events.foreach(_ -/-> r)
+    //    }
 
     override def toString = s"$node.changed"
-    def slot: Int = throw new UnsupportedOperationException
+    def slot: Int = changedSlot // events.size // throw new UnsupportedOperationException
 
-    def connect   ()(implicit tx: S#Tx) {}
-    def disconnect()(implicit tx: S#Tx) {}
+    def connect   ()(implicit tx: S#Tx) {
+      events.foreach(_ ---> this)
+    }
+    def disconnect()(implicit tx: S#Tx) {
+      events.foreach(_ -/-> this)
+    }
 
     protected def reader: Reader[S, Repr] = self.reader
 
@@ -78,6 +87,7 @@ trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] {
   }
 
   final def select(slot: Int, invariant: Boolean): Event[S, Any, Any] = {
+    if (slot == changed.slot) changed else
     events.find(_.slot == slot) getOrElse sys.error(s"Invalid slot $slot")
   }
 }

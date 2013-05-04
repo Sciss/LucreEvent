@@ -30,7 +30,7 @@ package event
 import collection.immutable.{IndexedSeq => IIdxSeq}
 import stm.Mutable
 import annotation.switch
-import de.sciss.serial.{Writable, DataInput, DataOutput}
+import de.sciss.serial.{ImmutableSerializer, Writable, DataInput, DataOutput}
 
 /**
  * An abstract trait uniting invariant and mutating readers.
@@ -63,6 +63,30 @@ object Targets {
   //         stm.Serializer.Int, Selector.serializer[ I ]
   //      )
   //   )
+
+  private implicit def childrenSerializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Children[S]] =
+    anyChildrenSer.asInstanceOf[ChildrenSer[S]]
+
+  private val anyChildrenSer = new ChildrenSer[InMemory]
+
+  private final class ChildrenSer[S <: Sys[S]] extends serial.Serializer[S#Tx, S#Acc, Children[S]] {
+    def write(v: Children[S], out: DataOutput) {
+      out.writeInt(v.size)
+      v.foreach { tup =>
+        out.writeByte(tup._1)
+        tup._2.writeSelector(out) // same as Selector.serializer.write(tup._2)
+      }
+    }
+
+    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Children[S] = {
+      val sz = in.readInt()
+      if (sz == 0) Vector.empty else Vector.fill(sz) {
+        val slot      = in.readByte()
+        val selector  = Selector.read(in, access)
+        (slot, selector)
+      }
+    }
+  }
 
   def apply[S <: Sys[S]](implicit tx: S#Tx): Targets[S] = {
     val id = tx.newID()
@@ -135,10 +159,10 @@ object Targets {
     override def toString = "Targets" + id
 
     private[event] def add(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Boolean = {
-      log(this.toString + " add( " + slot + ", " + sel + ")")
-      val tup = (slot, sel)
+      log(s"$this.add($slot, $sel)")
+      val tup = (slot.toByte, sel)
       val old = childrenVar.get // .getFresh
-      log(this.toString + " old children = " + old)
+      log(s"$this - old children = $old")
       // MMM
       //         sel.writeValue()
       old match {
@@ -146,7 +170,7 @@ object Targets {
           childrenVar() = seq :+ tup
           !seq.exists(_._1 == slot)
         case _ =>
-          childrenVar() = IIdxSeq(tup)
+          childrenVar() = Vector(tup)
           true
       }
       //
@@ -155,8 +179,8 @@ object Targets {
     }
 
     private[event] def resetAndValidate(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {
-      log(this.toString + " resetAndValidate( " + slot + ", " + sel + ")")
-      val tup = (slot, sel)
+      log(s"$this.resetAndValidate($slot, $sel)")
+      val tup = (slot.toByte, sel)
       // MMM
       //         sel.writeValue()
       val old = if (isPartial) childrenVar.getOrElse(NoChildren[S]) else NoChildren[S]
@@ -165,18 +189,18 @@ object Targets {
     }
 
     private[event] def remove(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Boolean = {
-      log(this.toString + " remove( " + slot + ", " + sel + ")")
+      log(s"$this.remove($slot, $sel)")
       val tup = (slot, sel)
       val xs = childrenVar.getOrElse(NoChildren)
-      log(this.toString + " old children = " + xs)
+      log(s"$this - old children = $xs")
       val i = xs.indexOf(tup)
       if (i >= 0) {
-        val xs1 = xs.patch(i, IIdxSeq.empty, 1) // XXX crappy way of removing a single element
+        val xs1 = xs.patch(i, Vector.empty, 1) // XXX crappy way of removing a single element
         childrenVar() = xs1
         //         xs1.isEmpty
         !xs1.exists(_._1 == slot)
       } else {
-        log(this.toString + " selector not found")
+        log(s"$this - selector not found")
         false
       }
     }
@@ -193,20 +217,21 @@ object Targets {
     private[event] def isInvalid(implicit tx: S#Tx): Boolean = !invalidVar.isFresh || (invalidVar.getOrElse(0) != 0)
 
     private[event] def isInvalid(slot: Int)(implicit tx: S#Tx): Boolean =
-      !invalidVar.isFresh || ((invalidVar.getOrElse(0) & slot) != 0)
+      !invalidVar.isFresh || ((invalidVar.getOrElse(0) & (1 << slot)) != 0)
 
     private[event] def validated(slot: Int)(implicit tx: S#Tx) {
+      val mask = ~(1 << slot)
       if (invalidVar.isFresh) {
         //            invalidVar.transform( _ & ~slot )
-        invalidVar.transform(0)(_ & ~slot)
+        invalidVar.transform(0)(_ & mask)
       } else {
-        invalidVar() = ~slot
+        invalidVar() = mask
       }
     }
 
     private[event] def invalidate(slot: Int)(implicit tx: S#Tx) {
       if (invalidVar.isFresh) {
-        invalidVar.transform(0)(_ | slot)
+        invalidVar.transform(0)(_ | (1 << slot))
       } else {
         invalidVar() = 0xFFFFFFFF
       }

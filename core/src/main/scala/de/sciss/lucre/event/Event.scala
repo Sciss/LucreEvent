@@ -31,7 +31,9 @@ import util.hashing.MurmurHash3
 import serial.{DataInput, DataOutput}
 
 object Selector {
-  implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Selector[S]] = new Ser[S]
+  implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Selector[S]] = anySer.asInstanceOf[Ser[S]]
+
+  private val anySer = new Ser[InMemory]
 
   private[event] def apply[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S],
                                         invariant: Boolean): VirtualNodeSelector[S] = {
@@ -39,28 +41,30 @@ object Selector {
     else MutatingTargetsSelector(slot, node)
   }
 
+  private[event] def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = {
+    val cookie = in.readByte()
+    // 0 = invariant, 1 = mutating, 2 = observer
+    if (cookie == 0 || cookie == 1) {
+      val slot = in.readByte() // .readInt()
+      // MMM
+      //            val reactor = Targets.readAndExpand[ S ]( in, access )
+      val fullSize  = in.readInt()
+      val reactor   = VirtualNode.read[S](in, fullSize, access)
+      reactor.select(slot, cookie == 0)
+    } else if (cookie == 2) {
+      val id = in.readInt()
+      new ObserverKey[S](id)
+    } else {
+      sys.error("Unexpected cookie " + cookie)
+    }
+  }
+
   private final class Ser[S <: Sys[S]] extends serial.Serializer[S#Tx, S#Acc, Selector[S]] {
     def write(v: Selector[S], out: DataOutput) {
       v.writeSelector(out)
     }
 
-    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = {
-      val cookie = in.readByte()
-      // 0 = invariant, 1 = mutating, 2 = observer
-      if (cookie == 0 || cookie == 1) {
-        val slot = in.readInt()
-        // MMM
-        //            val reactor = Targets.readAndExpand[ S ]( in, access )
-        val fullSize  = in.readInt()
-        val reactor   = VirtualNode.read[S](in, fullSize, access)
-        reactor.select(slot, cookie == 0)
-      } else if (cookie == 2) {
-        val id = in.readInt()
-        new ObserverKey[S](id)
-      } else {
-        sys.error("Unexpected cookie " + cookie)
-      }
-    }
+    def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = Selector.read(in, access)
   }
 
   private sealed trait TargetsSelector[S <: Sys[S]] extends VirtualNodeSelector[S] {
@@ -120,7 +124,8 @@ sealed trait VirtualNodeSelector[S <: stm.Sys[S]] extends Selector[S] {
 
   //   private[event] def nodeSelectorOption: Option[ NodeSelector[ S, Any ]]
   final protected def writeSelectorData(out: DataOutput) {
-    out.writeInt(slot)
+    // out.writeInt(slot)
+    out.writeByte(slot)
     val sizeOffset = out.position
     out.writeInt(0) // will be overwritten later -- note: addSize cannot be used, because the subsequent write will be invalid!!!
     node.write(out)
@@ -159,7 +164,7 @@ sealed trait VirtualNodeSelector[S <: stm.Sys[S]] extends Selector[S] {
 
   final private[event] def toObserverKey: Option[ObserverKey[S]] = None
 
-  override def toString = node.toString + ".select(" + slot + ")"
+  override def toString = s"$node.select($slot)"
 }
 
 trait InvariantSelector[S <: stm.Sys[S]] extends VirtualNodeSelector[S] {

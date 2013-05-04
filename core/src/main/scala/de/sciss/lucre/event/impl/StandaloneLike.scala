@@ -44,12 +44,12 @@ trait StandaloneLike[S <: Sys[S], +A, +Repr]
   with InvariantEvent[S, A, Repr] {
   _: Repr =>
 
-  final private[event] def slot = 1
+  final private[event] def slot = 0
 
   final /* private[lucre] */ def node: Repr with Node[S] = this
 
   final private[event] def select(slot: Int, invariant: Boolean): Event[S, Any, Any] = {
-    require(slot == 1, "Invalid slot " + slot)
+    require(slot == 0, "Invalid slot " + slot)
     require(invariant, "Invalid invariant flag. Should be true")
     this
   }

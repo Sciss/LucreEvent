@@ -9,7 +9,8 @@ import java.text.SimpleDateFormat
 
 package object event {
   type Reaction = () => () => Unit
-  private[event] type Children[S <: stm.Sys[S]] = IIdxSeq[(Int, Selector[S])]
+  // private[event] type Children[S <: stm.Sys[S]] = IIdxSeq[(Int, Selector[S])]
+  private[event] type Children[S <: stm.Sys[S]] = IIdxSeq[(Byte, Selector[S])]
 
   private val emptySeq = IIdxSeq.empty[Nothing]
 
