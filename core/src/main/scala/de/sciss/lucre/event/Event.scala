@@ -257,11 +257,11 @@ trait EventLike[S <: stm.Sys[S], +A, +Repr] {
    */
   def reactTx[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr]
 
-  /**
-   * Tests whether this event participates in a pull. That is, whether the
-   * event was visited during the push phase.
-   */
-  /* private[lucre] */ def isSource(pull: Pull[S]): Boolean
+  //  /**
+  //   * Tests whether this event participates in a pull. That is, whether the
+  //   * event was visited during the push phase.
+  //   */
+  //  def isSource(pull: Pull[S]): Boolean
 
   /**
    * Called when the first target is connected to the underlying dispatcher node. This allows
@@ -320,10 +320,10 @@ trait Dummy[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A, Repr] {
 
   //   final private[lucre] def select() : NodeSelector[ S ] = opNotSupported
 
-  /**
-   * Returns `false`, as a dummy is never a source event.
-   */
-  final /* private[lucre] */ def isSource(pull: Pull[S]) = false
+  //  /**
+  //   * Returns `false`, as a dummy is never a source event.
+  //   */
+  //  final def isSource(pull: Pull[S]) = false
 
   final def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
     Observer.dummy[S, A1, Repr]

@@ -305,8 +305,8 @@ object LinkedListImpl {
          }
 
         private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[LinkedList.Update[S, Elem, U]] = {
-          val collOpt = if (CollectionEvent.isSource(pull)) pull(CollectionEvent) else None
-          val elemOpt = if (elementChanged .isSource(pull)) pull(elementChanged ) else None
+          val collOpt = if (pull.contains(CollectionEvent)) pull(CollectionEvent) else None
+          val elemOpt = if (pull.contains(elementChanged )) pull(elementChanged ) else None
 
           (collOpt, elemOpt) match {
             case (coll @ Some(_), None) => coll

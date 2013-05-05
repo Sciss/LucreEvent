@@ -49,8 +49,8 @@ trait MappingGenerator[S <: Sys[S], A, B, +Repr]
   }
 
   final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
-    val gen = if (this.isSource(pull)) pull.resolve[A] else None
-    if (inputEvent.isSource(pull)) pull(inputEvent) match {
+    val gen = if (pull.isOrigin(this)) pull.resolve[A] else None
+    if (pull.contains(inputEvent)) pull(inputEvent) match {
       case Some(e)  => foldUpdate(gen, e)
       case _        => gen
     } else gen

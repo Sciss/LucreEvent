@@ -30,7 +30,7 @@ package impl
 trait EventImpl[S <: Sys[S], +A, +Repr /* <: Node[ S ] */ ]
   extends Event[S, A, Repr] /* with InvariantSelector[ S ] */ {
 
-  final /* private[lucre] */ def isSource(pull: Pull[S]): Boolean = pull.hasVisited(this /* select() */)
+  // final /* private[lucre] */ def isSource(pull: Pull[S]): Boolean = pull.hasVisited(this /* select() */)
 
   protected def reader: Reader[S, Repr]
 

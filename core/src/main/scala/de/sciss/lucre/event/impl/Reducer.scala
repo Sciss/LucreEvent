@@ -76,7 +76,7 @@ trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] {
     private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
       events.foldLeft(Option.empty[A]) {
         case (res, e) =>
-          if (e.isSource(pull)) {
+          if (pull.contains(e)) {
             pull(e) match {
               case Some(upd) => foldUpdate(res, upd)
               case _ => res

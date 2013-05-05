@@ -31,8 +31,8 @@ import annotation.elidable
 import elidable.CONFIG
 
 object Push {
-  private[event] def apply[S <: Sys[S], A](source: Event[S, A, Any], update: A)(implicit tx: S#Tx) {
-    val push = new Impl(source, update)
+  private[event] def apply[S <: Sys[S], A](origin: Event[S, A, Any], update: A)(implicit tx: S#Tx) {
+    val push = new Impl(origin, update)
     log("push begin")
     //      resetIndent()
     //      val inlet   = source.slot
@@ -43,7 +43,7 @@ object Push {
     //            sel.pushUpdate( source, push )
     //         }
     //      }
-    push.visitChildren(source)
+    push.visitChildren(origin)
     log("pull begin")
     push.pull()
     log("pull end")
@@ -59,9 +59,9 @@ object Push {
 
   private type Visited[S <: stm.Sys[S]] = Map[VirtualNodeSelector[S], Parents[S]]
 
-  private final class Impl[S <: Sys[S]](source: VirtualNodeSelector[S], val update: Any)(implicit tx: S#Tx)
+  private final class Impl[S <: Sys[S]](origin: Event[S, Any, Any], val update: Any)(implicit tx: S#Tx)
     extends Push[S] {
-    private var pushMap   = Map((source, NoParents[S]))
+    private var pushMap   = Map((origin: Any, NoParents[S]))
     private var pullMap   = Map.empty[EventLike[S, Any, Any], Option[Any]]
     private var reactions = NoReactions
     private var mutating  = NoMutating[S]
@@ -112,7 +112,9 @@ object Push {
     //         }
     //      }
 
-    def hasVisited(sel: VirtualNodeSelector[S]): Boolean = pushMap.contains(sel)
+    def contains(source: EventLike[S, Any, Any]): Boolean = pushMap.contains(source)
+
+    def isOrigin(that: EventLike[S, Any, Any]) = that == origin
 
     def parents(sel: VirtualNodeSelector[S]): Parents[S] = pushMap.getOrElse(sel, NoParents)
 
@@ -177,7 +179,8 @@ sealed trait Pull[S <: stm.Sys[S]] {
   def apply[A](source: EventLike[S, A, Any]): Option[A]
 
   /** Whether the selector has been visited during the push phase. */
-  private[event] def hasVisited(sel: VirtualNodeSelector[S]): Boolean
+  /* private[event] */ def contains(source: EventLike[S, Any, Any]): Boolean
+  def isOrigin(source: EventLike[S, Any, Any]): Boolean
   private[event] def clearInvalid(evt: MutatingSelector[S])
 }
 

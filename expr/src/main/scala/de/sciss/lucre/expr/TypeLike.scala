@@ -162,8 +162,8 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
       val _1c = _1.changed
       val _2c = _2.changed
 
-      val _1ch = if (_1c.isSource(pull)) pull(_1c) else None
-      val _2ch = if (_2c.isSource(pull)) pull(_2c) else None
+      val _1ch = if (pull.contains(_1c)) pull(_1c) else None
+      val _2ch = if (pull.contains(_2c)) pull(_2c) else None
 
       (_1ch, _2ch) match {
         case (Some(ach), None) =>
