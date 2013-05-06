@@ -29,6 +29,7 @@ package event
 
 import util.hashing.MurmurHash3
 import serial.{DataInput, DataOutput}
+import de.sciss.lucre.stm.Disposable
 
 object Selector {
   implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Selector[S]] = anySer.asInstanceOf[Ser[S]]
@@ -241,16 +242,10 @@ trait EventLike[S <: stm.Sys[S], +A, +Repr] {
   /**
    * Registers a live observer with this event. The method is called with the
    * observing function which receives the event's update messages, and the
-   * method generates an opaque `Observer` instance, which may be used to
-   * remove the observer eventually (through the observer's `remove` method),
-   * or to add the observer to other events of the same type (using the
-   * observer's `add` method).
-   *
-   * Note that the caller should not call `add`
-   * on the resulting observer to register this event, as this is already
-   * done as part of the call to `react`.
+   * method generates an opaque `Disposable` instance, which may be used to
+   * remove the observer eventually (through the `dispose` method).
    */
-  def react[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr]
+  def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] // Observer[S, A1, Repr]
 
   // def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr]
 
@@ -325,8 +320,7 @@ trait Dummy[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A, Repr] {
   // final def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
   //   Observer.dummy[S, A1, Repr]
 
-  final def react[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
-    Observer.dummy[S, A1, Repr]
+  final def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer.dummy[S]
 
   final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = opNotSupported
 

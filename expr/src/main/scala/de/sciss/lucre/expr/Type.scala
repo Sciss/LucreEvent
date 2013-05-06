@@ -29,6 +29,7 @@ package expr
 
 import de.sciss.lucre.{event => evt}
 import serial.{DataInput, DataOutput}
+import de.sciss.lucre.stm.Disposable
 
 trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] {
   final protected type Ex [S <: stm.Sys[S]] = Expr[S, A]
@@ -87,9 +88,7 @@ trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] 
   // ---- private ----
 
   private final case class Const[S <: stm.Sys[S]](constValue: A) extends expr.impl.ConstImpl[S, A] {
-    def react(fun: S#Tx => Change[S] => Unit)(implicit tx: S#Tx): evt.Observer[S, Change[S], Ex[S]] = {
-      evt.Observer.dummy
-    }
+    // def react(fun: S#Tx => Change[S] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = evt.Observer.dummy[S]
 
     protected def writeData(out: DataOutput) {
       writeValue(constValue, out)

@@ -27,6 +27,8 @@ package de.sciss.lucre
 package event
 package impl
 
+import de.sciss.lucre.stm.Disposable
+
 trait EventImpl[S <: Sys[S], +A, +Repr /* <: Node[ S ] */ ]
   extends Event[S, A, Repr] /* with InvariantSelector[ S ] */ {
 
@@ -42,9 +44,9 @@ trait EventImpl[S <: Sys[S], +A, +Repr /* <: Node[ S ] */ ]
   //      if( reactor._targets.remove( slot, r )) disconnect()
   //   }
 
-  final def react[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] = {
-    val res = Observer[S, A1, Repr](reader, fun)
-    res.add(this)
+  final def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
+    val res = Observer[S, A, Repr](this, reader, fun)
+    // res.add(this)
     res
   }
 }

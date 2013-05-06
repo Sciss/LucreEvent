@@ -29,52 +29,51 @@ package event
 import stm.Disposable
 
 object Observer {
-   def apply[ S <: Sys[ S ], A, Repr /* <: Node[ S ] */](
-      reader: Reader[ S, Repr ], fun: S#Tx => A => Unit )( implicit tx: S#Tx ) : Observer[ S, A, Repr ] = {
+  def apply[S <: Sys[S], A, Repr](event: Event[S, A, Repr], reader: Reader[S, Repr], fun: S#Tx => A => Unit)
+                                 (implicit tx: S#Tx): Disposable[S#Tx] = {
+    val key = tx.reactionMap.addEventReaction[A, Repr](reader, fun)
+    val res = new Impl[S, A, Repr](event, key)
+    event ---> key
+    res
+  }
 
-      val key = tx.reactionMap.addEventReaction[ A, Repr ]( reader, fun )
-      new Impl[ S, A, Repr ]( key )
-   }
+  private final class Impl[S <: Sys[S], A, Repr](event: Event[S, A, Repr], key: ObserverKey[S])
+    extends Disposable[S#Tx] {
+    override def toString = "Observer<" + key.id + ">"
 
-   private final class Impl[ S <: Sys[ S ], A, Repr ](
-      key: ObserverKey[ S ])
-   extends Observer[ S, A, Repr ] {
-      override def toString = "Observer<" + key.id + ">"
+    // def add[R1 >: Repr /* <: Node[ S ] */ ](event: EventLike[S, A, R1])(implicit tx: S#Tx) {
+    //  event ---> key
+    // }
 
-      def add[ R1 >: Repr /* <: Node[ S ] */]( event: EventLike[ S, A, R1 ])( implicit tx: S#Tx ) {
-         event ---> key
-      }
+    // def remove[R1 >: Repr /* <: Node[ S ] */ ](event: EventLike[S, A, R1])(implicit tx: S#Tx) {
+    //   event -/-> key
+    // }
 
-      def remove[ R1 >: Repr /* <: Node[ S ] */]( event: EventLike[ S, A, R1 ])( implicit tx: S#Tx ) {
-         event -/-> key
-      }
+    def dispose()(implicit tx: S#Tx) {
+      event -/-> key
+      tx.reactionMap.removeEventReaction(key)
+    }
+  }
 
-      def dispose()( implicit tx: S#Tx ) {
-         tx.reactionMap.removeEventReaction( key )
-      }
-   }
+  /**
+   * This method is cheap.
+   */
+  def dummy[S <: stm.Sys[S]]: Disposable[S#Tx] = dummyVal.asInstanceOf[Disposable[S#Tx]]
 
-   /**
-    * This method is cheap.
-    */
-   def dummy[ S <: stm.Sys[ S ], A, Repr ] : Observer[ S, A, Repr ] = dummyVal.asInstanceOf[ Observer[ S, A, Repr ]]
+  private val dummyVal = new Dummy[stm.InMemory]
 
-   private val dummyVal = new Dummy[ stm.InMemory ]
+  private final class Dummy[S <: stm.Sys[S]] extends Disposable[S#Tx] {
+    override def toString = "Observer.Dummy"
 
-   private final class Dummy[ S <: stm.Sys[ S ]] extends Observer[ S, Any, Nothing ] {
-      override def toString = "Observer.Dummy"
-
-      def add[    R1 /* <: Node[ S ] */]( event: EventLike[ S, Any, R1 ])( implicit tx: S#Tx ) {}
-      def remove[ R1 /* <: Node[ S ] */]( event: EventLike[ S, Any, R1 ])( implicit tx: S#Tx ) {}
-      def dispose()( implicit tx: S#Tx ) {}
-   }
+    def dispose()(implicit tx: S#Tx) {}
+  }
 }
 
-/**
- * `Observer` instances are returned by the `observe` method of classes implementing
- * `Observable`. The observe can be registered and unregistered with events.
- */
-sealed trait Observer[ S <: stm.Sys[ S ], -A, +Repr ] extends Disposable[ S#Tx ] {
-   def add[    R1 >: Repr /* <: Node[ S ] */]( event: EventLike[ S, A, R1 ])( implicit tx: S#Tx ) : Unit
-   def remove[ R1 >: Repr /* <: Node[ S ] */]( event: EventLike[ S, A, R1 ])( implicit tx: S#Tx ) : Unit
-}
+///**
+// * `Observer` instances are returned by the `observe` method of classes implementing
+// * `Observable`. The observe can be registered and unregistered with events.
+// */
+//sealed trait Observer[ S <: stm.Sys[ S ], -A, +Repr ] extends Disposable[ S#Tx ] {
+//   def add[    R1 >: Repr /* <: Node[ S ] */]( event: EventLike[ S, A, R1 ])( implicit tx: S#Tx ) : Unit
+//   def remove[ R1 >: Repr /* <: Node[ S ] */]( event: EventLike[ S, A, R1 ])( implicit tx: S#Tx ) : Unit
+//}

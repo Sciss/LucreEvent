@@ -77,7 +77,7 @@ trait Expr[S <: Sys[S], +A] extends Writable with Disposable[S#Tx] {
     observeTx(_ => fun)
 
   final def observeTx(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
-    val o = changed.react[Change[A]] { tx => change =>
+    val o = changed.react { tx => change =>
       fun(tx)(change.now)
     }
     fun(tx)(value)

@@ -30,6 +30,7 @@ package expr
 import event.{EventLikeSerializer, Targets, Pull, Observer}
 import serial.{DataInput, DataOutput}
 import language.implicitConversions
+import de.sciss.lucre.stm.Disposable
 
 /**
  * IDs:
@@ -86,10 +87,9 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
    /* protected */ def readExpr( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Ex = serializer.read( in, access )
 
   private sealed trait ConstLike extends impl.ConstImpl[S, A] {
-    final def react(fun: S#Tx => Change => Unit)
-                   (implicit tx: S#Tx): Observer[S, Change, Ex] = {
-      Observer[S, Change, Ex](serializer, fun)
-    }
+    //    final def react(fun: S#Tx => Change => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
+    //      Observer[S, Change, Ex](changed, serializer, fun)
+    //    }
 
     final protected def writeData(out: DataOutput) {
       writeValue(constValue, out)
