@@ -58,7 +58,8 @@ object Build extends sbt.Build {
     settings      = Project.defaultSettings ++ Seq(
       libraryDependencies ++= Seq(
         "de.sciss" %% "lucredata-core" % dataVersion,
-        "de.sciss" %% "lucrestm-bdb"   % stmVersion % "test"
+        "de.sciss" %% "lucrestm-bdb"   % stmVersion % "test",
+        "org.scalatest" %% "scalatest" % "1.9.1" % "test"
       )
     )
   )
