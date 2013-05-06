@@ -196,8 +196,13 @@ object LinkedListImpl {
 
       def node: LinkedList[S, Elem, U] = list
 
-      def connect   ()(implicit tx: S#Tx) {}
-      def disconnect()(implicit tx: S#Tx) {}
+      def connect   ()(implicit tx: S#Tx) {
+        foreach(registerElement)
+      }
+
+      def disconnect()(implicit tx: S#Tx) {
+        foreach(unregisterElement)
+      }
 
       private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[LinkedList.Update[S, Elem, U]] = {
         val changes: IIdxSeq[LinkedList.Element[S, Elem, U]] = pull.parents(this).flatMap(sel => {
@@ -241,8 +246,8 @@ object LinkedListImpl {
 
     final protected type C = Cell[S, Elem]
 
-    protected def headRef: S#Var[Cell[S, Elem]]
-    protected def lastRef: S#Var[Cell[S, Elem]]
+    protected def headRef: S#Var[C]
+    protected def lastRef: S#Var[C]
     protected def sizeRef: S#Var[Int]
 
     implicit protected def elemSerializer: Serializer[S#Tx, S#Acc, Elem]

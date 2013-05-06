@@ -14,7 +14,7 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
 
   new Unobserved
   new EarlyObserved
-//  new LateObserved
+  new LateObserved
 
   implicit object Ints extends Type[Int] {
     def readValue(in: DataInput) = in.readInt()
