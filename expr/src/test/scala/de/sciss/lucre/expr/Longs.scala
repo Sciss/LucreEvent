@@ -154,7 +154,7 @@ class LongTests[ S <: event.Sys[ S ] with stm.Cursor[ S ]]( system: S ) {
 
    println( "Evaluated: " + eval )
 
-   ◊ { implicit tx => s2.changed.react { ch => println( "Observed: " + ch )}}
+   ◊ { implicit tx => s2.changed.react { _ => (ch: Any) => println( "Observed: " + ch )}}
 
    ◊ { implicit tx => s() = 22 }
 }

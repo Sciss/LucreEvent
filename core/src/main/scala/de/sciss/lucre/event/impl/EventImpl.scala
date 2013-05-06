@@ -42,10 +42,7 @@ trait EventImpl[S <: Sys[S], +A, +Repr /* <: Node[ S ] */ ]
   //      if( reactor._targets.remove( slot, r )) disconnect()
   //   }
 
-  final def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
-    reactTx(_ => fun)
-
-  final def reactTx[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] = {
+  final def react[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] = {
     val res = Observer[S, A1, Repr](reader, fun)
     res.add(this)
     res

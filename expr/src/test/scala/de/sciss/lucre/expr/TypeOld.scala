@@ -85,18 +85,18 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
 
    /* protected */ def readExpr( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Ex = serializer.read( in, access )
 
-   private sealed trait ConstLike extends impl.ConstImpl[ S, A ] {
-      final def react( fun: S#Tx => Change => Unit )
-                       ( implicit tx: S#Tx ) : Observer[ S, Change, Ex ] = {
-         Observer[ S, Change, Ex ]( serializer, fun )
-      }
+  private sealed trait ConstLike extends impl.ConstImpl[S, A] {
+    final def react(fun: S#Tx => Change => Unit)
+                   (implicit tx: S#Tx): Observer[S, Change, Ex] = {
+      Observer[S, Change, Ex](serializer, fun)
+    }
 
-      final protected def writeData( out: DataOutput ) {
-         writeValue( constValue, out )
-      }
-   }
+    final protected def writeData(out: DataOutput) {
+      writeValue(constValue, out)
+    }
+  }
 
-   implicit def Const( init: A ) : Ex = new ConstLike {
+  implicit def Const( init: A ) : Ex = new ConstLike {
       protected val constValue = init
    }
 

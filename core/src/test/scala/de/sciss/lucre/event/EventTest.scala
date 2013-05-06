@@ -14,7 +14,7 @@ object EventTest extends App {
 
    val bang = system.step { implicit tx => Bang[ S ]}
 
-   system.step { implicit tx => bang.react { _ => println( "Bang!" )}}
+   system.step { implicit tx => bang.react { _ => (_: Any) => println( "Bang!" )}}
 
 //   system.step { implicit tx => bang.react { m: Unit => m match {
 //      case "hallo" =>

@@ -250,12 +250,9 @@ trait EventLike[S <: stm.Sys[S], +A, +Repr] {
    * on the resulting observer to register this event, as this is already
    * done as part of the call to `react`.
    */
-  def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr]
+  def react[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr]
 
-  /**
-   * Like `react`, but passing in a transaction as first function argument.
-   */
-  def reactTx[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr]
+  // def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr]
 
   //  /**
   //   * Tests whether this event participates in a pull. That is, whether the
@@ -325,10 +322,10 @@ trait Dummy[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A, Repr] {
   //   */
   //  final def isSource(pull: Pull[S]) = false
 
-  final def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
-    Observer.dummy[S, A1, Repr]
+  // final def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
+  //   Observer.dummy[S, A1, Repr]
 
-  final def reactTx[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
+  final def react[A1 >: A](fun: S#Tx => A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
     Observer.dummy[S, A1, Repr]
 
   final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = opNotSupported
