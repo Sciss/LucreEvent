@@ -92,8 +92,9 @@ object Targets {
     val id = tx.newID()
     //      val children   = tx.newVar[ Children[ S ]]( id, NoChildren )
     //      val invalid    = tx.newIntVar( id, 0 )
-    val children = tx.newEventVar[Children[S]](id)
-    val invalid = tx.newEventIntVar(id)
+    val children  = tx.newEventVar[Children[S]](id)
+    val invalid   = tx.newEventIntVar(id)
+    // invalid()     = 0 // 'validated'. the problem is that isFresh will not find this variable, and conclude that we need a refresh!
     new Impl(0, id, children, invalid)
   }
 
@@ -118,7 +119,7 @@ object Targets {
     //      val children      = tx.readVar[ Children[ S ]]( id, in )
     //      val invalid       = tx.readIntVar( id, in )
     val children = tx.readEventVar[Children[S]](id, in)
-    val invalid = tx.readEventIntVar(id, in)
+    val invalid  = tx.readEventIntVar(id, in)
     new Impl[S](0, id, children, invalid)
   }
 
@@ -137,20 +138,20 @@ object Targets {
                                         invalidVar: event.Var[S, Int])
     extends Targets[S] {
     def write(out: DataOutput) {
-      out.writeByte(cookie)
-      id.write(out)
+      out        .writeByte(cookie)
+      id         .write(out)
       childrenVar.write(out)
-      invalidVar.write(out)
+      invalidVar .write(out)
     }
 
     private[lucre] def isPartial : Boolean = cookie == 1
 
-      def dispose()( implicit tx: S#Tx ) {
-         require( children.isEmpty, "Disposing a event reactor which is still being observed" )
-         id.dispose()
-         childrenVar.dispose()
-         invalidVar.dispose()
-      }
+    def dispose()(implicit tx: S#Tx) {
+      require( children.isEmpty, "Disposing a event reactor which is still being observed" )
+      id         .dispose()
+      childrenVar.dispose()
+      invalidVar .dispose()
+    }
 
     //      def select( slot: Int, invariant: Boolean ) : VirtualNodeSelector[ S ] = Selector( slot, this, invariant )
 
