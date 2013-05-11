@@ -35,9 +35,11 @@ import serial.{DataInput, DataOutput}
 object DurableImpl {
   def apply(factory: DataStoreFactory[DataStore], mainName: String, eventName: String): Durable = {
     val mainStore   = factory.open(mainName)
-    val eventStore  = factory.open(eventName)
-    new DurableSystem(mainStore, eventStore)
+    val eventStore  = factory.open(eventName, overwrite = true)
+    apply(mainStore = mainStore, eventStore = eventStore)
   }
+
+  def apply(mainStore: DataStore, eventStore: DataStore): Durable = new DurableSystem(mainStore, eventStore)
 
   private type D[S <: DurableLike[S]] = DurableLike[S]
 
