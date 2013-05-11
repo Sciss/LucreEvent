@@ -44,7 +44,7 @@ object InMemoryImpl {
 
     final def write(out: DataOutput) {}
 
-    final def isFresh(implicit tx: S#Tx): Boolean = true
+    // final def isFresh(implicit tx: S#Tx): Boolean = true
   }
 
   private final class VarImpl[S <: Sys[S], A](peer: Ref[A])
@@ -70,30 +70,30 @@ object InMemoryImpl {
     }
   }
 
-  private final class IntVarImpl[S <: Sys[S]](peer: Ref[Long])
-    extends BasicVar[S, Int] {
-    def get(implicit tx: S#Tx): Option[Int] = {
-      val v = peer.get(tx.peer)
-      if (v < 0) None else Some(v.toInt)
-    }
-
-    def getOrElse(default: => Int)(implicit tx: S#Tx): Int = {
-      val v = peer.get(tx.peer)
-      if (v < 0) default else v.toInt
-    }
-
-    def transform(default: => Int)(f: Int => Int)(implicit tx: S#Tx) {
-      peer.transform(v => f(if (v < 0) default else v.toInt))(tx.peer)
-    }
-
-    def update(v: Int)(implicit tx: S#Tx) {
-      peer.set(v.toLong & 0xFFFFFFFFL)(tx.peer)
-    }
-
-    def dispose()(implicit tx: S#Tx) {
-      peer.set(-1L)(tx.peer)
-    }
-  }
+  //  private final class IntVarImpl[S <: Sys[S]](peer: Ref[Long])
+  //    extends BasicVar[S, Int] {
+  //    def get(implicit tx: S#Tx): Option[Int] = {
+  //      val v = peer.get(tx.peer)
+  //      if (v < 0) None else Some(v.toInt)
+  //    }
+  //
+  //    def getOrElse(default: => Int)(implicit tx: S#Tx): Int = {
+  //      val v = peer.get(tx.peer)
+  //      if (v < 0) default else v.toInt
+  //    }
+  //
+  //    def transform(default: => Int)(f: Int => Int)(implicit tx: S#Tx) {
+  //      peer.transform(v => f(if (v < 0) default else v.toInt))(tx.peer)
+  //    }
+  //
+  //    def update(v: Int)(implicit tx: S#Tx) {
+  //      peer.set(v.toLong & 0xFFFFFFFFL)(tx.peer)
+  //    }
+  //
+  //    def dispose()(implicit tx: S#Tx) {
+  //      peer.set(-1L)(tx.peer)
+  //    }
+  //  }
 
   trait TxnMixin[S <: Sys[S]] extends Txn[S] {
     final private[lucre] def reactionMap: ReactionMap[S] = system.reactionMap
@@ -103,18 +103,21 @@ object InMemoryImpl {
       new VarImpl(Ref.make[A])
     }
 
-    final private[event] def newEventIntVar[A](id: S#ID): Var[S, Int] = {
-      new IntVarImpl(Ref(-1L))
-    }
+    //    final private[event] def newEventIntVar[A](id: S#ID): Var[S, Int] = {
+    //      new IntVarImpl(Ref(-1L))
+    //    }
 
     final private[event] def readEventVar[A](id: S#ID, in: DataInput)
                                             (implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
       opNotSupported("readEventVar")
     }
 
-    final private[event] def readEventIntVar[A](id: S#ID, in: DataInput): Var[S, Int] = {
-      opNotSupported("readEventIntVar")
-    }
+    //    final private[event] def readEventIntVar[A](id: S#ID, in: DataInput): Var[S, Int] = {
+    //      opNotSupported("readEventIntVar")
+    //    }
+
+    final private[event] def readEventValidity(id: S#ID, in: DataInput): Validity[S#Tx] = DummyValidity
+    final private[event] def newEventValidity (id: S#ID)               : Validity[S#Tx] = DummyValidity
   }
 
   private final class TxnImpl(val system: InMemory, val peer: InTxn)

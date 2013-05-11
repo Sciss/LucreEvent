@@ -217,7 +217,7 @@ object LinkedListImpl {
 
     final protected def reader: evt.Reader[S, LinkedList[S, Elem, U]] = activeSerializer(eventView)
 
-    final def select(slot: Int, invariant: Boolean): Event[S, Any, Any] = (slot: @switch) match {
+    final def select(slot: Int /*, invariant: Boolean */): Event[S, Any, Any] = (slot: @switch) match {
       case ChangeEvent    .slot => ChangeEvent
       case CollectionEvent.slot => CollectionEvent
       case ElementEvent   .slot => ElementEvent
@@ -235,7 +235,7 @@ object LinkedListImpl {
 
     final protected def reader: evt.Reader[S, LinkedList[S, Elem, Unit]] = passiveSerializer
 
-    final def select(slot: Int, invariant: Boolean): Event[S, Any, Any] = (slot: @switch) match {
+    final def select(slot: Int /* , invariant: Boolean */): Event[S, Any, Any] = (slot: @switch) match {
       case ChangeEvent    .slot => ChangeEvent
       case CollectionEvent.slot => CollectionEvent
     }

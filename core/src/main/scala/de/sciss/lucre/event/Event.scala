@@ -36,22 +36,19 @@ object Selector {
 
   private val anySer = new Ser[InMemory]
 
-  private[event] def apply[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S],
-                                        invariant: Boolean): VirtualNodeSelector[S] = {
-    if (invariant) InvariantTargetsSelector(slot, node)
-    else MutatingTargetsSelector(slot, node)
+  private[event] def apply[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S] /*, invariant: Boolean */): VirtualNodeSelector[S] = {
+    /* if (invariant) */ InvariantTargetsSelector(slot, node)
+    // else MutatingTargetsSelector(slot, node)
   }
 
   private[event] def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = {
     val cookie = in.readByte()
     // 0 = invariant, 1 = mutating, 2 = observer
-    if (cookie == 0 || cookie == 1) {
-      val slot = in.readByte() // .readInt()
-      // MMM
-      //            val reactor = Targets.readAndExpand[ S ]( in, access )
+    if (cookie == 0 /* || cookie == 1 */) {
+      val slot      = in.readByte() // .readInt()
       val fullSize  = in.readInt()
       val reactor   = VirtualNode.read[S](in, fullSize, access)
-      reactor.select(slot, cookie == 0)
+      reactor.select(slot /*, cookie == 0 */)
     } else if (cookie == 2) {
       val id = in.readInt()
       new ObserverKey[S](id)
@@ -88,16 +85,15 @@ object Selector {
 
     //      final def devirtualize[ Evt <: Event[ S, Any, Any ]]( reader: Reader[ S, Any ])( implicit tx: S#Tx ) : Evt =
     final def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]] = {
-      node.devirtualize(reader).select(slot, cookie == 0).asInstanceOf[Event[S, A, Repr with Node[S]]] // .asInstanceOf[ Evt ]
+      node.devirtualize(reader).select(slot /*, cookie == 0 */).asInstanceOf[Event[S, A, Repr with Node[S]]] // .asInstanceOf[ Evt ]
     }
   }
 
   private final case class InvariantTargetsSelector[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S])
     extends TargetsSelector[S] with InvariantSelector[S]
 
-  private final case class MutatingTargetsSelector[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S])
-    extends TargetsSelector[S] with MutatingSelector[S]
-
+  //  private final case class MutatingTargetsSelector[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S])
+  //    extends TargetsSelector[S] with MutatingSelector[S]
 }
 
 sealed trait Selector[S <: stm.Sys[S]] /* extends Writable */ {
@@ -176,25 +172,25 @@ trait InvariantSelector[S <: stm.Sys[S]] extends VirtualNodeSelector[S] {
   }
 }
 
-trait MutatingSelector[S <: stm.Sys[S]] extends VirtualNodeSelector[S] {
-  final protected def cookie: Int = 1
-
-  //   final private[event] def _invalidate()( implicit tx: S#Tx ) {
-  //      reactor._targets.invalidate( slot )
-  //   }
-
-  //   final /* protected */ def invalidate()( implicit tx: S#Tx ) {
-  ////      _invalidate()
-  //      reactor._targets.invalidate( slot )
-  //   }
-  //   final /* protected */ def isInvalid( implicit tx: S#Tx ) : Boolean = reactor._targets.isInvalid( slot )
-  //   final /* protected */ def validated()( implicit tx: S#Tx ) { reactor._targets.validated( slot )}
-
-  final private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]) {
-    push.markInvalid(this)
-    push.visit(this, parent)
-  }
-}
+//trait MutatingSelector[S <: stm.Sys[S]] extends VirtualNodeSelector[S] {
+//  final protected def cookie: Int = 1
+//
+//  //   final private[event] def _invalidate()( implicit tx: S#Tx ) {
+//  //      reactor._targets.invalidate( slot )
+//  //   }
+//
+//  //   final /* protected */ def invalidate()( implicit tx: S#Tx ) {
+//  ////      _invalidate()
+//  //      reactor._targets.invalidate( slot )
+//  //   }
+//  //   final /* protected */ def isInvalid( implicit tx: S#Tx ) : Boolean = reactor._targets.isInvalid( slot )
+//  //   final /* protected */ def validated()( implicit tx: S#Tx ) { reactor._targets.validated( slot )}
+//
+//  final private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]) {
+//    push.markInvalid(this)
+//    push.visit(this, parent)
+//  }
+//}
 
 /**
  * Instances of `ObserverKey` are provided by methods in `Txn`, when a live `Observer` is registered. Since
@@ -356,10 +352,10 @@ trait InvariantEvent[S <: stm.Sys[S], +A, +Repr] extends InvariantSelector[S] wi
     //         connect()
     //         t.validated( slot )
     //      }
-    if (t.isInvalid(slot)) {
+    if (t.isInvalid) { // (slot)
       log(this.toString + " re-connect")
       disconnect()
-      t.resetAndValidate(slot, r)
+      t.resetAndValidate(slot, r)   // XXX TODO: doesn't this add r twice, becaues connect() will also add it?
       connect()
     } else if (t.add(slot, r)) {
       log(this.toString + " connect")
@@ -372,19 +368,19 @@ trait InvariantEvent[S <: stm.Sys[S], +A, +Repr] extends InvariantSelector[S] wi
   }
 }
 
-trait MutatingEvent[S <: stm.Sys[S], +A, +Repr] extends MutatingSelector[S] with Event[S, A, Repr] {
-  final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {
-    node._targets.add(slot, r)
-  }
-
-  final /* private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {
-    node._targets.remove(slot, r)
-  }
-
-  final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
-    pull.clearInvalid(this)
-    processUpdate(pull)
-  }
-
-  protected def processUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A]
-}
+//trait MutatingEvent[S <: stm.Sys[S], +A, +Repr] extends MutatingSelector[S] with Event[S, A, Repr] {
+//  final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {
+//    node._targets.add(slot, r)
+//  }
+//
+//  final /* private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {
+//    node._targets.remove(slot, r)
+//  }
+//
+//  final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
+//    pull.clearInvalid(this)
+//    processUpdate(pull)
+//  }
+//
+//  protected def processUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A]
+//}

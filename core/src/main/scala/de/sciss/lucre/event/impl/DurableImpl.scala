@@ -60,7 +60,7 @@ object DurableImpl {
       this() = f(getOrElse(default))
     }
 
-    final def isFresh(implicit tx: S#Tx): Boolean = true
+    // final def isFresh(implicit tx: S#Tx): Boolean = true
   }
 
   private final class DurableVarImpl[S <: D[S], A](protected val id: Int,
@@ -76,19 +76,19 @@ object DurableImpl {
     override def toString = "event.Var(" + id + ")"
   }
 
-  private final class DurableIntVar[S <: D[S]](protected val id: Int)
-    extends DurableSource[S, Int] {
-
-    def get(implicit tx: S#Tx): Option[Int] = {
-      tx.system.tryReadEvent[Int](id)(_.readInt())
-    }
-
-    def update(v: Int)(implicit tx: S#Tx) {
-      tx.system.writeEvent(id)(_.writeInt(v))
-    }
-
-    override def toString = "event.Var[Int](" + id + ")"
-  }
+  //  private final class DurableIntVar[S <: D[S]](protected val id: Int)
+  //    extends DurableSource[S, Int] {
+  //
+  //    def get(implicit tx: S#Tx): Option[Int] = {
+  //      tx.system.tryReadEvent[Int](id)(_.readInt())
+  //    }
+  //
+  //    def update(v: Int)(implicit tx: S#Tx) {
+  //      tx.system.writeEvent(id)(_.writeInt(v))
+  //    }
+  //
+  //    override def toString = "event.Var[Int](" + id + ")"
+  //  }
 
   trait DurableMixin[S <: D[S], I <: Sys[I]] extends stm.impl.DurableImpl.Mixin[S, I] with DurableLike[S] {
     private val idCntVar = Ref(0)
@@ -134,9 +134,9 @@ object DurableImpl {
       new DurableVarImpl[S, A](system.newEventIDValue()(this), serializer)
     }
 
-    final private[event] def newEventIntVar[A](id: S#ID): Var[S, Int] = {
-      new DurableIntVar[S](system.newEventIDValue()(this))
-    }
+    //    final private[event] def newEventIntVar[A](id: S#ID): Var[S, Int] = {
+    //      new DurableIntVar[S](system.newEventIDValue()(this))
+    //    }
 
     final private[event] def readEventVar[A](id: S#ID, in: DataInput)
                                             (implicit serializer: serial.Serializer[S#Tx, S#Acc, A]): Var[S, A] = {
@@ -144,10 +144,13 @@ object DurableImpl {
       new DurableVarImpl[S, A](id, serializer)
     }
 
-    final private[event] def readEventIntVar[A](id: S#ID, in: DataInput): Var[S, Int] = {
-      val id = in.readInt()
-      new DurableIntVar[S](id)
-    }
+    //    final private[event] def readEventIntVar[A](id: S#ID, in: DataInput): Var[S, Int] = {
+    //      val id = in.readInt()
+    //      new DurableIntVar[S](id)
+    //    }
+
+    final private[event] def readEventValidity(id: S#ID, in: DataInput): Validity[S#Tx] = DummyValidity
+    final private[event] def newEventValidity (id: S#ID)               : Validity[S#Tx] = DummyValidity
   }
 
   private final class TxnImpl(val system: DurableSystem, val peer: InTxn)

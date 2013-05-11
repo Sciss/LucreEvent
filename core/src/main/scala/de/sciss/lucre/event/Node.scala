@@ -89,12 +89,9 @@ object Targets {
   }
 
   def apply[S <: Sys[S]](implicit tx: S#Tx): Targets[S] = {
-    val id = tx.newID()
-    //      val children   = tx.newVar[ Children[ S ]]( id, NoChildren )
-    //      val invalid    = tx.newIntVar( id, 0 )
+    val id        = tx.newID()
     val children  = tx.newEventVar[Children[S]](id)
-    val invalid   = tx.newEventIntVar(id)
-    // invalid()     = 0 // 'validated'. the problem is that isFresh will not find this variable, and conclude that we need a refresh!
+    val invalid   = tx.newEventValidity(id)
     new Impl(0, id, children, invalid)
   }
 
@@ -106,7 +103,7 @@ object Targets {
     //      new Impl( 1, id, children, invalid )
   }
 
-  /* private[lucre] */ def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
+  def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
     (in.readByte(): @switch) match {
       case 0      => readIdentified(in, access)
       case 1      => readIdentifiedPartial(in, access)
@@ -116,32 +113,23 @@ object Targets {
 
   private[event] def readIdentified[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
     val id = tx.readID(in, access)
-    //      val children      = tx.readVar[ Children[ S ]]( id, in )
-    //      val invalid       = tx.readIntVar( id, in )
     val children = tx.readEventVar[Children[S]](id, in)
-    val invalid  = tx.readEventIntVar(id, in)
-    new Impl[S](0, id, children, invalid)
+    val valid    = tx.readEventValidity(id, in)
+    new Impl[S](0, id, children, valid)
   }
 
   private[event] def readIdentifiedPartial[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Targets[S] = {
     readIdentified(in, access)
-    //      val id            = tx.readPartialID( in, access )
-    //      val children      = tx.readPartialVar[ Children[ S ]]( id, in )
-    //      val invalid       = tx.readIntVar( id, in )
-    //      new Impl[ S ]( 1, id, children, invalid )
   }
 
-  //   private[event] def apply[ S <: Sys[ S ]]( id: S#ID, children: S#Var[ Children[ S ]]) : Targets[ S ] =
-  //      new EventImpl( id, children )
-
   private final class Impl[S <: Sys[S]](cookie: Int, val id: S#ID, childrenVar: event.Var[S, Children[S]],
-                                        invalidVar: event.Var[S, Int])
+                                        valid: Validity[S#Tx])
     extends Targets[S] {
     def write(out: DataOutput) {
       out        .writeByte(cookie)
       id         .write(out)
       childrenVar.write(out)
-      invalidVar .write(out)
+      valid      .write(out)
     }
 
     private[lucre] def isPartial : Boolean = cookie == 1
@@ -150,10 +138,8 @@ object Targets {
       require( children.isEmpty, "Disposing a event reactor which is still being observed" )
       id         .dispose()
       childrenVar.dispose()
-      invalidVar .dispose()
+      valid      .dispose()
     }
-
-    //      def select( slot: Int, invariant: Boolean ) : VirtualNodeSelector[ S ] = Selector( slot, this, invariant )
 
     private[event] def children(implicit tx: S#Tx): Children[S] = childrenVar.getOrElse(NoChildren)
 
@@ -164,8 +150,6 @@ object Targets {
       val tup = (slot.toByte, sel)
       val old = childrenVar.get // .getFresh
       log(s"$this - old children = $old")
-      // MMM
-      //         sel.writeValue()
       old match {
         case Some(seq) =>
           childrenVar() = seq :+ tup
@@ -174,22 +158,19 @@ object Targets {
           childrenVar() = Vector(tup)
           true
       }
-      //
-      //         childrenVar.set( old :+ tup )
-      //         !old.exists( _._1 == slot )
     }
 
-    private[event] def resetAndValidate(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {
+    private[event] def resetAndValidate(slot: Int, sel: Selector[S])(implicit tx: S#Tx) {
       log(s"$this.resetAndValidate($slot, $sel)")
       val tup = (slot.toByte, sel)
-      // MMM
-      //         sel.writeValue()
-      val old = if (isPartial) childrenVar.getOrElse(NoChildren[S]) else NoChildren[S]
+      // I'm not sure this is correct... Why would we only read children if this was partial?
+      // When this is called (from InvariantEvent.--->)
+      val old = /* if (isPartial) */ childrenVar.getOrElse(NoChildren[S]) /* else NoChildren[S] */
       childrenVar() = old :+ tup
-      validated(slot)
+      validated() // (slot)
     }
 
-    private[event] def remove(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Boolean = {
+    private[event] def remove(slot: Int, sel: Selector[S])(implicit tx: S#Tx): Boolean = {
       log(s"$this.remove($slot, $sel)")
       val tup = (slot, sel)
       val xs = childrenVar.getOrElse(NoChildren)
@@ -198,7 +179,6 @@ object Targets {
       if (i >= 0) {
         val xs1 = xs.patch(i, Vector.empty, 1) // XXX crappy way of removing a single element
         childrenVar() = xs1
-        //         xs1.isEmpty
         !xs1.exists(_._1 == slot)
       } else {
         log(s"$this - selector not found")
@@ -212,39 +192,37 @@ object Targets {
     def isEmpty (implicit tx: S#Tx): Boolean = children.isEmpty   // XXX TODO this is expensive
     def nonEmpty(implicit tx: S#Tx): Boolean = children.nonEmpty  // XXX TODO this is expensive
 
-    //      private[event] def nodeOption : Option[ Node[ S ]] = None
     private[event] def _targets: Targets[S] = this
 
-    private[event] def isInvalid(implicit tx: S#Tx): Boolean = !invalidVar.isFresh || (invalidVar.getOrElse(0) != 0)
+    private[event] def isInvalid(implicit tx: S#Tx): Boolean = !valid() // !invalidVar.isFresh || (invalidVar.getOrElse(0) != 0)
 
-    private[event] def isInvalid(slot: Int)(implicit tx: S#Tx): Boolean =
-      !invalidVar.isFresh || ((invalidVar.getOrElse(0) & (1 << slot)) != 0)
+    //    private[event] def isInvalid(slot: Int)(implicit tx: S#Tx): Boolean =
+    //      !invalidVar.isFresh || ((invalidVar.getOrElse(0) & (1 << slot)) != 0)
 
-    private[event] def validated(slot: Int)(implicit tx: S#Tx) {
-      val mask = ~(1 << slot)
-      if (invalidVar.isFresh) {
-        //            invalidVar.transform( _ & ~slot )
-        invalidVar.transform(0)(_ & mask)
-      } else {
-        invalidVar() = mask
-      }
-    }
+    //    private[event] def validated(slot: Int)(implicit tx: S#Tx) {
+    //      val mask = ~(1 << slot)
+    //      if (invalidVar.isFresh) {
+    //        invalidVar.transform(0)(_ & mask)
+    //      } else {
+    //        invalidVar() = mask
+    //      }
+    //    }
 
-    private[event] def invalidate(slot: Int)(implicit tx: S#Tx) {
-      if (invalidVar.isFresh) {
-        invalidVar.transform(0)(_ | (1 << slot))
-      } else {
-        invalidVar() = 0xFFFFFFFF
-      }
-    }
+    //    private[event] def invalidate(slot: Int)(implicit tx: S#Tx) {
+    //      if (invalidVar.isFresh) {
+    //        invalidVar.transform(0)(_ | (1 << slot))
+    //      } else {
+    //        invalidVar() = 0xFFFFFFFF
+    //      }
+    //    }
 
     private[event] def validated()(implicit tx: S#Tx) {
-      invalidVar() = 0
+      valid.update()
     }
 
-    private[event] def invalidate()(implicit tx: S#Tx) {
-      invalidVar() = 0xFFFFFFFF
-    }
+    //    private[event] def invalidate()(implicit tx: S#Tx) {
+    //      invalidVar() = 0xFFFFFFFF
+    //    }
   }
 }
 
@@ -255,9 +233,6 @@ object Targets {
  * `propagate` a fired event.
  */
 sealed trait Targets[S <: stm.Sys[S]] extends Reactor[S] /* extends Writable with Disposable[ S#Tx ] */ {
-  //   /* private[event] */ def id: S#ID
-
-  //   private[event] def children( implicit tx: S#Tx ) : Children[ S ]
   private[event] def children(implicit tx: S#Tx): Children[S]
 
   private[lucre] def isPartial: Boolean
@@ -281,8 +256,7 @@ sealed trait Targets[S <: stm.Sys[S]] extends Reactor[S] /* extends Writable wit
    */
   private[event] def resetAndValidate(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Unit
 
-  def isEmpty(implicit tx: S#Tx): Boolean
-
+  def isEmpty (implicit tx: S#Tx): Boolean
   def nonEmpty(implicit tx: S#Tx): Boolean
 
   /**
@@ -299,11 +273,11 @@ sealed trait Targets[S <: stm.Sys[S]] extends Reactor[S] /* extends Writable wit
 
   private[event] def isInvalid   (implicit tx: S#Tx): Boolean
   private[event] def validated ()(implicit tx: S#Tx): Unit
-  private[event] def invalidate()(implicit tx: S#Tx): Unit
+  // private[event] def invalidate()(implicit tx: S#Tx): Unit
 
-  private[event] def isInvalid (slot: Int)(implicit tx: S#Tx): Boolean
-  private[event] def validated (slot: Int)(implicit tx: S#Tx): Unit
-  private[event] def invalidate(slot: Int)(implicit tx: S#Tx): Unit
+  //  private[event] def isInvalid (slot: Int)(implicit tx: S#Tx): Boolean
+  //  private[event] def validated (slot: Int)(implicit tx: S#Tx): Unit
+  //  private[event] def invalidate(slot: Int)(implicit tx: S#Tx): Unit
 }
 
 /**
@@ -325,9 +299,9 @@ trait Node[S <: stm.Sys[S]] extends /* Reactor[ S ] with */ VirtualNode[S] /* wi
   protected def writeData(out: DataOutput): Unit
   protected def disposeData()(implicit tx: S#Tx): Unit
 
-  final protected def validated()(implicit tx: S#Tx)  { targets.validated() }
-  final protected def isInvalid(implicit tx: S#Tx): Boolean = targets.isInvalid
-  final protected def invalidate()(implicit tx: S#Tx) { targets.invalidate() }
+  final protected def validated() (implicit tx: S#Tx)  { targets.validated() }
+  final protected def isInvalid   (implicit tx: S#Tx): Boolean = targets.isInvalid
+  // final protected def invalidate()(implicit tx: S#Tx) { targets.invalidate() }
 
   final private[event] def _targets: Targets[S] = targets
 
@@ -335,8 +309,7 @@ trait Node[S <: stm.Sys[S]] extends /* Reactor[ S ] with */ VirtualNode[S] /* wi
 
   final def id: S#ID = targets.id
 
-  //   private[event] def select( slot: Int ) : NodeSelector[ S, Any ]
-  private[event] def select(slot: Int, invariant: Boolean): Event[S, Any, Any] // NodeSelector[ S, Any ]
+  private[event] def select(slot: Int /*, invariant: Boolean */): Event[S, Any, Any] // NodeSelector[ S, Any ]
 
   final def write(out: DataOutput) {
     targets.write(out)
@@ -387,7 +360,7 @@ object VirtualNode {
       out.write(data)
     }
 
-    private[event] def select(slot: Int, invariant: Boolean) = Selector(slot, this, invariant)
+    private[event] def select(slot: Int /*, invariant: Boolean */) = Selector(slot, this /*, invariant */)
 
     private[event] def devirtualize[Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Repr with Node[S] = {
       val in = DataInput(data)
@@ -403,5 +376,5 @@ object VirtualNode {
 }
 
 sealed trait VirtualNode[S <: stm.Sys[S]] extends Reactor[S] {
-  private[event] def select(slot: Int, invariant: Boolean): VirtualNodeSelector[S]
+  private[event] def select(slot: Int /*, invariant: Boolean */): VirtualNodeSelector[S]
 }

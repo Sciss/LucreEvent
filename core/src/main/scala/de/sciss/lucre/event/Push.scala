@@ -55,7 +55,7 @@ object Push {
   type Parents[S <: stm.Sys[S]] = Set[VirtualNodeSelector[S]]
 
   private def NoParents [S <: stm.Sys[S]]: Parents[S] = Set.empty[VirtualNodeSelector[S]]
-  private def NoMutating[S <: stm.Sys[S]]: Set[MutatingSelector[S]] = Set.empty[MutatingSelector[S]]
+  // private def NoMutating[S <: stm.Sys[S]]: Set[MutatingSelector[S]] = Set.empty[MutatingSelector[S]]
 
   private type Visited[S <: stm.Sys[S]] = Map[VirtualNodeSelector[S], Parents[S]]
 
@@ -64,7 +64,7 @@ object Push {
     private var pushMap   = Map((origin: Any, NoParents[S]))
     private var pullMap   = Map.empty[EventLike[S, Any, Any], Option[Any]]
     private var reactions = NoReactions
-    private var mutating  = NoMutating[S]
+    // private var mutating  = NoMutating[S]
 
     private var indent    = ""
 
@@ -132,24 +132,24 @@ object Push {
       val firstPass = reactions.map(_.apply())
       /* val secondPass = */ firstPass.foreach(_.apply())
 
-      if (mutating.nonEmpty) {
-        log("numInvalid = " + mutating.size)
-        mutating.foreach { sel =>
-          println("INVALIDATED: " + mutating.mkString(", "))
-          sel.node._targets.invalidate(sel.slot)
-        }
-      }
+      //      if (mutating.nonEmpty) {
+      //        log("numInvalid = " + mutating.size)
+      //        mutating.foreach { sel =>
+      //          println("INVALIDATED: " + mutating.mkString(", "))
+      //          sel.node._targets.invalidate(sel.slot)
+      //        }
+      //      }
     }
 
-    def markInvalid(evt: MutatingSelector[S]) {
-      log("markInvalid " + evt)
-      mutating += evt
-    }
-
-    def clearInvalid(evt: MutatingSelector[S]) {
-      log("clearInvalid " + evt)
-      mutating -= evt
-    }
+    //    def markInvalid(evt: MutatingSelector[S]) {
+    //      log("markInvalid " + evt)
+    //      mutating += evt
+    //    }
+    //
+    //    def clearInvalid(evt: MutatingSelector[S]) {
+    //      log("clearInvalid " + evt)
+    //      mutating -= evt
+    //    }
 
     def resolve[A]: Option[A] = Some(update.asInstanceOf[A])
 
@@ -181,7 +181,8 @@ sealed trait Pull[S <: stm.Sys[S]] {
   /** Whether the selector has been visited during the push phase. */
   /* private[event] */ def contains(source: EventLike[S, Any, Any]): Boolean
   def isOrigin(source: EventLike[S, Any, Any]): Boolean
-  private[event] def clearInvalid(evt: MutatingSelector[S])
+
+  // private[event] def clearInvalid(evt: MutatingSelector[S])
 }
 
 private[event] sealed trait Push[S <: stm.Sys[S]] extends Pull[S] {
@@ -195,5 +196,5 @@ private[event] sealed trait Push[S <: stm.Sys[S]] extends Pull[S] {
 
   private[event] def addReaction(r: Reaction): Unit
 
-  private[event] def markInvalid(evt: MutatingSelector[S])
+  // private[event] def markInvalid(evt: MutatingSelector[S])
 }

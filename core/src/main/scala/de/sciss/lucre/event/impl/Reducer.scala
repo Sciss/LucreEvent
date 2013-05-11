@@ -86,7 +86,7 @@ trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] {
     }
   }
 
-  final def select(slot: Int, invariant: Boolean): Event[S, Any, Any] = {
+  final def select(slot: Int /*, invariant: Boolean */): Event[S, Any, Any] = {
     if (slot == changed.slot) changed else
     events.find(_.slot == slot) getOrElse sys.error(s"Invalid slot $slot")
   }
