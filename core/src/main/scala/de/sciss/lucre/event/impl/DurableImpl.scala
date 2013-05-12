@@ -91,7 +91,12 @@ object DurableImpl {
   //  }
 
   trait DurableMixin[S <: D[S], I <: Sys[I]] extends stm.impl.DurableImpl.Mixin[S, I] with DurableLike[S] {
-    private val idCntVar = Ref(0)
+    // I don't know what the original reasoning was. Obviously we want events to be ephemeral.
+    // But targets are stored in a durable way, and along with them the valid and children variables.
+    // So if we were to use an in-memory reference starting at zero in each application run, we
+    // end up having former targets with event vars which share the ids with newly allocated events.
+    //
+    // private val idCntVar = Ref(0)
 
     protected def eventStore: DataStore
 
@@ -115,13 +120,16 @@ object DurableImpl {
       eventStore.remove(_.writeInt(id))
     }
 
-    private[event] def newEventIDValue()(implicit tx: S#Tx): Int = {
-      implicit val itx = tx.peer
-      val id = idCntVar.get + 1
-      log("newE  <" + id + ">")
-      idCntVar.set(id)
-      id
-    }
+    // we could use two independent counters, but well... let's keep it simple.
+    private[event] def newEventIDValue()(implicit tx: S#Tx): Int = newIDValue()
+
+    //    {
+    //      implicit val itx = tx.peer
+    //      val id = idCntVar.get + 1
+    //      log("newE  <" + id + ">")
+    //      idCntVar.set(id)
+    //      id
+    //    }
   }
 
   trait DurableTxnMixin[S <: D[S]] extends DurableLike.Txn[S] {

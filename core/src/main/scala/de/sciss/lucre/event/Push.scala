@@ -79,7 +79,7 @@ object Push {
 
     private def addVisited(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]): Boolean = {
       val parents = pushMap.getOrElse(sel, NoParents)
-      log(indent + "visit " + sel + " (new ? " + parents.isEmpty + ")")
+      log(s"${indent}visit $sel  (new ? ${parents.isEmpty})")
       pushMap += ((sel, parents + parent))
       parents.isEmpty
     }
@@ -119,7 +119,7 @@ object Push {
     def parents(sel: VirtualNodeSelector[S]): Parents[S] = pushMap.getOrElse(sel, NoParents)
 
     def addLeaf(leaf: ObserverKey[S], parent: VirtualNodeSelector[S]) {
-      log(indent + "addLeaf " + leaf + ", parent = " + parent)
+      log(s"${indent}addLeaf $leaf, parent = $parent")
       tx.reactionMap.processEvent(leaf, parent, this)
     }
 
@@ -128,7 +128,7 @@ object Push {
     }
 
     def pull() {
-      log("numReactions = " + reactions.size)
+      log(s"numReactions = ${reactions.size}")
       val firstPass = reactions.map(_.apply())
       /* val secondPass = */ firstPass.foreach(_.apply())
 
@@ -151,16 +151,27 @@ object Push {
     //      mutating -= evt
     //    }
 
-    def resolve[A]: Option[A] = Some(update.asInstanceOf[A])
+    def resolve[A]: Option[A] = {
+      log(s"${indent}resolve")
+      Some(update.asInstanceOf[A])
+    }
 
     // caches pulled values
     def apply[A](source: EventLike[S, A, Any]): Option[A] = {
-      pullMap.get(source) match {
-        case Some(res: Option[_]) => res.asInstanceOf[Option[A]]
-        case _ =>
-          val res = source.pullUpdate(this)
-          pullMap += ((source, res))
-          res
+      incIndent()
+      try {
+        pullMap.get(source) match {
+          case Some(res: Option[_]) =>
+            log(s"${indent}pull $source  (new ? false)")
+            res.asInstanceOf[Option[A]]
+          case _ =>
+            log(s"${indent}pull $source  (new ? true)")
+            val res = source.pullUpdate(this)
+            pullMap += ((source, res))
+            res
+        }
+      } finally {
+        decIndent()
       }
     }
   }
