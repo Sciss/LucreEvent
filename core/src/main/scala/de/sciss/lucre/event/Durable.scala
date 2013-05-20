@@ -16,12 +16,12 @@ object Durable {
   def apply(mainStore: DataStore, eventStore: DataStore): S = Impl(mainStore, eventStore)
 
   // a rare moment of love for Scala today ... this view is automatically found. at least something...
-  implicit def inMemory(tx: Durable#Tx): InMemory#Tx = tx.inMemory
+  // implicit def inMemory(tx: Durable#Tx): InMemory#Tx = tx.inMemory
 }
 
 object DurableLike {
   trait Txn[S <: DurableLike[S]] extends stm.DurableLike.Txn[S] with event.Txn[S] {
-    def inMemory: InMemory#Tx
+    // def inMemory: InMemory#Tx
   }
 }
 
