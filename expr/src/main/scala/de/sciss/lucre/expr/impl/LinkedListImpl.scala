@@ -385,32 +385,44 @@ object LinkedListImpl {
 
     final def addLast(elem: Elem)(implicit tx: S#Tx) {
       val pred      = lastRef()
-      val recPred   = tx.newVar[C](id, pred)
-      val recSucc   = tx.newVar[C](id, null)
-      val rec       = new Cell(elem, recPred, recSucc)
-      val predSucc  = if (pred == null) headRef else pred.succ
-      lastRef()     = rec
-      predSucc()    = rec
+      val succ      = null
       val idx       = sizeRef()
-      sizeRef()     = idx + 1
-      if (isConnected) {
-        registerElement(elem)
-        fireAdded(idx, elem)
-      }
+      insert(elem, pred, succ, idx)
     }
 
     final def addHead(elem: Elem)(implicit tx: S#Tx) {
+      val pred      = null
       val succ      = headRef()
-      val recPred   = tx.newVar[C](id, null)
+      val idx       = 0
+      insert(elem, pred, succ, idx)
+    }
+
+    def insert(index: Int, elem: Elem)(implicit tx: S#Tx) {
+      if (index < 0)      throw new IndexOutOfBoundsException(index.toString)
+      var pred      = null: C
+      var succ      = headRef()
+      var idx       = 0
+      while (idx < index) {
+        if (succ == null) throw new IndexOutOfBoundsException(index.toString)
+        pred  = succ
+        succ  = succ.succ()
+        idx  += 1
+      }
+      insert(elem, pred, succ, idx)
+    }
+
+    private def insert(elem: Elem, pred: C, succ: C, idx: Int)(implicit tx: S#Tx) {
+      val recPred   = tx.newVar[C](id, pred)
       val recSucc   = tx.newVar[C](id, succ)
       val rec       = new Cell(elem, recPred, recSucc)
+      val predSucc  = if (pred == null) headRef else pred.succ
       val succPred  = if (succ == null) lastRef else succ.pred
-      headRef()     = rec
+      predSucc()    = rec
       succPred()    = rec
       sizeRef.transform(_ + 1)
       if (isConnected) {
         registerElement(elem)
-        fireAdded(0, elem)
+        fireAdded(idx, elem)
       }
     }
 

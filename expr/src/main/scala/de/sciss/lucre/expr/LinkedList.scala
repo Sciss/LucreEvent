@@ -100,11 +100,12 @@ object LinkedList {
   trait Modifiable[S <: stm.Sys[S], Elem, U] extends LinkedList[S, Elem, U] {
     def addLast(elem: Elem)(implicit tx: S#Tx): Unit
     def addHead(elem: Elem)(implicit tx: S#Tx): Unit
-    def remove (elem: Elem)(implicit tx: S#Tx): Boolean
 
     def removeLast()(implicit tx: S#Tx): Elem
     def removeHead()(implicit tx: S#Tx): Elem
 
+    def insert  (index: Int, elem: Elem)(implicit tx: S#Tx): Unit
+    def remove  (elem: Elem)(implicit tx: S#Tx): Boolean
     def removeAt(index: Int)(implicit tx: S#Tx): Elem
 
     def clear()(implicit tx: S#Tx): Unit
@@ -164,22 +165,25 @@ object LinkedList {
  * @tparam Elem      the element type of the list
  * @tparam U         the updates fired by the element type
  */
-trait LinkedList[ S <: stm.Sys[ S ], Elem, U ] extends evt.Node[ S ] {
-   def isEmpty( implicit tx: S#Tx ) : Boolean
-   def nonEmpty( implicit tx: S#Tx ) : Boolean
-   def size( implicit tx: S#Tx ) : Int
+trait LinkedList[S <: stm.Sys[S], Elem, U] extends evt.Node[S] {
+  def isEmpty (implicit tx: S#Tx): Boolean
+  def nonEmpty(implicit tx: S#Tx): Boolean
+  def size    (implicit tx: S#Tx): Int
 
-   def apply( index: Int )( implicit tx: S#Tx ) : Elem
-   def get( index: Int )( implicit tx: S#Tx ) : Option[ Elem ]
-   def headOption( implicit tx: S#Tx ) : Option[ Elem ]
-   def lastOption( implicit tx: S#Tx ) : Option[ Elem ]
-   def head( implicit tx: S#Tx ) : Elem
-   def last( implicit tx: S#Tx ) : Elem
-   def iterator( implicit tx: S#Tx ) : Iterator[ S#Tx, Elem ]
+  def apply(index: Int)(implicit tx: S#Tx): Elem
+  def get  (index: Int)(implicit tx: S#Tx): Option[Elem]
 
-   def modifiableOption : Option[ LinkedList.Modifiable[ S, Elem, U ]]
+  def headOption(implicit tx: S#Tx): Option[Elem]
+  def lastOption(implicit tx: S#Tx): Option[Elem]
 
-   /**
+  def head(implicit tx: S#Tx): Elem
+  def last(implicit tx: S#Tx): Elem
+
+  def iterator(implicit tx: S#Tx): Iterator[S#Tx, Elem]
+
+  def modifiableOption: Option[LinkedList.Modifiable[S, Elem, U]]
+
+  /**
     * Note: this is an O(n) operation.
     */
    def indexOf( elem: Elem )( implicit tx: S#Tx ) : Int
