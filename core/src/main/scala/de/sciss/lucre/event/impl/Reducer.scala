@@ -27,8 +27,6 @@ package de.sciss.lucre
 package event
 package impl
 
-import collection.immutable.{IndexedSeq => IIdxSeq}
-
 /** A trait which reduces multiple input events into one output event.
   *
   * @tparam S     the system

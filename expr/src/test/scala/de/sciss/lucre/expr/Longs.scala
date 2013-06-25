@@ -65,7 +65,7 @@ final class Longs[ S <: evt.Sys[ S ]] extends TypeOld[ S, Long ] {
    }
 
    private object UnaryOp {
-      def apply( id: Int ) : UnaryOp = (id /*: @switch */) match {
+      def apply( id: Int ) : UnaryOp = id match {
          case 0 => Abs
       }
 

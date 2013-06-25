@@ -55,7 +55,7 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
   private final class Ser[S <: evt.Sys[S]] extends evt.EventLikeSerializer[S, Repr[S]] {
     def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): ReprNode[S] = {
       // 0 = var, 1 = op
-      (in.readByte() /*: @switch */) match {
+      in.readByte() match {
         case 0      => readVar(in, access, targets)
         case cookie => readTuple(cookie, in, access, targets)
       }
@@ -113,7 +113,7 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
       }
     }
 
-    override def toString() = op.toString(_1)
+    override def toString = op.toString(_1)
   }
 
   trait Tuple2Op[T1, T2] extends TupleOp {
@@ -178,6 +178,6 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
       }
     }
 
-    override def toString() = op.toString(_1, _2)
+    override def toString = op.toString(_1, _2)
   }
 }

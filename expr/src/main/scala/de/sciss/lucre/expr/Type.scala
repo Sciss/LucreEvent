@@ -29,7 +29,6 @@ package expr
 
 import de.sciss.lucre.{event => evt}
 import serial.{DataInput, DataOutput}
-import de.sciss.lucre.stm.Disposable
 
 trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] {
   final protected type Ex [S <: stm.Sys[S]] = Expr[S, A]

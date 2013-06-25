@@ -9,6 +9,6 @@ with eimpl.StandaloneLike[ S, Change[ A ], Expr[ S, A ]] with InvariantSelector[
 
    final def disposeData()( implicit tx: S#Tx ) {}
 
-   override def toString() = "Expr" + id
+   override def toString = "Expr" + id
 }
 

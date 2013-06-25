@@ -152,11 +152,9 @@ sealed trait VirtualNodeSelector[S <: stm.Sys[S]] extends Selector[S] {
     finalizeHash(h2, 2)
   }
 
-  override def equals(that: Any): Boolean = {
-    (if (that.isInstanceOf[VirtualNodeSelector[_]]) {
-      val thatSel = that.asInstanceOf[VirtualNodeSelector[_]]
-      (slot == thatSel.slot && node.id == thatSel.node.id)
-    } else super.equals(that))
+  override def equals(that: Any): Boolean = that match {
+    case thatSel: VirtualNodeSelector[_] => slot == thatSel.slot && node.id == thatSel.node.id
+    case _ => super.equals(that)
   }
 
   final private[event] def toObserverKey: Option[ObserverKey[S]] = None

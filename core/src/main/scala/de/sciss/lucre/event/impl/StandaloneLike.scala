@@ -64,11 +64,9 @@ trait StandaloneLike[S <: Sys[S], +A, +Repr]
     finalizeHash(h2, 2)
   }
 
-  override def equals(that: Any): Boolean = {
-    (if (that.isInstanceOf[VirtualNodeSelector[_]]) {
-      val thatSel = that.asInstanceOf[VirtualNodeSelector[_]]
-      (slot == thatSel.slot && /* node. */ id == thatSel.node.id)
-    } else super.equals(that))
+  override def equals(that: Any): Boolean = that match {
+    case thatSel: VirtualNodeSelector[_] => slot == thatSel.slot && /* node. */ id == thatSel.node.id
+    case _ => super.equals(that)
   }
 
   override def toString = "Node" + id

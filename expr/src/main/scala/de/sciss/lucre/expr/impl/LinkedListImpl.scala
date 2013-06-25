@@ -158,7 +158,7 @@ object LinkedListImpl {
   private final class Cell[S <: stm.Sys[S], Elem](val elem: Elem, val pred: S#Var[Cell[S, Elem]], val succ: S#Var[Cell[S, Elem]])
 
   private final class Iter[S <: stm.Sys[S], Elem](private var cell: Cell[S, Elem]) extends Iterator[S#Tx, Elem] {
-    override def toString() = if (cell == null) "empty iterator" else "non-empty iterator"
+    override def toString = if (cell == null) "empty iterator" else "non-empty iterator"
 
     def hasNext(implicit tx: S#Tx) = cell != null
 

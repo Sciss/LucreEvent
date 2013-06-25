@@ -29,7 +29,7 @@ package event
 package impl
 
 import stm.{DataStoreFactory, DataStore}
-import concurrent.stm.{Ref, InTxn}
+import concurrent.stm.InTxn
 import serial.{DataInput, DataOutput}
 
 object DurableImpl {

@@ -27,10 +27,9 @@ package de.sciss
 package lucre
 package expr
 
-import event.{EventLikeSerializer, Targets, Pull, Observer}
+import event.{EventLikeSerializer, Targets, Pull}
 import serial.{DataInput, DataOutput}
 import language.implicitConversions
-import de.sciss.lucre.stm.Disposable
 
 /**
  * IDs:
@@ -59,7 +58,7 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
    implicit object serializer extends EventLikeSerializer[ S, Ex ] {
       def read( in: DataInput, access: S#Acc, targets: Targets[ S ])( implicit tx: S#Tx ) : Ex with event.Node[ S ] = {
          // 0 = var, 1 = op
-         (in.readByte() /*: @switch */) match {
+         in.readByte() match {
             case 0      => new VarRead( in, access, targets, tx )
             case arity  =>
                val clazz   = in.readInt()
@@ -173,7 +172,7 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
        }
      }
 
-     override def toString = op.toString( _1 )
+     override def toString() = op.toString( _1 )
    }
 
    /* protected */  trait Tuple2Op[ T1, T2 ] extends TupleOp {
@@ -257,6 +256,6 @@ trait TypeOld[ S <: event.Sys[ S ], A ] extends Extensions[ S, A ] with TupleRea
          }
       }
 
-      override def toString = op.toString( _1, _2 )
+      override def toString() = op.toString( _1, _2 )
    }
 }

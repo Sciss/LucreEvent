@@ -30,7 +30,7 @@ package event
 import collection.immutable.{IndexedSeq => IIdxSeq}
 import stm.Mutable
 import annotation.switch
-import de.sciss.serial.{ImmutableSerializer, Writable, DataInput, DataOutput}
+import de.sciss.serial.{Writable, DataInput, DataOutput}
 
 /**
  * An abstract trait uniting invariant and mutating readers.
@@ -331,10 +331,9 @@ trait Node[S <: stm.Sys[S]] extends /* Reactor[ S ] with */ VirtualNode[S] /* wi
 sealed trait Reactor[S <: stm.Sys[S]] extends Mutable[S#ID, S#Tx] {
   private[event] def _targets: Targets[S]
 
-  override def equals(that: Any): Boolean = {
-    (if (that.isInstanceOf[Reactor[_]]) {
-      id == that.asInstanceOf[Reactor[_]].id
-    } else super.equals(that))
+  override def equals(that: Any): Boolean = that match {
+    case value: Reactor[_] => id == value.id
+    case _ => super.equals(that)
   }
 
   override def hashCode = id.hashCode()
@@ -375,6 +374,7 @@ object VirtualNode {
   }
 }
 
+/** A virtual node is either in "raw", serialized state, or expanded to a full `Node`. */
 sealed trait VirtualNode[S <: stm.Sys[S]] extends Reactor[S] {
   private[event] def select(slot: Int /*, invariant: Boolean */): VirtualNodeSelector[S]
 }

@@ -59,8 +59,7 @@ final case class Span( start: Long, stop: Long ) {
     *  @return		<code>true</code>, if <code>aSpan.start >= this.span &&
     *				aSpan.stop <= this.stop</code>
     */
-    def contains( aSpan: Span ) : Boolean =
-         (aSpan.start >= this.start) && (aSpan.stop <= this.stop)
+    def contains( aSpan: Span ) : Boolean = aSpan.start >= this.start && aSpan.stop <= this.stop
 
    /**
     *  Checks if a two spans overlap each other.
@@ -69,8 +68,7 @@ final case class Span( start: Long, stop: Long ) {
     *  @return		<code>true</code>, if the spans
     *				overlap each other
     */
-    def overlaps( aSpan: Span ) : Boolean =
-      ((aSpan.start < this.stop) && (aSpan.stop > this.start))
+    def overlaps( aSpan: Span ) : Boolean = aSpan.start < this.stop && aSpan.stop > this.start
 
    /**
     *  Checks if a two spans overlap or touch each other.
@@ -178,7 +176,7 @@ final class Spans[ S <: evt.Sys[ S ]] private( longs: Longs[ S ]) extends TypeOl
 
    def readTuple( arity: Int, opID: Int, in: DataInput, access: S#Acc,
                   targets: evt.Targets[ S ])( implicit tx: S#Tx ) : Ex with event.Node[ S ] = {
-      (arity /*: @switch */) match {
+      arity match {
 //         case 1 => UnaryOp( opID ).read( in, access, targets )
          case 2 => {
             if( opID == 0 ) { // Literal

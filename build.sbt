@@ -1,6 +1,6 @@
 name := "LucreEvent"
 
-version in ThisBuild := "2.3.0"
+version in ThisBuild := "2.3.1-SNAPSHOT"
 
 organization in ThisBuild := "de.sciss"
 
@@ -20,7 +20,7 @@ scalacOptions in ThisBuild ++= Seq("-deprecation", "-unchecked", "-feature")
 
 scalacOptions in ThisBuild += "-no-specialization"
 
-scalacOptions in ThisBuild ++= Seq("-Xelide-below", "INFO") // elide debug logging!
+// scalacOptions in ThisBuild ++= Seq("-Xelide-below", "INFO") // elide debug logging!
 
 testOptions in Test += Tests.Argument("-oDF")   // ScalaTest: durations and full stack traces
 
