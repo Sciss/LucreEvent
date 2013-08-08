@@ -35,8 +35,8 @@ object EventTest extends App {
   //   abstract class Filter extends Event.Invariant.Observable[ S, Int, Filter ] with Event.LateBinding[ S, Int ] {
   //      protected def reader = FilterReader
   ////      protected val targets = Event.Invariant.Targets[ S ]
-  //      protected def disposeData()( implicit tx: S#Tx ) {}
-  //      protected def writeData( out: DataOutput ) {}
+  //      protected def disposeData()( implicit tx: S#Tx ) = ()
+  //      protected def writeData( out: DataOutput ) = ()
   //      protected def sources( implicit tx: S#Tx ) : Event.Sources[ S ] = IIdxSeq( e2 )
   //
   //      def pull( source: Event.Posted[ S, _ ])( implicit tx: S#Tx ) : Option[ Int ] = {

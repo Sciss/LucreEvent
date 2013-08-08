@@ -58,9 +58,7 @@ object Selector {
   }
 
   private final class Ser[S <: Sys[S]] extends serial.Serializer[S#Tx, S#Acc, Selector[S]] {
-    def write(v: Selector[S], out: DataOutput) {
-      v.writeSelector(out)
-    }
+    def write(v: Selector[S], out: DataOutput): Unit = v.writeSelector(out)
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Selector[S] = Selector.read(in, access)
   }
@@ -74,7 +72,7 @@ object Selector {
 
     //      final private[event] def nodeSelectorOption: Option[ NodeSelector[ S, Any ]] = None
 
-    //      final protected def writeVirtualNode( out: DataOutput ) {
+    //      final protected def writeVirtualNode( out: DataOutput ): Unit = {
     //         reactor.write( out )
     //         out.write( data )
     //      }
@@ -99,7 +97,7 @@ object Selector {
 sealed trait Selector[S <: stm.Sys[S]] /* extends Writable */ {
   protected def cookie: Int
 
-  final def writeSelector(out: DataOutput) {
+  final def writeSelector(out: DataOutput): Unit = {
     out.writeByte(cookie)
     writeSelectorData(out)
   }
@@ -120,7 +118,7 @@ sealed trait VirtualNodeSelector[S <: stm.Sys[S]] extends Selector[S] {
   private[event] def slot: Int
 
   //   private[event] def nodeSelectorOption: Option[ NodeSelector[ S, Any ]]
-  final protected def writeSelectorData(out: DataOutput) {
+  final protected def writeSelectorData(out: DataOutput): Unit = {
     // out.writeInt(slot)
     out.writeByte(slot)
     val sizeOffset = out.position
@@ -165,9 +163,8 @@ sealed trait VirtualNodeSelector[S <: stm.Sys[S]] extends Selector[S] {
 trait InvariantSelector[S <: stm.Sys[S]] extends VirtualNodeSelector[S] {
   final protected def cookie: Int = 0
 
-  final private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]) {
+  final private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit =
     push.visit(this, parent)
-  }
 }
 
 //trait MutatingSelector[S <: stm.Sys[S]] extends VirtualNodeSelector[S] {
@@ -200,7 +197,7 @@ final case class ObserverKey[S <: stm.Sys[S]] private[lucre](id: Int) extends /*
 
   private[event] def toObserverKey: Option[ObserverKey[S]] = Some(this)
 
-  private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]) {
+  private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit = {
     //      val reader  = push
     //      val nParent = parent.devirtualize( reader )
     ////
@@ -213,11 +210,9 @@ final case class ObserverKey[S <: stm.Sys[S]] private[lucre](id: Int) extends /*
   // MMM
   //   private[event] def writeValue()( implicit tx: S#Tx ) {}  // we are light weight, nothing to do here
 
-  def dispose()(implicit tx: S#Tx) {} // XXX really?
+  def dispose()(implicit tx: S#Tx) = () // XXX really?
 
-  protected def writeSelectorData(out: DataOutput) {
-    out.writeInt(id)
-  }
+  protected def writeSelectorData(out: DataOutput): Unit = out.writeInt(id)
 }
 
 trait EventLike[S <: stm.Sys[S], +A, +Repr] {
@@ -301,8 +296,8 @@ object Dummy {
 trait Dummy[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A, Repr] {
   import Dummy._
 
-  final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {}
-  final /* private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {}
+  final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) = ()
+  final /* private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) = ()
 
   //   final private[lucre] def select() : NodeSelector[ S ] = opNotSupported
 
@@ -318,8 +313,8 @@ trait Dummy[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A, Repr] {
 
   final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = opNotSupported
 
-  final private[lucre] def connect   ()(implicit tx: S#Tx) {}
-  final private[lucre] def disconnect()(implicit tx: S#Tx) {}
+  final private[lucre] def connect   ()(implicit tx: S#Tx) = ()
+  final private[lucre] def disconnect()(implicit tx: S#Tx) = ()
 }
 
 /**
@@ -339,7 +334,7 @@ trait Event[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A, Repr] with Virtu
 }
 
 trait InvariantEvent[S <: stm.Sys[S], +A, +Repr] extends InvariantSelector[S] with Event[S, A, Repr] {
-  final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {
+  final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Unit = {
     val t = node._targets
     //      if( t.add( slot, r )) {
     //         log( this.toString + " connect" )
@@ -361,17 +356,16 @@ trait InvariantEvent[S <: stm.Sys[S], +A, +Repr] extends InvariantSelector[S] wi
     }
   }
 
-  final /* private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {
+  final /* private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Unit =
     if (node._targets.remove(slot, r)) disconnect()
-  }
 }
 
 //trait MutatingEvent[S <: stm.Sys[S], +A, +Repr] extends MutatingSelector[S] with Event[S, A, Repr] {
-//  final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {
+//  final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Unit = {
 //    node._targets.add(slot, r)
 //  }
 //
-//  final /* private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) {
+//  final /* private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Unit = {
 //    node._targets.remove(slot, r)
 //  }
 //

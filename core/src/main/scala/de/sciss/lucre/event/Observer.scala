@@ -41,15 +41,15 @@ object Observer {
     extends Disposable[S#Tx] {
     override def toString = "Observer<" + key.id + ">"
 
-    // def add[R1 >: Repr /* <: Node[ S ] */ ](event: EventLike[S, A, R1])(implicit tx: S#Tx) {
+    // def add[R1 >: Repr /* <: Node[ S ] */ ](event: EventLike[S, A, R1])(implicit tx: S#Tx): Unit = {
     //  event ---> key
     // }
 
-    // def remove[R1 >: Repr /* <: Node[ S ] */ ](event: EventLike[S, A, R1])(implicit tx: S#Tx) {
+    // def remove[R1 >: Repr /* <: Node[ S ] */ ](event: EventLike[S, A, R1])(implicit tx: S#Tx): Unit = {
     //   event -/-> key
     // }
 
-    def dispose()(implicit tx: S#Tx) {
+    def dispose()(implicit tx: S#Tx): Unit = {
       event -/-> key
       tx.reactionMap.removeEventReaction(key)
     }
@@ -65,7 +65,7 @@ object Observer {
   private final class Dummy[S <: stm.Sys[S]] extends Disposable[S#Tx] {
     override def toString = "Observer.Dummy"
 
-    def dispose()(implicit tx: S#Tx) {}
+    def dispose()(implicit tx: S#Tx) = ()
   }
 }
 

@@ -89,7 +89,7 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
     def situation = "early observed state"
 
     def obs1(ll: LL)(implicit tx: S#Tx) {
-      ll.changed.react(obs.register _)
+      ll.changed.react(obs.register)
     }
 
     def obs2(ll: LL)(implicit tx: S#Tx) {
@@ -107,7 +107,7 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
     def obs1(ll: LL)(implicit tx: S#Tx) {}
 
     def obs2(ll: LL)(implicit tx: S#Tx) {
-      ll.changed.react(obs.register _)
+      ll.changed.react(obs.register)
     }
   }
 

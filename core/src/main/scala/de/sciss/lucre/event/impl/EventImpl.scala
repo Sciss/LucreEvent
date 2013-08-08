@@ -36,11 +36,11 @@ trait EventImpl[S <: Sys[S], +A, +Repr /* <: Node[ S ] */ ]
 
   protected def reader: Reader[S, Repr]
 
-  //   final /* private[lucre] */ def --->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ) {
+  //   final /* private[lucre] */ def --->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ): Unit = {
   //      if( reactor._targets.add( slot, r )) connect()
   //   }
   //
-  //   final /* private[lucre] */ def -/->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ) {
+  //   final /* private[lucre] */ def -/->( r: ExpandedSelector[ S ])( implicit tx: S#Tx ): Unit = {
   //      if( reactor._targets.remove( slot, r )) disconnect()
   //   }
 

@@ -42,9 +42,7 @@ trait Reader[S <: stm.Sys[S], +Repr] {
 trait NodeSerializer[S <: Sys[S], Repr <: Writable]
   extends Reader[S, Repr] with serial.Serializer[S#Tx, S#Acc, Repr] {
 
-  final def write(v: Repr, out: DataOutput) {
-    v.write(out)
-  }
+  final def write(v: Repr, out: DataOutput): Unit = v.write(out)
 
   final def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr = {
     val targets = Targets.read[S](in, access)
@@ -70,7 +68,7 @@ object Targets {
   private val anyChildrenSer = new ChildrenSer[InMemory]
 
   private final class ChildrenSer[S <: Sys[S]] extends serial.Serializer[S#Tx, S#Acc, Children[S]] {
-    def write(v: Children[S], out: DataOutput) {
+    def write(v: Children[S], out: DataOutput): Unit = {
       out.writeInt(v.size)
       v.foreach { tup =>
         out.writeByte(tup._1)
@@ -125,7 +123,8 @@ object Targets {
   private final class Impl[S <: Sys[S]](cookie: Int, val id: S#ID, childrenVar: event.Var[S, Children[S]],
                                         valid: Validity[S#Tx])
     extends Targets[S] {
-    def write(out: DataOutput) {
+
+    def write(out: DataOutput): Unit = {
       out        .writeByte(cookie)
       id         .write(out)
       childrenVar.write(out)
@@ -134,7 +133,7 @@ object Targets {
 
     private[lucre] def isPartial : Boolean = cookie == 1
 
-    def dispose()(implicit tx: S#Tx) {
+    def dispose()(implicit tx: S#Tx): Unit = {
       require( children.isEmpty, "Disposing a event reactor which is still being observed" )
       id         .dispose()
       childrenVar.dispose()
@@ -160,7 +159,7 @@ object Targets {
       }
     }
 
-    private[event] def resetAndValidate(slot: Int, sel: Selector[S])(implicit tx: S#Tx) {
+    private[event] def resetAndValidate(slot: Int, sel: Selector[S])(implicit tx: S#Tx): Unit = {
       log(s"$this.resetAndValidate($slot, $sel)")
       val tup = (slot.toByte, sel)
       // I'm not sure this is correct... Why would we only read children if this was partial?
@@ -216,11 +215,9 @@ object Targets {
     //      }
     //    }
 
-    private[event] def validated()(implicit tx: S#Tx) {
-      valid.update()
-    }
+    private[event] def validated()(implicit tx: S#Tx): Unit = valid.update()
 
-    //    private[event] def invalidate()(implicit tx: S#Tx) {
+    //    private[event] def invalidate()(implicit tx: S#Tx): Unit = {
     //      invalidVar() = 0xFFFFFFFF
     //    }
   }
@@ -301,7 +298,7 @@ trait Node[S <: stm.Sys[S]] extends /* Reactor[ S ] with */ VirtualNode[S] /* wi
 
   final protected def validated() (implicit tx: S#Tx)  { targets.validated() }
   final protected def isInvalid   (implicit tx: S#Tx): Boolean = targets.isInvalid
-  // final protected def invalidate()(implicit tx: S#Tx) { targets.invalidate() }
+  // final protected def invalidate()(implicit tx: S#Tx): Unit = targets.invalidate()
 
   final private[event] def _targets: Targets[S] = targets
 
@@ -311,12 +308,12 @@ trait Node[S <: stm.Sys[S]] extends /* Reactor[ S ] with */ VirtualNode[S] /* wi
 
   private[event] def select(slot: Int /*, invariant: Boolean */): Event[S, Any, Any] // NodeSelector[ S, Any ]
 
-  final def write(out: DataOutput) {
+  final def write(out: DataOutput): Unit = {
     targets.write(out)
     writeData(out)
   }
 
-  final def dispose()(implicit tx: S#Tx) {
+  final def dispose()(implicit tx: S#Tx): Unit = {
     disposeData() // call this first, as it may release events
     targets.dispose()
   }
@@ -354,7 +351,7 @@ object VirtualNode {
 
     def id: S#ID = _targets.id
 
-    def write(out: DataOutput) {
+    def write(out: DataOutput): Unit = {
       _targets.write(out)
       out.write(data)
     }
@@ -366,9 +363,7 @@ object VirtualNode {
       reader.read(in, access, _targets)
     }
 
-    def dispose()(implicit tx: S#Tx) {
-      _targets.dispose()
-    }
+    def dispose()(implicit tx: S#Tx): Unit = _targets.dispose()
 
     override def toString = "VirtualNode.Raw" + _targets.id
   }

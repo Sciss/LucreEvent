@@ -35,6 +35,6 @@ import serial.DataOutput
  * which provides no-op implementations for `writeData` and `disposeData`.
  */
 trait Singleton[S <: stm.Sys[S] /* , A, Repr */ ] extends InvariantSelector[S] {
-  final protected def disposeData()(implicit tx: S#Tx) {}
-  final protected def writeData(out: DataOutput) {}
+  final protected def disposeData()(implicit tx: S#Tx) = ()
+  final protected def writeData(out: DataOutput) = ()
 }

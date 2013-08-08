@@ -31,7 +31,7 @@ import annotation.elidable
 import elidable.CONFIG
 
 object Push {
-  private[event] def apply[S <: Sys[S], A](origin: Event[S, A, Any], update: A)(implicit tx: S#Tx) {
+  private[event] def apply[S <: Sys[S], A](origin: Event[S, A, Any], update: A)(implicit tx: S#Tx): Unit = {
     val push = new Impl(origin, update)
     log("push begin")
     //      resetIndent()
@@ -68,14 +68,9 @@ object Push {
 
     private var indent    = ""
 
-    //      @elidable(CONFIG) private def resetIndent() { indent = "" }
-    @elidable(CONFIG) private def incIndent() {
-      indent += "  "
-    }
-
-    @elidable(CONFIG) private def decIndent() {
-      indent = indent.substring(2)
-    }
+    //      @elidable(CONFIG) private def resetIndent(): Unit = indent = ""
+    @elidable(CONFIG) private def incIndent(): Unit = indent += "  "
+    @elidable(CONFIG) private def decIndent(): Unit = indent = indent.substring(2)
 
     private def addVisited(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]): Boolean = {
       val parents = pushMap.getOrElse(sel, NoParents)
@@ -84,7 +79,7 @@ object Push {
       parents.isEmpty
     }
 
-    def visitChildren(sel: VirtualNodeSelector[S]) {
+    def visitChildren(sel: VirtualNodeSelector[S]): Unit = {
       val inlet = sel.slot
       incIndent()
       try {
@@ -101,11 +96,10 @@ object Push {
       }
     }
 
-    def visit(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]) {
+    def visit(sel: VirtualNodeSelector[S], parent: VirtualNodeSelector[S]): Unit =
       if (addVisited(sel, parent)) visitChildren(sel)
-    }
 
-    //      def visit( sel: MutatingSelector[ S ], parent: VirtualNodeSelector[ S ]) {
+    //      def visit( sel: MutatingSelector[ S ], parent: VirtualNodeSelector[ S ]): Unit = {
     //         if( addVisited( sel, parent )) {
     //            mutating += sel
     //            visitChildren( sel )
@@ -118,16 +112,14 @@ object Push {
 
     def parents(sel: VirtualNodeSelector[S]): Parents[S] = pushMap.getOrElse(sel, NoParents)
 
-    def addLeaf(leaf: ObserverKey[S], parent: VirtualNodeSelector[S]) {
+    def addLeaf(leaf: ObserverKey[S], parent: VirtualNodeSelector[S]): Unit = {
       log(s"${indent}addLeaf $leaf, parent = $parent")
       tx.reactionMap.processEvent(leaf, parent, this)
     }
 
-    def addReaction(r: Reaction) {
-      reactions :+= r
-    }
+    def addReaction(r: Reaction): Unit = reactions :+= r
 
-    def pull() {
+    def pull(): Unit = {
       log(s"numReactions = ${reactions.size}")
       val firstPass = reactions.map(_.apply())
       /* val secondPass = */ firstPass.foreach(_.apply())
@@ -141,12 +133,12 @@ object Push {
       //      }
     }
 
-    //    def markInvalid(evt: MutatingSelector[S]) {
+    //    def markInvalid(evt: MutatingSelector[S]): Unit = {
     //      log("markInvalid " + evt)
     //      mutating += evt
     //    }
     //
-    //    def clearInvalid(evt: MutatingSelector[S]) {
+    //    def clearInvalid(evt: MutatingSelector[S]): Unit = {
     //      log("clearInvalid " + evt)
     //      mutating -= evt
     //    }

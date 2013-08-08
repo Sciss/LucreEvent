@@ -42,7 +42,7 @@ object InMemoryImpl {
 
     override def toString = "event.Var<" + hashCode().toHexString + ">"
 
-    final def write(out: DataOutput) {}
+    final def write(out: DataOutput) = ()
 
     // final def isFresh(implicit tx: S#Tx): Boolean = true
   }
@@ -57,17 +57,11 @@ object InMemoryImpl {
       if (v == null) default else v
     }
 
-    def transform(default: => A)(f: A => A)(implicit tx: S#Tx) {
+    def transform(default: => A)(f: A => A)(implicit tx: S#Tx): Unit =
       peer.transform(v => f(if (v == null) default else v))(tx.peer)
-    }
 
-    def update(v: A)(implicit tx: S#Tx) {
-      peer.set(v)(tx.peer)
-    }
-
-    def dispose()(implicit tx: S#Tx) {
-      peer.set(null.asInstanceOf[A])(tx.peer)
-    }
+    def update(v: A)(implicit tx: S#Tx): Unit = peer.set(v)(tx.peer)
+    def dispose   ()(implicit tx: S#Tx): Unit = peer.set(null.asInstanceOf[A])(tx.peer)
   }
 
   //  private final class IntVarImpl[S <: Sys[S]](peer: Ref[Long])
@@ -82,15 +76,15 @@ object InMemoryImpl {
   //      if (v < 0) default else v.toInt
   //    }
   //
-  //    def transform(default: => Int)(f: Int => Int)(implicit tx: S#Tx) {
+  //    def transform(default: => Int)(f: Int => Int)(implicit tx: S#Tx): Unit = {
   //      peer.transform(v => f(if (v < 0) default else v.toInt))(tx.peer)
   //    }
   //
-  //    def update(v: Int)(implicit tx: S#Tx) {
+  //    def update(v: Int)(implicit tx: S#Tx): Unit = {
   //      peer.set(v.toLong & 0xFFFFFFFFL)(tx.peer)
   //    }
   //
-  //    def dispose()(implicit tx: S#Tx) {
+  //    def dispose()(implicit tx: S#Tx): Unit = {
   //      peer.set(-1L)(tx.peer)
   //    }
   //  }

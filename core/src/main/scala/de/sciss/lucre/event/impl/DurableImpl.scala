@@ -46,19 +46,14 @@ object DurableImpl {
   private sealed trait DurableSource[S <: D[S], @specialized(Int) A] extends event.Var[S, A] {
     protected def id: Int
 
-    final def write(out: DataOutput) {
-      out.writeInt(id)
-    }
+    final def write(out: DataOutput): Unit = out.writeInt(id)
 
-    final def dispose()(implicit tx: S#Tx) {
-      tx.system.removeEvent(id)
-    }
+    final def dispose()(implicit tx: S#Tx): Unit = tx.system.removeEvent(id)
 
     final def getOrElse(default: => A)(implicit tx: S#Tx): A = get.getOrElse(default)
 
-    final def transform(default: => A)(f: A => A)(implicit tx: S#Tx) {
+    final def transform(default: => A)(f: A => A)(implicit tx: S#Tx): Unit =
       this() = f(getOrElse(default))
-    }
 
     // final def isFresh(implicit tx: S#Tx): Boolean = true
   }
@@ -69,9 +64,8 @@ object DurableImpl {
 
     def get(implicit tx: S#Tx): Option[A] = tx.system.tryReadEvent[A](id)(ser.read(_, ()))
 
-    def update(v: A)(implicit tx: S#Tx) {
+    def update(v: A)(implicit tx: S#Tx): Unit =
       tx.system.writeEvent(id)(ser.write(v, _))
-    }
 
     override def toString = "event.Var(" + id + ")"
   }
@@ -83,7 +77,7 @@ object DurableImpl {
   //      tx.system.tryReadEvent[Int](id)(_.readInt())
   //    }
   //
-  //    def update(v: Int)(implicit tx: S#Tx) {
+  //    def update(v: Int)(implicit tx: S#Tx): Unit = {
   //      tx.system.writeEvent(id)(_.writeInt(v))
   //    }
   //
@@ -100,7 +94,7 @@ object DurableImpl {
 
     protected def eventStore: DataStore
 
-    override def close() {
+    override def close(): Unit = {
       super.close()
       eventStore.close()
     }
@@ -110,12 +104,12 @@ object DurableImpl {
       eventStore.get(_.writeInt(id))(valueFun)
     }
 
-    private[event] def writeEvent(id: Int)(valueFun: DataOutput => Unit)(implicit tx: S#Tx) {
+    private[event] def writeEvent(id: Int)(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit = {
       log("writE <" + id + ">")
       eventStore.put(_.writeInt(id))(valueFun)
     }
 
-    private[event] def removeEvent(id: Int)(implicit tx: S#Tx) {
+    private[event] def removeEvent(id: Int)(implicit tx: S#Tx): Unit = {
       log("remoE <" + id + ">")
       eventStore.remove(_.writeInt(id))
     }

@@ -61,12 +61,12 @@ object ReactionMapImpl {
     // self-reference useful when Mixin is added to an event.Sys
     def reactionMap: ReactionMap[S] = this
 
-    final def processEvent(leaf: ObserverKey[S], parent: VirtualNodeSelector[S], push: Push[S])(implicit tx: S#Tx) {
+    final def processEvent(leaf: ObserverKey[S], parent: VirtualNodeSelector[S], push: Push[S])
+                          (implicit tx: S#Tx): Unit = {
       val itx = tx.peer
-      eventMap.get(leaf.id)(itx).foreach {
-        obs =>
-          val react = obs.reaction(parent, push)
-          push.addReaction(react)
+      eventMap.get(leaf.id)(itx).foreach { obs =>
+        val react = obs.reaction(parent, push)
+        push.addReaction(react)
       }
     }
 
@@ -79,8 +79,7 @@ object ReactionMapImpl {
       new ObserverKey[S](key)
     }
 
-    def removeEventReaction(key: ObserverKey[S])(implicit tx: S#Tx) {
+    def removeEventReaction(key: ObserverKey[S])(implicit tx: S#Tx): Unit =
       eventMap.-=(key.id)(tx.peer)
-    }
   }
 }

@@ -40,13 +40,8 @@ trait MappingGenerator[S <: Sys[S], A, B, +Repr]
   /** Folds a new input event, by combining it with an optional previous output event. */
   protected def foldUpdate(generated: Option[A], input: B)(implicit tx: S#Tx): Option[A]
 
-  final private[lucre] def connect()(implicit tx: S#Tx) {
-    inputEvent ---> this
-  }
-
-  final private[lucre] def disconnect()(implicit tx: S#Tx) {
-    inputEvent -/-> this
-  }
+  final private[lucre] def connect   ()(implicit tx: S#Tx): Unit = inputEvent ---> this
+  final private[lucre] def disconnect()(implicit tx: S#Tx): Unit = inputEvent -/-> this
 
   final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
     val gen = if (pull.isOrigin(this)) pull.resolve[A] else None

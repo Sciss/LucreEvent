@@ -39,8 +39,8 @@ object Bang {
 
     override def toString = "Bang"
 
-    def apply()(implicit tx: S#Tx) { fire(())  }
-    def apply(unit: Unit)(implicit tx: S#Tx) { apply(()) }
+    def apply()(implicit tx: S#Tx): Unit = fire()
+    def apply(unit: Unit)(implicit tx: S#Tx): Unit = fire()
   }
 
   implicit def serializer[S <: Sys[S]]: NodeSerializer[S, Bang[S]] = new NodeSerializer[S, Bang[S]] {

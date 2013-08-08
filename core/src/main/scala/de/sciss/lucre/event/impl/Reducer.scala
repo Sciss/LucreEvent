@@ -51,27 +51,23 @@ trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] {
   object changed extends impl.EventImpl[S, A, Repr] with InvariantEvent[S, A, Repr] {
     def node: Repr with Node[S] = self
 
-    //    def --->(r: Selector[S])(implicit tx: S#Tx) {
+    //    def --->(r: Selector[S])(implicit tx: S#Tx): Unit = {
     //      events.foreach(_ ---> r)
     //    }
     //
-    //    def -/->(r: Selector[S])(implicit tx: S#Tx) {
+    //    def -/->(r: Selector[S])(implicit tx: S#Tx): Unit = {
     //      events.foreach(_ -/-> r)
     //    }
 
     override def toString = s"$node.changed"
     def slot: Int = changedSlot // events.size // throw new UnsupportedOperationException
 
-    def connect   ()(implicit tx: S#Tx) {
-      events.foreach(_ ---> this)
-    }
-    def disconnect()(implicit tx: S#Tx) {
-      events.foreach(_ -/-> this)
-    }
+    def connect   ()(implicit tx: S#Tx): Unit = events.foreach(_ ---> this)
+    def disconnect()(implicit tx: S#Tx): Unit = events.foreach(_ -/-> this)
 
     protected def reader: Reader[S, Repr] = self.reader
 
-    private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
+    private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] =
       events.foldLeft(Option.empty[A]) {
         case (res, e) =>
           if (pull.contains(e)) {
@@ -81,7 +77,6 @@ trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] {
             }
           } else res
       }
-    }
   }
 
   final def select(slot: Int /*, invariant: Boolean */): Event[S, Any, Any] = {
