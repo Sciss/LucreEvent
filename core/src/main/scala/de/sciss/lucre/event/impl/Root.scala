@@ -35,5 +35,5 @@ trait Root[S <: stm.Sys[S], +A] {
   final private[lucre] def connect   ()(implicit tx: S#Tx) = ()
   final private[lucre] def disconnect()(implicit tx: S#Tx) = ()
 
-  final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = pull.resolve[A]
+  final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = Some(pull.resolve[A])
 }

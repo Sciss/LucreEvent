@@ -51,13 +51,12 @@ trait VarImpl[S <: event.Sys[S], A]
 
   final def value(implicit tx: S#Tx): A = ref().value
 
-  private[lucre] final def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[Change[A]] = {
+  private[lucre] final def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[Change[A]] =
     if (pull.parents(this /* select() */).isEmpty) {
-      pull.resolve[Change[A]]
+      Some(pull.resolve[Change[A]])
     } else {
       pull(this().changed)
     }
-  }
 
   override def toString = "Expr.Var" + id
 }

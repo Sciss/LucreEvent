@@ -29,7 +29,7 @@ package impl
 
 /** A trait which combined external input events with self generated events. */
 trait MappingGenerator[S <: Sys[S], A, B, +Repr]
-  extends Generator[S, A, Repr]
+  extends Generator  [S, A, Repr]
   with StandaloneLike[S, A, Repr] {
   _: Repr =>
 
@@ -44,7 +44,7 @@ trait MappingGenerator[S <: Sys[S], A, B, +Repr]
   final private[lucre] def disconnect()(implicit tx: S#Tx): Unit = inputEvent -/-> this
 
   final private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A] = {
-    val gen = if (pull.isOrigin(this)) pull.resolve[A] else None
+    val gen = if (pull.isOrigin(this)) Some(pull.resolve[A]) else None
     if (pull.contains(inputEvent)) pull(inputEvent) match {
       case Some(e)  => foldUpdate(gen, e)
       case _        => gen

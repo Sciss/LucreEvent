@@ -143,9 +143,9 @@ object Push {
     //      mutating -= evt
     //    }
 
-    def resolve[A]: Option[A] = {
+    def resolve[A]: A = {
       log(s"${indent}resolve")
-      Some(update.asInstanceOf[A])
+      update.asInstanceOf[A]
     }
 
     // caches pulled values
@@ -171,7 +171,7 @@ object Push {
 
 sealed trait Pull[S <: stm.Sys[S]] {
   /** Assuming that the caller is origin of the event, resolves the update of the given type. */
-  def resolve[A]: Option[A]
+  def resolve[A]: A
 
   // def update: Any
 
