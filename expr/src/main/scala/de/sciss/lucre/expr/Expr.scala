@@ -55,7 +55,7 @@ object Expr {
   }
 
   trait Const[S <: Sys[S], +A] extends Expr[S, A] {
-    final def changed = Dummy[S, Change[A], Expr[S, A]]
+    final def changed = Dummy[S, Change[A]]
 
     protected def constValue: A
     final def value(implicit tx: S#Tx): A = constValue
@@ -69,7 +69,7 @@ object Expr {
 }
 
 trait Expr[S <: Sys[S], +A] extends Writable with Disposable[S#Tx] {
-  def changed: EventLike[S, Change[A], Expr[S, A]]
+  def changed: EventLike[S, Change[A]]
 
   def value(implicit tx: S#Tx): A
 

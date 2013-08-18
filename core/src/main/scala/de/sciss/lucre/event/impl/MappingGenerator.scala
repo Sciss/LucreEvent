@@ -33,7 +33,7 @@ trait MappingGenerator[S <: Sys[S], A, B, +Repr]
   with StandaloneLike[S, A, Repr] {
   _: Repr =>
 
-  protected def inputEvent: EventLike[S, B, _]
+  protected def inputEvent: EventLike[S, B]
 
   def changed: Event[S, A, Repr] = this
 

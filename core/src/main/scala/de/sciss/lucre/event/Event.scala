@@ -214,7 +214,7 @@ final case class ObserverKey[S <: stm.Sys[S]] private[lucre](id: Int) extends /*
   protected def writeSelectorData(out: DataOutput): Unit = out.writeInt(id)
 }
 
-trait EventLike[S <: stm.Sys[S], +A, +Repr] {
+trait EventLike[S <: stm.Sys[S], +A] {
   /**
    * Connects the given selector to this event. That is, this event will
    * adds the selector to its propagation targets.
@@ -263,36 +263,33 @@ trait EventLike[S <: stm.Sys[S], +A, +Repr] {
 
   //   private[lucre] def reconnect()( implicit tx: S#Tx ) : Unit
 
-  /**
-   * Involves this event in the pull-phase of event delivery. The event should check
-   * the source of the originally fired event, and if it identifies itself with that
-   * source, cast the `update` to the appropriate type `A` and wrap it in an instance
-   * of `Some`. If this event is not the source, it should invoke `pull` on any
-   * appropriate event source feeding this event.
-   *
-   * @return  the `update` as seen through this event, or `None` if the event did not
-   *          originate from this part of the dependency graph or was absorbed by
-   *          a filtering function
-   */
+  /** Involves this event in the pull-phase of event delivery. The event should check
+    * the source of the originally fired event, and if it identifies itself with that
+    * source, cast the `update` to the appropriate type `A` and wrap it in an instance
+    * of `Some`. If this event is not the source, it should invoke `pull` on any
+    * appropriate event source feeding this event.
+    *
+    * @return  the `update` as seen through this event, or `None` if the event did not
+    *          originate from this part of the dependency graph or was absorbed by
+    *          a filtering function
+    */
   private[lucre] def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[A]
 }
 
 object Dummy {
-  /**
-   * This method is cheap.
-   */
-  def apply[S <: stm.Sys[S], A, Repr]: Dummy[S, A, Repr] = anyDummy.asInstanceOf[Dummy[S, A, Repr]]
+  /** This method is cheap. */
+  def apply[S <: stm.Sys[S], A]: Dummy[S, A] = anyDummy.asInstanceOf[Dummy[S, A]]
 
   private val anyDummy = new Impl[stm.InMemory]
 
-  private final class Impl[S <: stm.Sys[S]] extends Dummy[S, Any, Any] {
+  private final class Impl[S <: stm.Sys[S]] extends Dummy[S, Any] {
     override def toString = "event.Dummy"
   }
 
   private def opNotSupported = sys.error("Operation not supported ")
 }
 
-trait Dummy[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A, Repr] {
+trait Dummy[S <: stm.Sys[S], +A] extends EventLike[S, A] {
   import Dummy._
 
   final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) = ()
@@ -321,7 +318,7 @@ trait Dummy[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A, Repr] {
  * implementations should extend either of `Event.Constant` or `Event.Node` (which itself is sealed and
  * split into `Event.Invariant` and `Event.Mutating`.
  */
-trait Event[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A, Repr] with VirtualNodeSelector[S] {
+trait Event[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A] with VirtualNodeSelector[S] {
   // with NodeSelector[ S, A ]
   /* private[lucre] */ def node: Repr with Node[S]
 

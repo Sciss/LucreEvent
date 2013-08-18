@@ -61,11 +61,11 @@ object LinkedList {
     /**
      * Returns a serializer for a modifiable list, given the provided mapping function from elements to their events.
      */
-    def serializer[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U, Elem])(
+    def serializer[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U])(
       implicit elemSerializer: evt.Serializer[S, Elem]): serial.Serializer[S#Tx, S#Acc, Modifiable[S, Elem, U]] =
       Impl.activeModifiableSerializer(eventView)
 
-    def read[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U, Elem])(in: DataInput, access: S#Acc)
+    def read[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U])(in: DataInput, access: S#Acc)
                                       (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): Modifiable[S, Elem, U] =
       Impl.activeModifiableRead(eventView)(in, access)
 
@@ -82,7 +82,7 @@ object LinkedList {
     /**
      * Creates a new empty linked list, given the provided mapping function from elements to their events.
      */
-    def apply[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U, Elem])
+    def apply[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U])
                                        (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): Modifiable[S, Elem, U] =
       Impl.newActiveModifiable[S, Elem, U](eventView)
 
@@ -114,10 +114,10 @@ object LinkedList {
   object Expr {
     type Modifiable[S <: stm.Sys[S], A] = LinkedList.Modifiable[S, Ex[S, A], evt.Change[A]]
 
-    private val anyChanged: Ex[InMemory, Any] => EventLike[InMemory, evt.Change[Any], Ex[InMemory, Any]] = _.changed
+    private val anyChanged: Ex[InMemory, Any] => EventLike[InMemory, evt.Change[Any]] = _.changed
 
-    private def changed[S <: stm.Sys[S], A]: Ex[S, A] => EventLike[S, evt.Change[A], Ex[S, A]] =
-      anyChanged.asInstanceOf[Ex[S, A] => EventLike[S, evt.Change[A], Ex[S, A]]]
+    private def changed[S <: stm.Sys[S], A]: Ex[S, A] => EventLike[S, evt.Change[A]] =
+      anyChanged.asInstanceOf[Ex[S, A] => EventLike[S, evt.Change[A]]]
 
     def serializer[S <: evt.Sys[S], A](implicit elemType: Type[A]): serial.Serializer[S#Tx, S#Acc, Expr[S, A]] =
       Impl.activeSerializer[S, Ex[S, A], evt.Change[A]](changed)(elemType.serializer[S])
@@ -139,11 +139,11 @@ object LinkedList {
 
   type Expr[S <: stm.Sys[S], A] = LinkedList[S, Ex[S, A], evt.Change[A]]
 
-  def serializer[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U, Elem])(
+  def serializer[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U])(
     implicit elemSerializer: evt.Serializer[S, Elem]): serial.Serializer[S#Tx, S#Acc, LinkedList[S, Elem, U]] =
     Impl.activeSerializer[S, Elem, U](eventView)
 
-  def read[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U, Elem])(in: DataInput, access: S#Acc)
+  def read[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U])(in: DataInput, access: S#Acc)
                                     (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): LinkedList[S, Elem, U] =
     Impl.activeRead(eventView)(in, access)
 
@@ -187,10 +187,10 @@ trait LinkedList[S <: stm.Sys[S], Elem, U] extends evt.Node[S] {
     * Note: this is an O(n) operation.
     */
    def indexOf( elem: Elem )( implicit tx: S#Tx ) : Int
-   
-//   def collectionChanged:  Event[     S, LinkedList.Collection[ S, Elem, U ], LinkedList[ S, Elem, U ]]
-//   def elementChanged:     EventLike[ S, LinkedList.Element[    S, Elem, U ], LinkedList[ S, Elem, U ]]
-   def changed: EventLike[ S, LinkedList.Update[ S, Elem, U ], LinkedList[ S, Elem, U ]]
 
-   def debugList()( implicit tx: S#Tx ) : List[ Elem ]
+  //   def collectionChanged:  Event[     S, LinkedList.Collection[ S, Elem, U ], LinkedList[ S, Elem, U ]]
+  //   def elementChanged:     EventLike[ S, LinkedList.Element[    S, Elem, U ], LinkedList[ S, Elem, U ]]
+  def changed: EventLike[S, LinkedList.Update[S, Elem, U]]
+
+  def debugList()(implicit tx: S#Tx): List[Elem]
 }

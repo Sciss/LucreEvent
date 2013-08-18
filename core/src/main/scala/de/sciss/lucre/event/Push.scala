@@ -62,7 +62,7 @@ object Push {
   private final class Impl[S <: Sys[S]](origin: Event[S, Any, Any], val update: Any)(implicit tx: S#Tx)
     extends Push[S] {
     private var pushMap   = Map((origin: Any, NoParents[S]))
-    private var pullMap   = Map.empty[EventLike[S, Any, Any], Option[Any]]
+    private var pullMap   = Map.empty[EventLike[S, Any], Option[Any]]
     private var reactions = NoReactions
     // private var mutating  = NoMutating[S]
 
@@ -106,9 +106,9 @@ object Push {
     //         }
     //      }
 
-    def contains(source: EventLike[S, Any, Any]): Boolean = pushMap.contains(source)
+    def contains(source: EventLike[S, Any]): Boolean = pushMap.contains(source)
 
-    def isOrigin(that: EventLike[S, Any, Any]) = that == origin
+    def isOrigin(that: EventLike[S, Any]) = that == origin
 
     def parents(sel: VirtualNodeSelector[S]): Parents[S] = pushMap.getOrElse(sel, NoParents)
 
@@ -149,7 +149,7 @@ object Push {
     }
 
     // caches pulled values
-    def apply[A](source: EventLike[S, A, Any]): Option[A] = {
+    def apply[A](source: EventLike[S, A]): Option[A] = {
       incIndent()
       try {
         pullMap.get(source) match {
@@ -179,11 +179,11 @@ sealed trait Pull[S <: stm.Sys[S]] {
   def parents(sel: VirtualNodeSelector[S]): Push.Parents[S]
 
   /** Pulls the update from the given source. */
-  def apply[A](source: EventLike[S, A, Any]): Option[A]
+  def apply[A](source: EventLike[S, A]): Option[A]
 
   /** Whether the selector has been visited during the push phase. */
-  /* private[event] */ def contains(source: EventLike[S, Any, Any]): Boolean
-  def isOrigin(source: EventLike[S, Any, Any]): Boolean
+  /* private[event] */ def contains(source: EventLike[S, Any]): Boolean
+  def isOrigin(source: EventLike[S, Any]): Boolean
 
   // private[event] def clearInvalid(evt: MutatingSelector[S])
 }
