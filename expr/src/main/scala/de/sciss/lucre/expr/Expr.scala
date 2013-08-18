@@ -62,7 +62,7 @@ object Expr {
 
     override def toString = constValue.toString
 
-    final def dispose()(implicit tx: S#Tx) {}
+    final def dispose()(implicit tx: S#Tx) = ()
   }
 
   def isConst(expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const[_, _]]

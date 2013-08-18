@@ -45,9 +45,7 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
   private val anyVarSer = new VarSer[event.InMemory]
 
   private final class VarSer[S <: evt.Sys[S]] extends Serializer[S#Tx, S#Acc, ReprVar[S]] {
-    def write(v: ReprVar[S], out: DataOutput) {
-      v.write(out)
-    }
+    def write(v: ReprVar[S], out: DataOutput): Unit = v.write(out)
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): ReprVar[S] = readVar[S](in, access)
   }
@@ -90,17 +88,12 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
 
     protected def reader = serializer[S]
 
-    private[lucre] def connect()(implicit tx: S#Tx) {
-      _1.changed ---> this
-    }
-
-    private[lucre] def disconnect()(implicit tx: S#Tx) {
-      _1.changed -/-> this
-    }
+    private[lucre] def connect   ()(implicit tx: S#Tx): Unit = _1.changed ---> this
+    private[lucre] def disconnect()(implicit tx: S#Tx): Unit = _1.changed -/-> this
 
     def value(implicit tx: S#Tx) = op.value(_1.value)
 
-    protected def writeData(out: DataOutput) {
+    protected def writeData(out: DataOutput): Unit = {
       out.writeByte(1)
       out.writeInt(typeID)
       out.writeInt(op.id)
@@ -119,7 +112,7 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
   trait Tuple2Op[T1, T2] extends TupleOp {
     def value(a: T1, b: T2): A
 
-    final protected def writeTypes(out: DataOutput) {}
+    final protected def writeTypes(out: DataOutput) = ()
 
     final def unapply[S <: evt.Sys[S]](ex: Expr[S, A])(implicit tx: S#Tx): Option[(Expr[S, T1], Expr[S, T2])] =
       ex match {
@@ -138,19 +131,19 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
 
     protected def reader = serializer[S]
 
-    private[lucre] def connect()(implicit tx: S#Tx) {
+    private[lucre] def connect()(implicit tx: S#Tx): Unit = {
       _1.changed ---> this
       _2.changed ---> this
     }
 
-    private[lucre] def disconnect()(implicit tx: S#Tx) {
+    private[lucre] def disconnect()(implicit tx: S#Tx): Unit = {
       _1.changed -/-> this
       _2.changed -/-> this
     }
 
     def value(implicit tx: S#Tx) = op.value(_1.value, _2.value)
 
-    protected def writeData(out: DataOutput) {
+    protected def writeData(out: DataOutput): Unit = {
       out.writeByte(2)
       out.writeInt(typeID)
       out.writeInt(op.id)

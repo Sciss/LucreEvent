@@ -178,13 +178,11 @@ object LinkedListImpl {
     final protected def elementChanged: EventLike[S, LinkedList.Update[S, Elem, U], LinkedList[S, Elem, U]] =
       ElementEvent
 
-    final protected def registerElement(elem: Elem)(implicit tx: S#Tx) {
+    final protected def registerElement(elem: Elem)(implicit tx: S#Tx): Unit =
       eventView(elem) ---> ElementEvent
-    }
 
-    final protected def unregisterElement(elem: Elem)(implicit tx: S#Tx) {
+    final protected def unregisterElement(elem: Elem)(implicit tx: S#Tx): Unit =
       eventView(elem) -/-> ElementEvent
-    }
 
     private object ElementEvent
       extends eimpl.EventImpl[S, LinkedList.Update[S, Elem, U], LinkedList[S, Elem, U]]
@@ -196,13 +194,8 @@ object LinkedListImpl {
 
       def node: LinkedList[S, Elem, U] = list
 
-      def connect   ()(implicit tx: S#Tx) {
-        foreach(registerElement)
-      }
-
-      def disconnect()(implicit tx: S#Tx) {
-        foreach(unregisterElement)
-      }
+      def connect   ()(implicit tx: S#Tx): Unit = foreach(registerElement  )
+      def disconnect()(implicit tx: S#Tx): Unit = foreach(unregisterElement)
 
       private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[LinkedList.Update[S, Elem, U]] = {
         val changes: IIdxSeq[LinkedList.Element[S, Elem, U]] = pull.parents(this).flatMap(sel => {
@@ -230,8 +223,8 @@ object LinkedListImpl {
     final protected def elementChanged: EventLike[S, LinkedList.Update[S, Elem, Unit], LinkedList[S, Elem, Unit]] =
       evt.Dummy.apply
 
-    final protected def registerElement  (elem: Elem)(implicit tx: S#Tx) {}
-    final protected def unregisterElement(elem: Elem)(implicit tx: S#Tx) {}
+    final protected def registerElement  (elem: Elem)(implicit tx: S#Tx) = ()
+    final protected def unregisterElement(elem: Elem)(implicit tx: S#Tx) = ()
 
     final protected def reader: evt.Reader[S, LinkedList[S, Elem, Unit]] = passiveSerializer
 
@@ -260,7 +253,7 @@ object LinkedListImpl {
     // ---- event behaviour ----
 
     protected implicit object CellSer extends Serializer[S#Tx, S#Acc, C] {
-      def write(cell: C, out: DataOutput) {
+      def write(cell: C, out: DataOutput): Unit =
         if (cell != null) {
           out.writeByte(1)
           elemSerializer.write(cell.elem, out)
@@ -269,7 +262,6 @@ object LinkedListImpl {
         } else {
           out.writeByte(0)
         }
-      }
 
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): C = {
         (in.readByte: @switch) match {
@@ -308,11 +300,11 @@ object LinkedListImpl {
 
       def node: LinkedList[S, Elem, U] = list
 
-      def connect   ()(implicit tx: S#Tx) {
+      def connect   ()(implicit tx: S#Tx): Unit = {
         CollectionEvent ---> this
         elementChanged  ---> this
       }
-      def disconnect()(implicit tx: S#Tx) {
+      def disconnect()(implicit tx: S#Tx): Unit = {
         CollectionEvent -/-> this
         elementChanged  -/-> this
       }
@@ -383,21 +375,21 @@ object LinkedListImpl {
       if (rec == null) None else Some(rec.elem)
     }
 
-    final def addLast(elem: Elem)(implicit tx: S#Tx) {
+    final def addLast(elem: Elem)(implicit tx: S#Tx): Unit = {
       val pred      = lastRef()
       val succ      = null
       val idx       = sizeRef()
       insert(elem, pred, succ, idx)
     }
 
-    final def addHead(elem: Elem)(implicit tx: S#Tx) {
+    final def addHead(elem: Elem)(implicit tx: S#Tx): Unit = {
       val pred      = null
       val succ      = headRef()
       val idx       = 0
       insert(elem, pred, succ, idx)
     }
 
-    def insert(index: Int, elem: Elem)(implicit tx: S#Tx) {
+    def insert(index: Int, elem: Elem)(implicit tx: S#Tx): Unit = {
       if (index < 0)      throw new IndexOutOfBoundsException(index.toString)
       var pred      = null: C
       var succ      = headRef()
@@ -411,7 +403,7 @@ object LinkedListImpl {
       insert(elem, pred, succ, idx)
     }
 
-    private def insert(elem: Elem, pred: C, succ: C, idx: Int)(implicit tx: S#Tx) {
+    private def insert(elem: Elem, pred: C, succ: C, idx: Int)(implicit tx: S#Tx): Unit = {
       val recPred   = tx.newVar[C](id, pred)
       val recSucc   = tx.newVar[C](id, succ)
       val rec       = new Cell(elem, recPred, recSucc)
@@ -428,23 +420,21 @@ object LinkedListImpl {
 
     final protected def isConnected(implicit tx: S#Tx) = targets.nonEmpty
 
-    final protected def foreach(fun: Elem => Unit)(implicit tx: S#Tx) {
-      @tailrec def loop(cell: C) {
+    final protected def foreach(fun: Elem => Unit)(implicit tx: S#Tx): Unit = {
+      @tailrec def loop(cell: C): Unit =
         if (cell != null) {
           fun(cell.elem)
           loop(cell.succ())
         }
-      }
+
       loop(headRef())
     }
 
-    private def fireAdded(idx: Int, elem: Elem)(implicit tx: S#Tx) {
+    private def fireAdded(idx: Int, elem: Elem)(implicit tx: S#Tx): Unit =
       CollectionEvent(LinkedList.Update(list, IIdxSeq(LinkedList.Added(idx, elem))))
-    }
 
-    private def fireRemoved(idx: Int, elem: Elem)(implicit tx: S#Tx) {
+    private def fireRemoved(idx: Int, elem: Elem)(implicit tx: S#Tx): Unit =
       CollectionEvent(LinkedList.Update(list, IIdxSeq(LinkedList.Removed(idx, elem))))
-    }
 
     final def remove(elem: Elem)(implicit tx: S#Tx): Boolean = {
       var rec = headRef()
@@ -483,7 +473,7 @@ object LinkedListImpl {
     }
 
     // unlinks a cell and disposes it. does not fire. decrements sizeRef
-    private def removeCell(cell: C)(implicit tx: S#Tx) {
+    private def removeCell(cell: C)(implicit tx: S#Tx): Unit = {
       val pred = cell.pred()
       val succ = cell.succ()
       if (pred != null) {
@@ -541,18 +531,17 @@ object LinkedListImpl {
       e
     }
 
-    final def clear()(implicit tx: S#Tx) {
+    final def clear()(implicit tx: S#Tx): Unit =
       while (nonEmpty) removeLast()
-    }
 
     // unregisters element event. disposes cell contents, but does not unlink, nor fire.
-    private def disposeCell(cell: C)(implicit tx: S#Tx) {
+    private def disposeCell(cell: C)(implicit tx: S#Tx): Unit = {
       unregisterElement(cell.elem)
       cell.pred.dispose()
       cell.succ.dispose()
     }
 
-    final protected def disposeData()(implicit tx: S#Tx) {
+    final protected def disposeData()(implicit tx: S#Tx): Unit = {
       var rec = headRef()
       while (rec != null) {
         val tmp = rec.succ()
@@ -564,7 +553,7 @@ object LinkedListImpl {
       lastRef.dispose()
     }
 
-    final protected def writeData(out: DataOutput) {
+    final protected def writeData(out: DataOutput): Unit = {
       sizeRef.write(out)
       headRef.write(out)
       lastRef.write(out)

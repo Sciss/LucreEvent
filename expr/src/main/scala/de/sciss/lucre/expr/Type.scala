@@ -89,9 +89,8 @@ trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] 
   private final case class Const[S <: stm.Sys[S]](constValue: A) extends expr.impl.ConstImpl[S, A] {
     // def react(fun: S#Tx => Change[S] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = evt.Observer.dummy[S]
 
-    protected def writeData(out: DataOutput) {
+    protected def writeData(out: DataOutput): Unit =
       writeValue(constValue, out)
-    }
   }
 
   private final class Var[S <: evt.Sys[S]](protected val ref: S#Var[Ex[S]], protected val targets: evt.Targets[S])

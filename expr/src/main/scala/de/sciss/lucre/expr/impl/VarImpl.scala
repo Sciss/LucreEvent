@@ -20,26 +20,19 @@ trait VarImpl[S <: event.Sys[S], A]
 
   protected def reader: event.Reader[S, Expr[S, A]]
 
-  final protected def writeData(out: DataOutput) {
+  final protected def writeData(out: DataOutput): Unit = {
     out.writeByte(0)
     ref.write(out)
   }
 
-  final protected def disposeData()(implicit tx: S#Tx) {
-    ref.dispose()
-  }
+  final protected def disposeData()(implicit tx: S#Tx): Unit =ref.dispose()
 
-  final private[lucre] def connect()(implicit tx: S#Tx) {
-    ref().changed ---> this
-  }
-
-  final private[lucre] def disconnect()(implicit tx: S#Tx) {
-    ref().changed -/-> this
-  }
+  final private[lucre] def connect   ()(implicit tx: S#Tx): Unit = ref().changed ---> this
+  final private[lucre] def disconnect()(implicit tx: S#Tx): Unit = ref().changed -/-> this
 
   final def apply()(implicit tx: S#Tx): Ex = ref()
 
-  final def update(expr: Ex)(implicit tx: S#Tx) {
+  final def update(expr: Ex)(implicit tx: S#Tx): Unit = {
     val before = ref()
     if (before != expr) {
       val con = targets.nonEmpty
@@ -54,9 +47,7 @@ trait VarImpl[S <: event.Sys[S], A]
     }
   }
 
-  final def transform(f: Ex => Ex)(implicit tx: S#Tx) {
-    this() = f(this())
-  }
+  final def transform(f: Ex => Ex)(implicit tx: S#Tx): Unit = this() = f(this())
 
   final def value(implicit tx: S#Tx): A = ref().value
 

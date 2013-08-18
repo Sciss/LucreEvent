@@ -198,7 +198,7 @@ object Targets {
     //    private[event] def isInvalid(slot: Int)(implicit tx: S#Tx): Boolean =
     //      !invalidVar.isFresh || ((invalidVar.getOrElse(0) & (1 << slot)) != 0)
 
-    //    private[event] def validated(slot: Int)(implicit tx: S#Tx) {
+    //    private[event] def validated(slot: Int)(implicit tx: S#Tx): Unit = {
     //      val mask = ~(1 << slot)
     //      if (invalidVar.isFresh) {
     //        invalidVar.transform(0)(_ & mask)
@@ -207,7 +207,7 @@ object Targets {
     //      }
     //    }
 
-    //    private[event] def invalidate(slot: Int)(implicit tx: S#Tx) {
+    //    private[event] def invalidate(slot: Int)(implicit tx: S#Tx): Unit = {
     //      if (invalidVar.isFresh) {
     //        invalidVar.transform(0)(_ | (1 << slot))
     //      } else {

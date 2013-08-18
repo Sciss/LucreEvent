@@ -7,7 +7,7 @@ trait NodeImpl[ S <: event.Sys[ S ], A ] extends Expr.Node[ S, A ]
 with eimpl.StandaloneLike[ S, Change[ A ], Expr[ S, A ]] with InvariantSelector[ S ] {
    final def changed: Event[ S, Change[ A ], Expr[ S, A ]] = this
 
-   final def disposeData()( implicit tx: S#Tx ) {}
+   final def disposeData()( implicit tx: S#Tx ) = ()
 
    override def toString = "Expr" + id
 }

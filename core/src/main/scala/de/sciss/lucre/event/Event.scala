@@ -137,7 +137,7 @@ sealed trait VirtualNodeSelector[S <: stm.Sys[S]] extends Selector[S] {
   def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]]
 
   // MMM
-  //   final protected def writeSelectorData( out: DataOutput ) {
+  //   final protected def writeSelectorData( out: DataOutput ): Unit = {
   //      out.writeInt( slot )
   //      reactor.id.write( out )
   //   }
@@ -170,18 +170,17 @@ trait InvariantSelector[S <: stm.Sys[S]] extends VirtualNodeSelector[S] {
 //trait MutatingSelector[S <: stm.Sys[S]] extends VirtualNodeSelector[S] {
 //  final protected def cookie: Int = 1
 //
-//  //   final private[event] def _invalidate()( implicit tx: S#Tx ) {
+//  //   final private[event] def _invalidate()( implicit tx: S#Tx ): Unit =
 //  //      reactor._targets.invalidate( slot )
-//  //   }
 //
-//  //   final /* protected */ def invalidate()( implicit tx: S#Tx ) {
+//  //   final /* protected */ def invalidate()( implicit tx: S#Tx ): Unit = {
 //  ////      _invalidate()
 //  //      reactor._targets.invalidate( slot )
 //  //   }
 //  //   final /* protected */ def isInvalid( implicit tx: S#Tx ) : Boolean = reactor._targets.isInvalid( slot )
-//  //   final /* protected */ def validated()( implicit tx: S#Tx ) { reactor._targets.validated( slot )}
+//  //   final /* protected */ def validated()( implicit tx: S#Tx ): Unit = reactor._targets.validated( slot )
 //
-//  final private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]) {
+//  final private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit = {
 //    push.markInvalid(this)
 //    push.visit(this, parent)
 //  }
@@ -208,7 +207,7 @@ final case class ObserverKey[S <: stm.Sys[S]] private[lucre](id: Int) extends /*
   }
 
   // MMM
-  //   private[event] def writeValue()( implicit tx: S#Tx ) {}  // we are light weight, nothing to do here
+  //   private[event] def writeValue()( implicit tx: S#Tx ) = ()  // we are light weight, nothing to do here
 
   def dispose()(implicit tx: S#Tx) = () // XXX really?
 
