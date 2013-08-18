@@ -38,8 +38,8 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
   implicit final def varSerializer[S <: evt.Sys[S]]: Serializer[S#Tx, S#Acc, ReprVar[S]] =
     anyVarSer.asInstanceOf[VarSer[S]]
 
-  final def change[S <: stm.Sys[S]](before: A, now: A): Option[evt.Change[A]] =
-    new evt.Change(before, now).toOption
+  final def change[S <: stm.Sys[S]](before: A, now: A): Option[model.Change[A]] =
+    new model.Change(before, now).toOption
 
   private val anySer    = new Ser   [event.InMemory]
   private val anyVarSer = new VarSer[event.InMemory]
@@ -100,11 +100,10 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
       _1.write(out)
     }
 
-    private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[evt.Change[A]] = {
+    private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[model.Change[A]] =
       pull(_1.changed).flatMap { ach =>
         change(op.value(ach.before), op.value(ach.now))
       }
-    }
 
     override def toString = op.toString(_1)
   }
@@ -151,7 +150,7 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
       _2.write(out)
     }
 
-    private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[evt.Change[A]] = {
+    private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[model.Change[A]] = {
       val _1c = _1.changed
       val _2c = _2.changed
 

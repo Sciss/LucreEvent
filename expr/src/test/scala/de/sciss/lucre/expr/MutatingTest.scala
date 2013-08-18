@@ -34,7 +34,7 @@
 //""" )
 //   }
 //
-//   def run[ S <: evt.Sys[ S ] with stm.Cursor[ S ]]( setup: (S, () => Unit) ) {
+//   def run[ S <: evt.Sys[ S ] with stm.Cursor[ S ]]( setup: (S, () => Unit) ): Unit = {
 //      val (system, cleanUp) = setup
 //      try {
 //         system.step { implicit tx =>
@@ -147,7 +147,7 @@
 //            seq().toList
 //         }
 //
-//         final protected def ensureValidity()( implicit tx: S#Tx ) {
+//         final protected def ensureValidity()( implicit tx: S#Tx ): Unit = {
 //            if( isInvalid ) {
 //println( "VALIDATING" )
 //               val sz = unsorted.size
@@ -160,7 +160,7 @@
 //
 //         override def toString = "Sorted" + id
 //
-//         final protected def add( elem: Elem )( implicit tx: S#Tx ) {
+//         final protected def add( elem: Elem )( implicit tx: S#Tx ): Unit = {
 //println( "ADD" )
 //            val es         = seq()
 //            val newStart   = elem.span.value.start
@@ -172,7 +172,7 @@
 ////            collectionChanged( Added( this, elem ))
 //         }
 //
-//         private def remove( elem: Elem )( implicit tx: S#Tx ) {
+//         private def remove( elem: Elem )( implicit tx: S#Tx ): Unit = {
 //            val es         = seq()
 //            val idx        = es.indexOf( elem )
 //            if( idx < 0 ) return
@@ -180,14 +180,14 @@
 //            seq()         = esNew
 //         }
 //
-//         final protected def disposeData()( implicit tx: S#Tx ) {
+//         final protected def disposeData()( implicit tx: S#Tx ): Unit = {
 //            // XXX not so nice having to handle this explicitly
 //            collectionChanged.disconnect()
 //            elementChanged.disconnect()
 //            seq.dispose()
 //         }
 //
-//         final protected def writeData( out: DataOutput ) {
+//         final protected def writeData( out: DataOutput ): Unit = {
 //            unsorted.write( out )
 //            seq.write( out )
 //         }

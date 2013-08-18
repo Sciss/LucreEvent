@@ -33,7 +33,7 @@ import serial.{DataInput, DataOutput}
 trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] {
   final protected type Ex [S <: stm.Sys[S]] = Expr[S, A]
   final protected type ExN[S <: stm.Sys[S]] = Expr[S, A] with event.Node[S]
-  final protected type Change[S <: stm.Sys[S]] = event.Change[A]
+  final protected type Change = model.Change[A]
 
   // ---- abstract ----
 

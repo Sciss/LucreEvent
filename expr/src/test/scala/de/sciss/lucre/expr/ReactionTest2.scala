@@ -128,7 +128,7 @@
 //            )
 //         )
 //
-//         private def stringToModel( s: String, model: (Tx, R, String) => Unit )( implicit system: S ) {
+//         private def stringToModel( s: String, model: (Tx, R, String) => Unit )( implicit system: S ): Unit = {
 ////            system.atomic { implicit tx =>
 ////               model( tx, s )
 ////            }
@@ -137,15 +137,15 @@
 //            }
 //         }
 //
-//         private def longToModel( n: Long, model: (Tx, Long) => Unit )( implicit system: S ) {
+//         private def longToModel( n: Long, model: (Tx, Long) => Unit )( implicit system: S ): Unit = {
 //            system.step { implicit tx => model( tx, n )}
 //         }
 //
-//         def connect()( implicit tx: Tx ) {
+//         def connect()( implicit tx: Tx ): Unit = {
 //            connect(rv())
 //         }
 //
-//         private def connect( r: R )( implicit tx: Tx ) {
+//         private def connect( r: R )( implicit tx: Tx ): Unit = {
 //            r.name_#.observe { v => defer( ggName.setText(  v ))}
 //            r.span_#.observe( newSpan => defer {
 //               ggStart.setText( newSpan.start.toString )
@@ -155,7 +155,7 @@
 //            implicit val system = tx.system
 //
 //            ggName.addActionListener( new ActionListener {
-//               def actionPerformed( e: ActionEvent ) {
+//               def actionPerformed( e: ActionEvent ): Unit = {
 //                  stringToModel( ggName.getText, (tx, r, s) => {
 //                     implicit val _tx = tx
 //                     r.name = s
@@ -164,7 +164,7 @@
 //            })
 //
 //            ggStart.addActionListener( new ActionListener {
-//               def actionPerformed( e: ActionEvent ) {
+//               def actionPerformed( e: ActionEvent ): Unit = {
 //                  longToModel( ggStart.getText.toLong, (tx, n) => { implicit val _tx = tx
 ////                     r.start = n
 //                     r.span = spans.Span( n, r.span.stop_# )
@@ -173,7 +173,7 @@
 //            })
 //
 //            ggStop.addActionListener( new ActionListener {
-//               def actionPerformed( e: ActionEvent ) {
+//               def actionPerformed( e: ActionEvent ): Unit = {
 //                  longToModel( ggStop.getText.toLong, (tx, n) => { implicit val _tx = tx
 ////                     r.stop = n
 //                     r.span = spans.Span( r.span.start_#, n )
@@ -184,9 +184,9 @@
 //      }
 //   }
 //
-//   def defer( thunk: => Unit ) { EventQueue.invokeLater( new Runnable { def run() { thunk }})}
+//   def defer( thunk: => Unit ): Unit = EventQueue.invokeLater( new Runnable { def run() { thunk }})
 //
-//   def expressions[ S <: evt.Sys[ S ] with Cursor[ S ]]( tup: (S, () => Unit) ) {
+//   def expressions[ S <: evt.Sys[ S ] with Cursor[ S ]]( tup: (S, () => Unit) ): Unit = {
 //      val (system, cleanUp) = tup
 //      val infra = system.step { implicit tx => System[ S ]}
 //      import infra._
@@ -250,7 +250,7 @@
 //
 //      private var cycle = 0.0f
 //
-//      def insert( idx: Int, r: TrackItem ) {
+//      def insert( idx: Int, r: TrackItem ): Unit = {
 //         items.insert( idx, r )
 ////         map += ((r.id, r))
 //         if( idx == items.size - 1 ) {
@@ -260,7 +260,7 @@
 //         }
 //      }
 //
-//      def removeAt( idx: Int ) {
+//      def removeAt( idx: Int ): Unit = {
 //         val it = items.remove( idx )
 ////         map -= it.id
 //         if( idx == items.size ) {
@@ -270,7 +270,7 @@
 //         }
 //      }
 //
-//      def update( idx: Int, r: TrackItem ) {
+//      def update( idx: Int, r: TrackItem ): Unit = {
 ////         val old = map( r.id )
 //         val old = items( idx )
 ////         val idx = items.indexOf( old )
@@ -282,7 +282,7 @@
 //
 //      private def trackHeight = regionHeight + 2
 //
-//      private def repaintTracks( rstart: Long, rstop: Long, ystart: Int, ystop: Int ) {
+//      private def repaintTracks( rstart: Long, rstop: Long, ystart: Int, ystop: Int ): Unit = {
 //         val w          = getWidth
 //         val scale      = w.toDouble / (stop - start)
 //         val rx1        = (rstart * scale).toInt
@@ -292,7 +292,7 @@
 //         repaint( rx1, ry1, (rx2 - rx1), (ry2 - ry1) )
 //      }
 //
-//      override def paintComponent( g: Graphics ) {
+//      override def paintComponent( g: Graphics ): Unit = {
 //         val g2 = g.asInstanceOf[ Graphics2D ]
 //         g2.setColor( Color.getHSBColor( cycle, 1f, 1f ))
 //         cycle = (cycle + 0.1f) % 1.0f
@@ -326,7 +326,7 @@
 //
 //   def button( label: String )( action: => Unit ) : JButton = {
 //      val b = new JButton( new AbstractAction( label ) {
-//         def actionPerformed( e: ActionEvent ) { action }
+//         def actionPerformed( e: ActionEvent ): Unit = action
 //      })
 //      b.setFocusable( false )
 //      b.putClientProperty( "JButton.buttonType", "bevel" )
@@ -338,7 +338,7 @@
 //      f.setResizable( false )
 //      f.setDefaultCloseOperation( WindowConstants.DO_NOTHING_ON_CLOSE )
 //      f.addWindowListener( new WindowAdapter {
-//         override def windowClosing( e: WindowEvent ) {
+//         override def windowClosing( e: WindowEvent ): Unit = {
 //            f.dispose()
 //            try {
 //               cleanUp()
@@ -350,13 +350,13 @@
 //      f
 //   }
 //
-//   def showFrame( f: JFrame ) {
+//   def showFrame( f: JFrame ): Unit = {
 //      f.pack()
 //      f.setLocationRelativeTo( null )
 //      f.setVisible( true )
 //   }
 //
-//   def collections[ S <: evt.Sys[ S ] with Cursor[ S ]]( tup: (S, () => Unit) ) {
+//   def collections[ S <: evt.Sys[ S ] with Cursor[ S ]]( tup: (S, () => Unit) ): Unit = {
 //      val (system, cleanUp) = tup
 //
 ////      val id = system.atomic { implicit tx => tx.newID() }
@@ -470,7 +470,7 @@
 //      showFrame( f )
 //   }
 //
-//   def warn( message: String ) {
+//   def warn( message: String ): Unit = {
 //      new Throwable( message ).printStackTrace()
 //   }
 //}

@@ -3,8 +3,9 @@ import Keys._
 import sbtbuildinfo.Plugin._
 
 object Build extends sbt.Build {
-  lazy val stmVersion  = "2.0.+"
-  lazy val dataVersion = "2.2.+"
+  def stmVersion    = "2.0.+"
+  def dataVersion   = "2.2.+"
+  def modelVersion  = "0.3.1+"
 
   lazy val root: Project = Project(
     id            = "lucreevent",
@@ -58,6 +59,7 @@ object Build extends sbt.Build {
     settings      = Project.defaultSettings ++ Seq(
       libraryDependencies ++= Seq(
         "de.sciss" %% "lucredata-core" % dataVersion,
+        "de.sciss" %% "model"          % modelVersion,
         "de.sciss" %% "lucrestm-bdb"   % stmVersion % "test",
         "org.scalatest" %% "scalatest" % "1.9.1" % "test"
       )

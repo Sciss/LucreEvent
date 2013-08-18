@@ -312,11 +312,9 @@ object LinkedListImpl {
         elementChanged  -/-> this
       }
 
-      //      def --->(r: evt.Selector[S])(implicit tx: S#Tx) {
-      //      }
+      //      def --->(r: evt.Selector[S])(implicit tx: S#Tx) = ()
       //
-      //      def -/->(r: evt.Selector[S])(implicit tx: S#Tx) {
-      //      }
+      //      def -/->(r: evt.Selector[S])(implicit tx: S#Tx) = ()
 
       private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[LinkedList.Update[S, Elem, U]] = {
         val collOpt = if (pull.contains(CollectionEvent)) pull(CollectionEvent) else None

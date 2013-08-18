@@ -113,7 +113,7 @@ final class Spans[ S <: evt.Sys[ S ]] private( longs: Longs[ S ]) extends TypeOl
 
    private type LongEx = Expr[ S, Long ]
 
-   def init()( implicit tx: S#Tx ) {
+   def init()( implicit tx: S#Tx ): Unit = {
       implicit val itx = tx.peer
       // 'Span'
       longs.addExtension( this, LongExtensions )
@@ -224,7 +224,7 @@ final class Spans[ S <: evt.Sys[ S ]] private( longs: Longs[ S ]) extends TypeOl
       new Span( start, stop )
    }
 
-   protected def writeValue( v: expr.Span, out: DataOutput ) {
+   protected def writeValue( v: expr.Span, out: DataOutput ): Unit = {
       out.writeLong( v.start )
       out.writeLong( v.stop )
    }

@@ -42,7 +42,7 @@ final class Strings[ S <: evt.Sys[ S ]] private() extends TypeOld[ S, String ] {
 
    val id = 8
 
-   protected def writeValue( v: String, out: DataOutput ) { out.writeUTF( v )}
+   protected def writeValue( v: String, out: DataOutput ): Unit = out.writeUTF( v )
    protected def readValue( in: DataInput ) : String = in.readUTF()
 //   type Ops = StringOps
 

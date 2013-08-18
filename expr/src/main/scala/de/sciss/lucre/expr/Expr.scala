@@ -28,8 +28,9 @@ package lucre
 package expr
 
 import stm.{Disposable, Var => _Var, Sys}
-import event.{EventLike, Dummy, Event, Change}
+import event.{EventLike, Dummy, Event}
 import serial.Writable
+import de.sciss.model.Change
 
 object Expr {
   trait Node[S <: Sys[S], +A] extends Expr[S, A] with event.Node[S] {

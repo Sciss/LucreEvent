@@ -36,19 +36,21 @@ object Longs {
   def apply[S <: evt.Sys[S]]: Longs[S] = new Longs[S]
 }
 
-final class Longs[ S <: evt.Sys[ S ]] extends TypeOld[ S, Long ] {
-   tpe =>
+final class Longs[S <: evt.Sys[S]] extends TypeOld[S, Long] {
+  tpe =>
 
-   val id = 3
+  val id = 3
 
-   protected def writeValue( v: Long, out: DataOutput ) { out.writeLong( v )}
-   protected def readValue( in: DataInput ) : Long = in.readLong()
-//   type Ops = LongOps
+  protected def writeValue(v: Long, out: DataOutput): Unit = out.writeLong(v)
 
-   // for a stupid reason scalac doesn't eat A <% Ex
-   implicit def longOps[ A <% Expr[ S, Long ]]( ex: A ) : LongOps = new LongOps( ex )
+  protected def readValue(in: DataInput): Long = in.readLong()
 
-   final class LongOps private[Longs]( ex: Ex ) {
+  //   type Ops = LongOps
+
+  // for a stupid reason scalac doesn't eat A <% Ex
+  implicit def longOps[A <% Expr[S, Long]](ex: A): LongOps = new LongOps(ex)
+
+  final class LongOps private[Longs]( ex: Ex ) {
       def +( that: Ex )( implicit tx: S#Tx ) : Ex = BinaryOp.Plus( ex, that )
       def -( that: Ex )( implicit tx: S#Tx ) : Ex = BinaryOp.Minus( ex, that )
       def min( that: Ex )( implicit tx: S#Tx ) : Ex = BinaryOp.Min( ex, that )

@@ -112,32 +112,32 @@ object LinkedList {
   }
 
   object Expr {
-    type Modifiable[S <: stm.Sys[S], A] = LinkedList.Modifiable[S, Ex[S, A], evt.Change[A]]
+    type Modifiable[S <: stm.Sys[S], A] = LinkedList.Modifiable[S, Ex[S, A], model.Change[A]]
 
-    private val anyChanged: Ex[InMemory, Any] => EventLike[InMemory, evt.Change[Any]] = _.changed
+    private val anyChanged: Ex[InMemory, Any] => EventLike[InMemory, model.Change[Any]] = _.changed
 
-    private def changed[S <: stm.Sys[S], A]: Ex[S, A] => EventLike[S, evt.Change[A]] =
-      anyChanged.asInstanceOf[Ex[S, A] => EventLike[S, evt.Change[A]]]
+    private def changed[S <: stm.Sys[S], A]: Ex[S, A] => EventLike[S, model.Change[A]] =
+      anyChanged.asInstanceOf[Ex[S, A] => EventLike[S, model.Change[A]]]
 
     def serializer[S <: evt.Sys[S], A](implicit elemType: Type[A]): serial.Serializer[S#Tx, S#Acc, Expr[S, A]] =
-      Impl.activeSerializer[S, Ex[S, A], evt.Change[A]](changed)(elemType.serializer[S])
+      Impl.activeSerializer[S, Ex[S, A], model.Change[A]](changed)(elemType.serializer[S])
 
     def read[S <: evt.Sys[S], A](in: DataInput, access: S#Acc)(implicit tx: S#Tx, elemType: Type[A]): Expr[S, A] =
-      Impl.activeRead[S, Ex[S, A], evt.Change[A]](changed)(in, access)(tx, elemType.serializer[S])
+      Impl.activeRead[S, Ex[S, A], model.Change[A]](changed)(in, access)(tx, elemType.serializer[S])
 
     object Modifiable {
       def serializer[S <: evt.Sys[S], A](implicit elemType: Type[A]): serial.Serializer[S#Tx, S#Acc, Expr.Modifiable[S, A]] =
-        Impl.activeModifiableSerializer[S, Ex[S, A], evt.Change[A]](changed)(elemType.serializer[S])
+        Impl.activeModifiableSerializer[S, Ex[S, A], model.Change[A]](changed)(elemType.serializer[S])
 
       def read[S <: evt.Sys[S], A](in: DataInput, access: S#Acc)(implicit tx: S#Tx, elemType: Type[A]): Expr.Modifiable[S, A] =
-        Impl.activeModifiableRead[S, Ex[S, A], evt.Change[A]](changed)(in, access)(tx, elemType.serializer[S])
+        Impl.activeModifiableRead[S, Ex[S, A], model.Change[A]](changed)(in, access)(tx, elemType.serializer[S])
 
       def apply[S <: evt.Sys[S], A](implicit tx: S#Tx, peerType: Type[A]): Expr.Modifiable[S, A] =
-        LinkedList.Modifiable[S, Ex[S, A], evt.Change[A]](changed)(tx, peerType.serializer[S])
+        LinkedList.Modifiable[S, Ex[S, A], model.Change[A]](changed)(tx, peerType.serializer[S])
     }
   }
 
-  type Expr[S <: stm.Sys[S], A] = LinkedList[S, Ex[S, A], evt.Change[A]]
+  type Expr[S <: stm.Sys[S], A] = LinkedList[S, Ex[S, A], model.Change[A]]
 
   def serializer[S <: evt.Sys[S], Elem, U](eventView: Elem => EventLike[S, U])(
     implicit elemSerializer: evt.Serializer[S, Elem]): serial.Serializer[S#Tx, S#Acc, LinkedList[S, Elem, U]] =

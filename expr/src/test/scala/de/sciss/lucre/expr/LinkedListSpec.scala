@@ -1,12 +1,13 @@
 package de.sciss.lucre.expr
 
-import de.sciss.lucre.event.{Change, Targets, Sys, Durable}
+import de.sciss.lucre.event.{Targets, Sys, Durable}
 import org.scalatest.fixture
 import org.scalatest.matchers.ShouldMatchers
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.serial.{DataOutput, DataInput}
 import scala.concurrent.stm.TxnLocal
 import de.sciss.lucre.stm
+import de.sciss.model.Change
 
 class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
   final type S = Durable
@@ -18,12 +19,12 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
 
   implicit object Ints extends Type[Int] {
     def readValue(in: DataInput) = in.readInt()
-    def writeValue(value: Int, out: DataOutput) { out.writeInt(value) }
+    def writeValue(value: Int, out: DataOutput): Unit = out.writeInt(value)
     protected def readTuple[S <: Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: Targets[S])
                                         (implicit tx: S#Tx) = sys.error(s"Unsupported tuple $cookie")
   }
 
-  final def withFixture(test: OneArgTest) {
+  final def withFixture(test: OneArgTest): Unit = {
     val system = Durable(BerkeleyDB.tmp())
     try {
       //         val (_, cursor) = system.cursorRoot( _ => () )( tx => _ => tx.newCursor() )
@@ -37,7 +38,7 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
 
   class Unobserved extends Body {
     def situation = "unobserved state"
-    def observationPoint(ll: LL, id: Int)(implicit tx: S#Tx) {}
+    def observationPoint(ll: LL, id: Int)(implicit tx: S#Tx) = ()
   }
 
   abstract class ObservedLike extends Body {
@@ -49,7 +50,7 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
     def update(ll: LL, ch: LinkedList.Change[S, Expr[S, Int], Change[Int]]) =
       LinkedList.Update[S, Expr[S, Int], Change[Int]](ll, Vector(ch))
 
-    def observationPoint(ll: LL, id: Int)(implicit tx: S#Tx) {
+    def observationPoint(ll: LL, id: Int)(implicit tx: S#Tx): Unit =
       id match {
         case 1 => obs1(ll)
         case 2 => obs2(ll)
@@ -82,17 +83,14 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
           )
           obs.clear()
       }
-    }
   }
 
   class EarlyObserved extends ObservedLike {
     def situation = "early observed state"
 
-    def obs1(ll: LL)(implicit tx: S#Tx) {
-      ll.changed.react(obs.register)
-    }
+    def obs1(ll: LL)(implicit tx: S#Tx): Unit = ll.changed.react(obs.register)
 
-    def obs2(ll: LL)(implicit tx: S#Tx) {
+    def obs2(ll: LL)(implicit tx: S#Tx): Unit = {
       obs.assertEquals(
         update(ll, LinkedList.Added(0, cn)),
         update(ll, LinkedList.Added(1, vh()))
@@ -104,11 +102,9 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
   class LateObserved extends ObservedLike {
     def situation = "late observed state"
 
-    def obs1(ll: LL)(implicit tx: S#Tx) {}
+    def obs1(ll: LL)(implicit tx: S#Tx) = ()
 
-    def obs2(ll: LL)(implicit tx: S#Tx) {
-      ll.changed.react(obs.register)
-    }
+    def obs2(ll: LL)(implicit tx: S#Tx): Unit = ll.changed.react(obs.register)
   }
 
   abstract class Body {
@@ -195,26 +191,22 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
   final class Observation[S <: Sys[S]] {
     private val seqRef = TxnLocal(init = Vector.empty[Any])
 
-    def register(tx: S#Tx)(upd: Any) {
+    def register(tx: S#Tx)(upd: Any): Unit =
       seqRef.transform(_ :+ upd)(tx.peer)
-    }
 
-    def assertEquals(expected: Any*)(implicit tx: S#Tx) {
+    def assertEquals(expected: Any*)(implicit tx: S#Tx): Unit = {
       val ob = seqRef.get(tx.peer)
       assert(ob === expected.toIndexedSeq, "Expected\n   " + expected.mkString("[", ", ", "]")
         + "\n...but observed\n   " + ob.mkString("[", ", ", "]"))
     }
 
-    def clear()(implicit tx: S#Tx) {
+    def clear()(implicit tx: S#Tx): Unit =
       seqRef.set(Vector.empty)(tx.peer)
-    }
 
-    def assertEmpty()(implicit tx: S#Tx) {
+    def assertEmpty()(implicit tx: S#Tx): Unit =
       assertEquals()
-    }
 
-    def print()(implicit tx: S#Tx) {
+    def print()(implicit tx: S#Tx): Unit =
       println(seqRef.get(tx.peer).mkString("[", ", ", "]"))
-    }
   }
 }

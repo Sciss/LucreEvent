@@ -25,7 +25,7 @@ object ThesisExample extends App {
     def update()(implicit tx: S#Tx): Unit
   }
 
-  def run()(implicit tx: S#Tx) {
+  def run()(implicit tx: S#Tx): Unit = {
     val r = Random(0, 10)
     val f = r + 64
     println(r == f)
@@ -78,22 +78,20 @@ object ThesisExample extends App {
 
     override def toString = s"Random(min = $min, max = $max)$id"
 
-    def update()(implicit tx: S#Tx) {
+    def update()(implicit tx: S#Tx): Unit = {
       val value = random(min, max)
       vr() = value
       fire(value)
     }
 
-    protected def writeData(out: DataOutput) {
+    protected def writeData(out: DataOutput): Unit = {
       out.writeByte(0)
       out.writeInt(min)
       out.writeInt(max)
       vr.write(out)
     }
 
-    protected def disposeData()(implicit tx: S#Tx) {
-      vr.dispose()
-    }
+    protected def disposeData()(implicit tx: S#Tx): Unit = vr.dispose()
 
     def value(implicit tx: S#Tx) = vr()
   }
@@ -103,21 +101,16 @@ object ThesisExample extends App {
 
     override def toString = s"($ex + $a)$id"
 
-    protected def writeData(out: DataOutput) {
+    protected def writeData(out: DataOutput): Unit = {
       out.writeByte(1)
       ex.write(out)
       out.writeInt(a)
     }
 
-    protected def disposeData()(implicit tx: S#Tx) {}
+    protected def disposeData()(implicit tx: S#Tx) = ()
 
-    def connect()(implicit tx: S#Tx) {
-      ex.changed ---> this
-    }
-
-    def disconnect()(implicit tx: S#Tx) {
-      ex.changed -/-> this
-    }
+    def connect   ()(implicit tx: S#Tx): Unit = ex.changed ---> this
+    def disconnect()(implicit tx: S#Tx): Unit = ex.changed -/-> this
 
     def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[Int] =
       ex.changed.pullUpdate(pull).map(_ + a)

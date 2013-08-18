@@ -3,8 +3,9 @@ package lucre
 package expr
 package impl
 
-import event.{Pull, Event, InvariantSelector, Change, impl => evti}
+import event.{Pull, Event, InvariantSelector, impl => evti}
 import serial.DataOutput
+import de.sciss.model.Change
 
 trait VarImpl[S <: event.Sys[S], A]
   extends Expr.Var[S, A] with evti.StandaloneLike[S, Change[A], Expr[S, A]]
