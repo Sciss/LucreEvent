@@ -1,0 +1,17 @@
+{
+  "organization" : "de.sciss",
+  "name" : "LucreEvent",
+  "version" : "2.4.0",
+  "description" : "Reactive event-system for LucreSTM",
+  "site" : "https://github.com/Sciss/LucreEvent",
+  "tags" : [ "stm", "software-transactional-memory", "reactive", "event", "expression" ],
+  "docs" : "",
+  "resolvers" : [ "https://oss.sonatype.org/content/repositories/releases" ],
+  "dependencies" : [ ],
+  "scalas" : [ "2.10.2" ],
+  "licenses" : [ {
+    "name" : "GPL v2+",
+    "url" : "http://www.gnu.org/licenses/gpl-2.0.txt"
+  } ],
+  "sbt" : false
+}
