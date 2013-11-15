@@ -29,16 +29,9 @@ package event
 import impl.{InMemoryImpl => Impl}
 
 object InMemory {
-   def apply() : InMemory = Impl()
+  def apply(): InMemory = Impl()
 }
-trait InMemory extends stm.InMemoryLike[ InMemory ] with Sys[ InMemory ] {
-   final type Tx     = Txn[ InMemory ]
-//   final type IM     = InMemory
 
-//   final def inMemory[ A ]( fun: InMemory#IM#Tx => A )( implicit tx: InMemory#Tx ) : A = fun( tx )
-
-//   private type S = InMemory
-//
-//   final def im( tx: S#Tx ) : IM#Tx = tx.inMemory
-//   final def imVar[ A ]( v: Var[ A ]) : Var[ A ] = v
+trait InMemory extends stm.InMemoryLike[InMemory] with Sys[InMemory] {
+  type Tx = Txn[InMemory]
 }

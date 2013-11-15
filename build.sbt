@@ -1,6 +1,6 @@
 name := "LucreEvent"
 
-version in ThisBuild := "2.4.0"
+version in ThisBuild := "2.4.1-SNAPSHOT"
 
 organization in ThisBuild := "de.sciss"
 
@@ -16,9 +16,20 @@ resolvers in ThisBuild += "Oracle Repository" at "http://download.oracle.com/mav
 
 retrieveManaged in ThisBuild := true
 
-scalacOptions in ThisBuild ++= Seq("-deprecation", "-unchecked", "-feature")
+scalacOptions in ThisBuild ++= Seq(
+  "-deprecation", "-unchecked", "-feature"
+)
 
 scalacOptions in ThisBuild += "-no-specialization"
+
+//// API docs:
+//scalacOptions in ThisProject in (Compile, doc) ++= Seq(
+//  "-diagrams",
+//  "-diagrams-dot-path", "/usr/local/bin/dot",
+//  // "-diagrams-dot-timeout", "20", "-diagrams-debug",
+//  "-doc-title", name.value
+//)
+
 
 // scalacOptions in ThisBuild ++= Seq("-Xelide-below", "INFO") // elide debug logging!
 

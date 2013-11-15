@@ -110,6 +110,7 @@ sealed trait Selector[S <: stm.Sys[S]] /* extends Writable */ {
   private[event] def toObserverKey: Option[ObserverKey[S]] // Option[ Int ]
 }
 
+/** The serializable form of events. */
 sealed trait VirtualNodeSelector[S <: stm.Sys[S]] extends Selector[S] {
   //   private[event] def reactor: Reactor[ S ]
 
