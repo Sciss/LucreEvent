@@ -1,41 +1,87 @@
 name := "LucreEvent"
 
-version in ThisBuild := "2.4.1-SNAPSHOT"
+// ---- base settings ----
 
-organization in ThisBuild := "de.sciss"
-
-description in ThisBuild := "Reactive event-system for LucreSTM"
-
-homepage in ThisBuild <<= name { n => Some(url("https://github.com/Sciss/" + n)) }
-
-licenses in ThisBuild := Seq("GPL v2+" -> url("http://www.gnu.org/licenses/gpl-2.0.txt"))
-
-scalaVersion in ThisBuild := "2.10.2"
-
-resolvers in ThisBuild += "Oracle Repository" at "http://download.oracle.com/maven"  // required for sleepycat
-
-retrieveManaged in ThisBuild := true
-
-scalacOptions in ThisBuild ++= Seq(
-  "-deprecation", "-unchecked", "-feature"
+lazy val commonSettings = Project.defaultSettings ++ Seq(
+  version         := "2.4.1-SNAPSHOT",
+  organization    := "de.sciss",
+  description     := "Reactive event-system for LucreSTM",
+  homepage        := Some(url("https://github.com/Sciss/" + name.value)),
+  licenses        := Seq("GPL v2+" -> url("http://www.gnu.org/licenses/gpl-2.0.txt")),
+  scalaVersion    := "2.10.2",
+  resolvers       += "Oracle Repository" at "http://download.oracle.com/maven",  // required for sleepycat
+  retrieveManaged := true,
+  scalacOptions  ++= Seq(
+    "-no-specialization",
+    // "-Xelide-below", "INFO", // elide debug logging!
+    "-deprecation", "-unchecked", "-feature"
+  ),
+  // API docs:
+  scalacOptions in (Compile, doc) ++= Seq(
+    // "-doc-title", name.value,
+    // "-diagrams-dot-path", "/usr/local/bin/dot",
+    "-diagrams"
+    // "-diagrams-dot-timeout", "20", "-diagrams-debug",
+  ),
+  testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
+  parallelExecution in Test := false
 )
 
-scalacOptions in ThisBuild += "-no-specialization"
+// ---- dependencies ----
 
-//// API docs:
-//scalacOptions in ThisProject in (Compile, doc) ++= Seq(
-//  "-diagrams",
-//  "-diagrams-dot-path", "/usr/local/bin/dot",
-//  // "-diagrams-dot-timeout", "20", "-diagrams-debug",
-//  "-doc-title", name.value
-//)
+lazy val stmVersion    = "2.0.+"
 
+lazy val dataVersion   = "2.2.+"
 
-// scalacOptions in ThisBuild ++= Seq("-Xelide-below", "INFO") // elide debug logging!
+lazy val modelVersion  = "0.3.1+"
 
-testOptions in Test += Tests.Argument("-oDF")   // ScalaTest: durations and full stack traces
+// ---- projects ----
 
-parallelExecution in Test := false
+lazy val root: Project = Project(
+  id            = "lucreevent",
+  base          = file("."),
+  aggregate     = Seq(core, expr),
+  dependencies  = Seq(core, expr), // i.e. root = full sub project. if you depend on root, will draw all sub modules.
+  settings      = Project.defaultSettings ++ Seq(
+    publishArtifact in (Compile, packageBin) := false, // there are no binaries
+    publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
+    publishArtifact in (Compile, packageSrc) := false  // there are no sources
+  )
+)
+
+lazy val core = Project(
+  id        = "lucreevent-core",
+  base      = file("core"),
+  settings  = commonSettings ++ buildInfoSettings ++ Seq(
+    libraryDependencies ++= Seq(
+      "de.sciss" %% "lucrestm-core" % stmVersion
+    ),
+    sourceGenerators in Compile <+= buildInfo,
+    buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
+      BuildInfoKey.map(homepage) {
+        case (k, opt) => k -> opt.get
+      },
+      BuildInfoKey.map(licenses) {
+        case (_, Seq((lic, _))) => "license" -> lic
+      }
+    ),
+    buildInfoPackage := "de.sciss.lucre.event"
+  )
+)
+
+lazy val expr = Project(
+  id            = "lucreevent-expr",
+  base          = file("expr"),
+  dependencies  = Seq(core),
+  settings      = commonSettings ++ Seq(
+    libraryDependencies ++= Seq(
+      "de.sciss" %% "lucredata-core" % dataVersion,
+      "de.sciss" %% "model"          % modelVersion,
+      "de.sciss" %% "lucrestm-bdb"   % stmVersion % "test",
+      "org.scalatest" %% "scalatest" % "1.9.1" % "test"
+    )
+  )
+)
 
 // ---- publishing ----
 
