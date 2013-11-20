@@ -33,7 +33,7 @@ import lucre.{event => evt}
 import evt.{Event, EventLike, NodeSerializer, impl => eimpl}
 import data.Iterator
 import scala.annotation.{tailrec, switch}
-import collection.immutable.{IndexedSeq => IIdxSeq}
+import collection.immutable.{IndexedSeq => Vec}
 import collection.breakOut
 
 object LinkedListImpl {
@@ -201,7 +201,7 @@ object LinkedListImpl {
       def disconnect()(implicit tx: S#Tx): Unit = foreach(unregisterElement)
 
       private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[LinkedList.Update[S, Elem, U]] = {
-        val changes: IIdxSeq[LinkedList.Element[S, Elem, U]] = pull.parents(this).flatMap(sel => {
+        val changes: Vec[LinkedList.Element[S, Elem, U]] = pull.parents(this).flatMap(sel => {
           val evt = sel.devirtualize[U, Elem](elemSerializer)
           val opt: Option[LinkedList.Element[S, Elem, U]] = pull(evt).map(LinkedList.Element(evt.node, _)) // u => LinkedList.Element( list, elem, u ))
           opt
@@ -432,10 +432,10 @@ object LinkedListImpl {
     }
 
     private def fireAdded(idx: Int, elem: Elem)(implicit tx: S#Tx): Unit =
-      CollectionEvent(LinkedList.Update(list, IIdxSeq(LinkedList.Added(idx, elem))))
+      CollectionEvent(LinkedList.Update(list, Vec(LinkedList.Added(idx, elem))))
 
     private def fireRemoved(idx: Int, elem: Elem)(implicit tx: S#Tx): Unit =
-      CollectionEvent(LinkedList.Update(list, IIdxSeq(LinkedList.Removed(idx, elem))))
+      CollectionEvent(LinkedList.Update(list, Vec(LinkedList.Removed(idx, elem))))
 
     final def remove(elem: Elem)(implicit tx: S#Tx): Boolean = {
       var rec = headRef()
