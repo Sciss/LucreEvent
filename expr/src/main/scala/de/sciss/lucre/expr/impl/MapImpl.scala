@@ -3,92 +3,111 @@ package expr
 package impl
 
 import de.sciss.lucre.{event => evt}
-import evt.{Publisher, Sys, Event, EventLike}
+import de.sciss.lucre.event._
 import data.{Iterator, SkipList}
 import expr.Map.Modifiable
-import de.sciss.serial.{Serializer, DataOutput}
+import de.sciss.serial.{DataInput, Serializer, DataOutput}
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.collection.breakOut
 import scala.annotation.switch
+import scala.Some
 
 object MapImpl {
-  private final class Pair[S <: Sys[S], K, V <: Publisher[S, U], U](protected val targets : evt.Targets[S],
+  def activeSerializer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                                valueSerializer: evt.Serializer[S, V])
+  : Serializer[S#Tx, S#Acc, Map[S, K, V, U]] with evt.Reader[S, Map[S, K, V, U]] = ???
+
+  private class ActiveSer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                                   valueSerializer: evt.Serializer[S, V])
+    extends NodeSerializer[S, Map[S, K, V, U]] with evt.Reader[S, Map[S, K, V, U]] {
+    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Map[S, K, V, U] = {
+      ??? // MapImpl.activeRead(in, access, targets)
+    }
+  }
+
+  private def activeRead[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                                                 (implicit tx: S#Tx,
+                                                                  keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                                  valueSerializer: evt.Serializer[S, V])
+  : Impl[S, K, V, Pair[S, K, V, U], U] = {
+    val peer = ??? // SkipList.Map.read[S, K, Pair[S, K, V, U]](in, access)
+    new ActiveImpl[S, K, V, U](targets, peer)
+  }
+
+  private final class Pair[S <: Sys[S], K, V <: Publisher[S, U], U](map: ActiveImpl[S, K, V, U],
+                                                                    protected val targets: evt.Targets[S],
                                                                     val key: K, val value: V)
-    { // extends evt.impl.StandaloneLike[S, BiGroup.Update[S, Elem, U], TimedElem[S, Elem]] with TimedElem[S, Elem] {
-//
-//    def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[BiGroup.Update[S, Elem, U]] = {
-//      var res     = Vector.empty[BiGroup.Change[S, Elem, U]]
-//      val spanEvt = span.changed
-//      if (pull.contains(spanEvt)) {
-//        pull(spanEvt).foreach { ch =>
-//          log(s"$this.pullUpdate -> ElementMoved")
-//          res :+= BiGroup.ElementMoved(this, ch)
-//        }
-//      }
-//      val valueEvt = eventView(value)
-//      if (pull.contains(valueEvt)) {
-//        pull(valueEvt).foreach {
-//          ch => res :+= BiGroup.ElementMutated(this, ch)
-//        }
-//      }
-//
-//      if (res.nonEmpty) Some(BiGroup.Update(group, res)) else None
-//    }
-//
-//    protected def writeData(out: DataOutput): Unit = {
-//      span.write(out)
-//      elemSerializer.write(value, out)
-//    }
-//
-//    protected def disposeData()(implicit tx: S#Tx) = ()
-//
-//    def connect()(implicit tx: S#Tx): Unit = {
-//      log(s"$this.connect()")
-//      span.changed     ---> this
-//      eventView(value) ---> this
-//    }
-//
-//    def disconnect()(implicit tx: S#Tx): Unit = {
-//      log(s"$this.disconnect()")
-//      span.changed     -/-> this
-//      eventView(value) -/-> this
-//    }
-//
-//    protected def reader: evt.Reader[S, TimedElemImpl[S, Elem, U]] = group.TimedSer
+    extends evt.impl.StandaloneLike[S, U, Pair[S, K, V, U]] {
+
+    import map.{keySerializer, valueSerializer}
+
+    type Elem = Pair[S, K, V, U]
+
+    def changed: Event[S, U, Elem] = this
+
+    def connect   ()(implicit tx: S#Tx): Unit = value.changed ---> this
+    def disconnect()(implicit tx: S#Tx): Unit = value.changed -/-> this
+
+    def pullUpdate(pull: Pull[S])(implicit tx: S#Tx): Option[U] = value.changed.pullUpdate(pull)
+
+    protected def writeData(out: DataOutput): Unit = {
+      keySerializer  .write(key  , out)
+      valueSerializer.write(value, out)
+    }
+
+    protected def disposeData()(implicit tx: S#Tx) = ()
+
+    protected def reader: evt.Reader[S, Elem] = map.elemSerializer
   }
 
   private final class ActiveImpl[S <: Sys[S], K, V <: Publisher[S, U], U](
     protected val targets: evt.Targets[S],
     protected val peer: SkipList.Map[S, K, Pair[S, K, V, U]])
-   (implicit protected val keySerializer: Serializer[S#Tx, S#Acc, K],
-             protected val valueSerializer: evt.Serializer[S, V])
+   (implicit val keySerializer: Serializer[S#Tx, S#Acc, K],
+             val valueSerializer: evt.Serializer[S, V])
     extends Impl[S, K, V, Pair[S, K, V, U], U] {
     map =>
 
     private type Elem = Pair[S, K, V, U]
 
-    protected def registerElement  (elem: Elem)(implicit tx: S#Tx): Unit = ??? // elem.changed ---> elementChanged
-    protected def unregisterElement(elem: Elem)(implicit tx: S#Tx): Unit = ??? // elem.changed -/-> elementChanged
+    protected def registerElement  (elem: Elem)(implicit tx: S#Tx): Unit = elem.changed ---> elementChanged
+    protected def unregisterElement(elem: Elem)(implicit tx: S#Tx): Unit = elem.changed -/-> elementChanged
 
-    protected def reader: evt.Reader[S, Map[S, K, V, U]] = ??? // activeSerializer
+    protected def reader: evt.Reader[S, Map[S, K, V, U]] = activeSerializer
+
+    object elemSerializer extends Serializer[S#Tx, S#Acc, Elem] with evt.Reader[S, Elem] {
+      def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Elem = {
+        val key   = keySerializer  .read(in, access)
+        val value = valueSerializer.read(in, access)
+        new Pair(map, targets, key, value)
+      }
+
+      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem = {
+        val targets = evt.Targets.read(in, access)
+        read(in, access, targets)
+      }
+
+      def write(elem: Elem, out: DataOutput): Unit = elem.write(out)
+    }
 
     protected def mkElem(key: K, value: V)(implicit tx: S#Tx): Elem = {
-      ???
+      val targets = evt.Targets[S]
+      new Pair(map, targets, key, value)
     }
 
     protected def elemValue(elem: Elem): V = elem.value
 
     def select(slot: Int): Event[S, Any, Any] = (slot: @switch) match {
-      case `changed`        .slot => changed
-      case CollectionEvent  .slot => CollectionEvent
-      case `elementChanged` .slot => elementChanged
+      case changed        .slot => changed
+      case CollectionEvent.slot => CollectionEvent
+      case elementChanged .slot => elementChanged
     }
 
     protected object elementChanged
       extends evt.impl.EventImpl[S, Map.Update[S, K, V, U], Map[S, K, V, U]]
       with evt.InvariantEvent   [S, Map.Update[S, K, V, U], Map[S, K, V, U]] {
 
-      protected def reader: evt.Reader[S, Map[S, K, V, U]] = ??? // activeSerializer
+      protected def reader: evt.Reader[S, Map[S, K, V, U]] = activeSerializer
 
       final val slot = 1
 
@@ -99,8 +118,9 @@ object MapImpl {
 
       private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Map.Update[S, K, V, U]] = {
         val changes: Vec[Map.Element[S, K, V, U]] = pull.parents(this).flatMap { sel =>
-          val evt = sel.devirtualize[U, V](valueSerializer)
-          val opt: Option[Map.Element[S, K, V, U]] = ??? // pull(evt).map(Map.Element(evt.node, _))
+          val evt   = sel.devirtualize[U, Elem](elemSerializer)
+          val elem  = evt.node
+          val opt: Option[Map.Element[S, K, V, U]] = pull(evt).map(Map.Element(elem.key, elem.value, _))
           opt
         } (breakOut)
 
