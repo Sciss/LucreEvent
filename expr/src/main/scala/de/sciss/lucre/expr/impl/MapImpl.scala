@@ -10,29 +10,35 @@ import de.sciss.serial.{DataInput, Serializer, DataOutput}
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.collection.breakOut
 import scala.annotation.switch
-import scala.Some
 
+/*
+  XXX TODO: Should have a real hash map and not require an `Ordering[K]`
+ */
 object MapImpl {
   def activeSerializer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer: Serializer[S#Tx, S#Acc, K],
                                                                 valueSerializer: evt.Serializer[S, V])
-  : Serializer[S#Tx, S#Acc, Map[S, K, V, U]] with evt.Reader[S, Map[S, K, V, U]] = ???
+  : Serializer[S#Tx, S#Acc, Map[S, K, V, U]] with evt.Reader[S, Map[S, K, V, U]] = ??? // new ActiveSer[S, K, V, U]
 
   private class ActiveSer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer: Serializer[S#Tx, S#Acc, K],
-                                                                   valueSerializer: evt.Serializer[S, V])
+                                                                   valueSerializer: evt.Serializer[S, V],
+                                                                   keyOrdering: Ordering[K])
     extends NodeSerializer[S, Map[S, K, V, U]] with evt.Reader[S, Map[S, K, V, U]] {
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Map[S, K, V, U] = {
-      ??? // MapImpl.activeRead(in, access, targets)
-    }
+    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Map[S, K, V, U] =
+      MapImpl.activeRead(in, access, targets)
   }
 
-  private def activeRead[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+  private def activeRead[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
                                                                  (implicit tx: S#Tx,
-                                                                  keySerializer: Serializer[S#Tx, S#Acc, K],
-                                                                  valueSerializer: evt.Serializer[S, V])
-  : Impl[S, K, V, Pair[S, K, V, U], U] = {
-    val peer = ??? // SkipList.Map.read[S, K, Pair[S, K, V, U]](in, access)
-    new ActiveImpl[S, K, V, U](targets, peer)
-  }
+                                                                  _keySer: Serializer[S#Tx, S#Acc, K],
+                                                                  _valueSer: evt.Serializer[S, V],
+                                                                  keyOrdering: data.Ordering[S#Tx, K])
+  : Impl[S, K, V, Pair[S, K, V, U], U] =
+    new ActiveImpl[S, K, V, U] {
+      val targets         = _targets
+      val keySerializer   = _keySer
+      val valueSerializer = _valueSer
+      val peer            = SkipList.Map.read[S, K, Pair[S, K, V, U]](in, access)(tx, keyOrdering, keySerializer, elemSerializer)
+    }
 
   private final class Pair[S <: Sys[S], K, V <: Publisher[S, U], U](map: ActiveImpl[S, K, V, U],
                                                                     protected val targets: evt.Targets[S],
@@ -60,20 +66,18 @@ object MapImpl {
     protected def reader: evt.Reader[S, Elem] = map.elemSerializer
   }
 
-  private final class ActiveImpl[S <: Sys[S], K, V <: Publisher[S, U], U](
-    protected val targets: evt.Targets[S],
-    protected val peer: SkipList.Map[S, K, Pair[S, K, V, U]])
-   (implicit val keySerializer: Serializer[S#Tx, S#Acc, K],
-             val valueSerializer: evt.Serializer[S, V])
+  private abstract class ActiveImpl[S <: Sys[S], K, V <: Publisher[S, U], U]
     extends Impl[S, K, V, Pair[S, K, V, U], U] {
     map =>
 
     private type Elem = Pair[S, K, V, U]
 
+    implicit def valueSerializer: evt.Serializer[S, V]
+
     protected def registerElement  (elem: Elem)(implicit tx: S#Tx): Unit = elem.changed ---> elementChanged
     protected def unregisterElement(elem: Elem)(implicit tx: S#Tx): Unit = elem.changed -/-> elementChanged
 
-    protected def reader: evt.Reader[S, Map[S, K, V, U]] = activeSerializer
+    protected def reader: evt.Reader[S, Map[S, K, V, U]] = activeSerializer[S, K, V, U]
 
     object elemSerializer extends Serializer[S#Tx, S#Acc, Elem] with evt.Reader[S, Elem] {
       def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Elem = {
@@ -107,7 +111,7 @@ object MapImpl {
       extends evt.impl.EventImpl[S, Map.Update[S, K, V, U], Map[S, K, V, U]]
       with evt.InvariantEvent   [S, Map.Update[S, K, V, U], Map[S, K, V, U]] {
 
-      protected def reader: evt.Reader[S, Map[S, K, V, U]] = activeSerializer
+      protected def reader: evt.Reader[S, Map[S, K, V, U]] = activeSerializer[S, K, V, U]
 
       final val slot = 1
 
@@ -139,8 +143,8 @@ object MapImpl {
     protected def registerElement  (elem: Elem)(implicit tx: S#Tx): Unit
     protected def unregisterElement(elem: Elem)(implicit tx: S#Tx): Unit
 
-    implicit protected def keySerializer  : Serializer[S#Tx, S#Acc, K]
-    implicit protected def valueSerializer: Serializer[S#Tx, S#Acc, V]
+    implicit def keySerializer  : Serializer[S#Tx, S#Acc, K]
+    implicit def valueSerializer: Serializer[S#Tx, S#Acc, V]
 
     protected def elementChanged: EventLike[S, Map.Update[S, K, V, U]]
 
@@ -201,11 +205,11 @@ object MapImpl {
 
       def connect   ()(implicit tx: S#Tx): Unit = {
         CollectionEvent ---> this
-        elementChanged    ---> this
+        elementChanged  ---> this
       }
       def disconnect()(implicit tx: S#Tx): Unit = {
         CollectionEvent -/-> this
-        elementChanged    -/-> this
+        elementChanged  -/-> this
       }
 
       private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Map.Update[S, K, V, U]] = {
@@ -222,11 +226,11 @@ object MapImpl {
       }
     }
 
-    //    private def fireAdded(idx: Int, elem: Elem)(implicit tx: S#Tx): Unit =
-    //      CollectionEvent(List.Update(list, Vec(List.Added(idx, elem))))
-    //
-    //    private def fireRemoved(idx: Int, elem: Elem)(implicit tx: S#Tx): Unit =
-    //      CollectionEvent(List.Update(list, Vec(List.Removed(idx, elem))))
+    private def fireAdded(key: K, value: V)(implicit tx: S#Tx): Unit =
+      CollectionEvent(Map.Update(map, Vec(Map.Added(key, value))))
+
+    private def fireRemoved(key: K, value: V)(implicit tx: S#Tx): Unit =
+      CollectionEvent(Map.Update(map, Vec(Map.Removed(key, value))))
 
     final def +=(kv: (K, V))(implicit tx: S#Tx): this.type = {
       put(kv._1, kv._2)
@@ -244,17 +248,17 @@ object MapImpl {
       if (isConnected) {
         old.foreach(unregisterElement)
         registerElement(elem)
-        ??? // fireAdded(key, value)
+        fireAdded(key, value)
       }
       old.map(elemValue)
     }
 
     final def remove(key: K)(implicit tx: S#Tx): Option[V] = {
-      val valueOpt = peer.remove(key)
+      val valueOpt = peer.remove(key).map(elemValue)
       if (isConnected) valueOpt.foreach { value =>
-        ??? // fireRemoved(idx, elem)
+        fireRemoved(key, value)
       }
-      valueOpt.map(elemValue)
+      valueOpt
     }
   }
 }
