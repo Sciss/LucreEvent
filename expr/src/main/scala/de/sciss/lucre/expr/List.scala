@@ -2,7 +2,7 @@
  *  List.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2010-2012 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -28,7 +28,7 @@ package lucre
 package expr
 
 import de.sciss.lucre.{event => evt}
-import evt.{Publisher, EventLike, Sys}
+import evt.{Publisher, Sys}
 import serial.DataInput
 import impl.{ListImpl => Impl}
 import data.Iterator

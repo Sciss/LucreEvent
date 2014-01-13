@@ -2,7 +2,7 @@
  *  ListImpl.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2010-2012 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -172,16 +172,13 @@ object ListImpl {
     extends Impl[S, Elem, U] {
     list =>
 
-    final protected def elementChanged: EventLike[S, List.Update[S, Elem, U]] =
-      ElementEvent
-
     final protected def registerElement(elem: Elem)(implicit tx: S#Tx): Unit =
-      elem.changed ---> ElementEvent
+      elem.changed ---> elementChanged
 
     final protected def unregisterElement(elem: Elem)(implicit tx: S#Tx): Unit =
-      elem.changed -/-> ElementEvent
+      elem.changed -/-> elementChanged
 
-    private object ElementEvent
+    protected object elementChanged
       extends eimpl.EventImpl[S, List.Update[S, Elem, U], List[S, Elem, U]]
       with evt.InvariantEvent[S, List.Update[S, Elem, U], List[S, Elem, U]] {
 
@@ -195,11 +192,11 @@ object ListImpl {
       def disconnect()(implicit tx: S#Tx): Unit = foreach(unregisterElement)
 
       private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[List.Update[S, Elem, U]] = {
-        val changes: Vec[List.Element[S, Elem, U]] = pull.parents(this).flatMap(sel => {
+        val changes: Vec[List.Element[S, Elem, U]] = pull.parents(this).flatMap { sel =>
           val evt = sel.devirtualize[U, Elem](elemSerializer)
           val opt: Option[List.Element[S, Elem, U]] = pull(evt).map(List.Element(evt.node, _)) // u => List.Element( list, elem, u ))
           opt
-        })(breakOut)
+        } (breakOut)
 
         if (changes.isEmpty) None else Some(List.Update(list, changes))
       }
@@ -208,9 +205,9 @@ object ListImpl {
     final protected def reader: evt.Reader[S, List[S, Elem, U]] = activeSerializer
 
     final def select(slot: Int /*, invariant: Boolean */): Event[S, Any, Any] = (slot: @switch) match {
-      case ChangeEvent    .slot => ChangeEvent
-      case CollectionEvent.slot => CollectionEvent
-      case ElementEvent   .slot => ElementEvent
+      case `changed`        .slot => changed
+      case CollectionEvent  .slot => CollectionEvent
+      case `elementChanged` .slot => elementChanged
     }
   }
 
@@ -226,7 +223,7 @@ object ListImpl {
     final protected def reader: evt.Reader[S, List[S, Elem, Unit]] = passiveSerializer
 
     final def select(slot: Int /* , invariant: Boolean */): Event[S, Any, Any] = (slot: @switch) match {
-      case ChangeEvent    .slot => ChangeEvent
+      case `changed`      .slot => changed
       case CollectionEvent.slot => CollectionEvent
     }
   }
@@ -287,7 +284,7 @@ object ListImpl {
       def node: List[S, Elem, U] = list
     }
 
-    protected object ChangeEvent
+    object changed
       extends evt.impl.EventImpl[S, List.Update[S, Elem, U], List[S, Elem, U]]
       with evt.InvariantEvent   [S, List.Update[S, Elem, U], List[S, Elem, U]] {
 
@@ -306,10 +303,6 @@ object ListImpl {
         elementChanged  -/-> this
       }
 
-      //      def --->(r: evt.Selector[S])(implicit tx: S#Tx) = ()
-      //
-      //      def -/->(r: evt.Selector[S])(implicit tx: S#Tx) = ()
-
       private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[List.Update[S, Elem, U]] = {
         val collOpt = if (pull.contains(CollectionEvent)) pull(CollectionEvent) else None
         val elemOpt = if (pull.contains(elementChanged)) pull(elementChanged) else None
@@ -322,26 +315,7 @@ object ListImpl {
           case _ => None
         }
       }
-
-      //      def react[A1 >: List.Update[S, Elem, U]](fun: A1 => Unit)
-      //                                                    (implicit tx: S#Tx): evt.Observer[S, A1, List[S, Elem, U]] =
-      //        reactTx((_: S#Tx) => fun)
-      //
-      //      def reactTx[A1 >: List.Update[S, Elem, U]](fun: S#Tx => A1 => Unit)
-      //                                                      (implicit tx: S#Tx): evt.Observer[S, A1, List[S, Elem, U]] = {
-      //        val obs = evt.Observer[S, A1, List[S, Elem, U]](list.reader, fun)
-      //        obs.add(CollectionEvent)
-      //        obs.add(elementChanged)
-      //        obs
-      //      }
-
-      // def isSource( pull: evt.Pull[ S ]) : Boolean = opNotSupported
     }
-
-    //      final /* private[event] */ def select( slot: Int, invariant: Boolean ) : evt.NodeSelector[ S, _ ] = (slot: @switch) match {
-    //         case 1 => CollectionEvent
-    //         case 2 => elementChanged
-    //      }
 
     def modifiableOption: Option[List.Modifiable[S, Elem, U]] = Some(this)
 
@@ -581,8 +555,7 @@ object ListImpl {
     final def iterator(implicit tx: S#Tx): Iterator[S#Tx, Elem] = new Iter(headRef())
 
     protected def elementChanged: EventLike[S, List.Update[S, Elem, U]]
-    final def changed           : EventLike[S, List.Update[S, Elem, U]] = ChangeEvent
 
-    final def debugList()(implicit tx: S#Tx): scala.List[Elem] = iterator.toList
+    // final def debugList()(implicit tx: S#Tx): scala.List[Elem] = iterator.toList
   }
 }
