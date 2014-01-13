@@ -52,36 +52,38 @@ trait TypeOld[S <: event.Sys[S], A] extends Extensions[S, A] with TupleReader[S,
 
   protected def writeValue(v: A, out: DataOutput): Unit
 
-  /* protected */ /* sealed */ trait Basic extends Expr[ S, A ] {
-      final protected def reader = serializer
-   }
+  /* protected */
+  /* sealed */ trait Basic extends Expr[S, A] {
+    final protected def reader = serializer
+  }
 
-   implicit object serializer extends EventLikeSerializer[ S, Ex ] {
-      def read( in: DataInput, access: S#Acc, targets: Targets[ S ])( implicit tx: S#Tx ) : Ex with event.Node[ S ] = {
-         // 0 = var, 1 = op
-         in.readByte() match {
-            case 0      => new VarRead( in, access, targets, tx )
-            case arity  =>
-               val clazz   = in.readInt()
-               val opID    = in.readInt()
-               if( clazz == tpe.id ) {
-                  readTuple( arity, opID, in, access, targets )
-               } else {
-                  getExtension( clazz )( tx.peer ).readTuple( arity, opID, in, access, targets )
-               }
-         }
+  implicit object serializer extends EventLikeSerializer[S, Ex] {
+    def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Ex with event.Node[S] = {
+      // 0 = var, 1 = op
+      in.readByte() match {
+        case 0 => new VarRead(in, access, targets, tx)
+        case arity =>
+          val clazz = in.readInt()
+          val opID = in.readInt()
+          if (clazz == tpe.id) {
+            readTuple(arity, opID, in, access, targets)
+          } else {
+            getExtension(clazz)(tx.peer).readTuple(arity, opID, in, access, targets)
+          }
       }
+    }
 
-      def readConstant( in: DataInput )( implicit tx: S#Tx ) : Ex = new ConstRead( in )
+    def readConstant(in: DataInput)(implicit tx: S#Tx): Ex = new ConstRead(in)
    }
 
-   private final class ConstRead( in: DataInput ) extends ConstLike {
-      protected val constValue = readValue( in )
-   }
+  private final class ConstRead(in: DataInput) extends ConstLike {
+    protected val constValue = readValue(in)
+  }
 
-   private final class VarRead( in: DataInput, access: S#Acc, protected val targets: Targets[ S ], tx0: S#Tx )
-   extends Basic with impl.VarImpl[ S, A ] {
-      protected val ref = tx0.readVar[ Ex ]( id, in )
+  private final class VarRead(in: DataInput, access: S#Acc, protected val targets: Targets[S], tx0: S#Tx)
+    extends Basic with impl.VarImpl[S, A] {
+
+    protected val ref = tx0.readVar[Ex](id, in)
    }
 
    /* protected */ def readExpr( in: DataInput, access: S#Acc )( implicit tx: S#Tx ) : Ex = serializer.read( in, access )
@@ -90,6 +92,13 @@ trait TypeOld[S <: event.Sys[S], A] extends Extensions[S, A] with TupleReader[S,
     //    final def react(fun: S#Tx => Change => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
     //      Observer[S, Change, Ex](changed, serializer, fun)
     //    }
+
+    override def hashCode = constValue.##
+
+    override def equals(that: Any) = that match {
+      case c: ConstLike => constValue.equals(c.constValue)
+      case _ => super.equals(that)
+    }
 
     final protected def writeData(out: DataOutput): Unit = writeValue(constValue, out)
   }

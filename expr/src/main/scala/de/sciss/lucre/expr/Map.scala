@@ -30,13 +30,14 @@ import de.sciss.lucre.{event => evt, data}
 import scala.collection.immutable.{IndexedSeq => Vec}
 import evt.{EventLike, Sys, Publisher}
 import de.sciss.serial.Serializer
+import impl.{MapImpl => Impl}
 
 object Map {
   object Modifiable {
     def apply[S <: Sys[S], K, V <: Publisher[S, U], U](implicit tx: S#Tx,
                                                        keySerializer  : Serializer[S#Tx, S#Acc, K],
-                                                       valueSerializer: Serializer[S#Tx, S#Acc, V]): Modifiable[S, K, V, U] =
-      ???
+                                                       valueSerializer: evt.Serializer[S, V]): Modifiable[S, K, V, U] =
+      Impl[S, K, V, U]
   }
 
   trait Modifiable[S <: Sys[S], K, V, U] extends Map[S, K, V, U] {

@@ -11,43 +11,45 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.collection.breakOut
 import scala.annotation.switch
 
-/*
-  XXX TODO: Should have a real hash map and not require an `Ordering[K]`
- */
 object MapImpl {
+  def apply[S <: Sys[S], K, V <: Publisher[S, U], U](implicit tx: S#Tx, keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                     valueSerializer: evt.Serializer[S, V]): Modifiable[S, K, V, U] = {
+    val targets = evt.Targets[S]
+    new ActiveImpl[S, K, V, U](targets) {
+      val peer = SkipList.Map.empty[S, K, Vec[ElemImpl[S, K, V, U]]](tx, keyOrdering, keySerializer,
+        Serializer.indexedSeq(elemSerializer))
+    }
+  }
+
   def activeSerializer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer: Serializer[S#Tx, S#Acc, K],
                                                                 valueSerializer: evt.Serializer[S, V])
-  : Serializer[S#Tx, S#Acc, Map[S, K, V, U]] with evt.Reader[S, Map[S, K, V, U]] = ??? // new ActiveSer[S, K, V, U]
+  : Serializer[S#Tx, S#Acc, Map[S, K, V, U]] with evt.Reader[S, Map[S, K, V, U]] = new ActiveSer[S, K, V, U]
 
   private class ActiveSer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer: Serializer[S#Tx, S#Acc, K],
-                                                                   valueSerializer: evt.Serializer[S, V],
-                                                                   keyOrdering: Ordering[K])
+                                                                   valueSerializer: evt.Serializer[S, V])
     extends NodeSerializer[S, Map[S, K, V, U]] with evt.Reader[S, Map[S, K, V, U]] {
     def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Map[S, K, V, U] =
       MapImpl.activeRead(in, access, targets)
   }
 
-  private def activeRead[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
+  private def activeRead[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                                                  (implicit tx: S#Tx,
-                                                                  _keySer: Serializer[S#Tx, S#Acc, K],
-                                                                  _valueSer: evt.Serializer[S, V],
-                                                                  keyOrdering: data.Ordering[S#Tx, K])
-  : Impl[S, K, V, Pair[S, K, V, U], U] =
-    new ActiveImpl[S, K, V, U] {
-      val targets         = _targets
-      val keySerializer   = _keySer
-      val valueSerializer = _valueSer
-      val peer            = SkipList.Map.read[S, K, Pair[S, K, V, U]](in, access)(tx, keyOrdering, keySerializer, elemSerializer)
+                                                                  keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                                  valueSerializer: evt.Serializer[S, V])
+  : Impl[S, K, V, ElemImpl[S, K, V, U], U] =
+    new ActiveImpl[S, K, V, U](targets) {
+      val peer = SkipList.Map.read[S, K, Vec[ElemImpl[S, K, V, U]]](in, access)(tx, keyOrdering, keySerializer,
+        Serializer.indexedSeq(elemSerializer))
     }
 
-  private final class Pair[S <: Sys[S], K, V <: Publisher[S, U], U](map: ActiveImpl[S, K, V, U],
+  private final class ElemImpl[S <: Sys[S], K, V <: Publisher[S, U], U](map: ActiveImpl[S, K, V, U],
                                                                     protected val targets: evt.Targets[S],
                                                                     val key: K, val value: V)
-    extends evt.impl.StandaloneLike[S, U, Pair[S, K, V, U]] {
+    extends evt.impl.StandaloneLike[S, U, ElemImpl[S, K, V, U]] {
 
     import map.{keySerializer, valueSerializer}
 
-    type Elem = Pair[S, K, V, U]
+    type Elem = ElemImpl[S, K, V, U]
 
     def changed: Event[S, U, Elem] = this
 
@@ -66,24 +68,32 @@ object MapImpl {
     protected def reader: evt.Reader[S, Elem] = map.elemSerializer
   }
 
-  private abstract class ActiveImpl[S <: Sys[S], K, V <: Publisher[S, U], U]
-    extends Impl[S, K, V, Pair[S, K, V, U], U] {
+  private abstract class ActiveImpl[S <: Sys[S], K, V <: Publisher[S, U], U](protected val targets: evt.Targets[S])
+                                                                            (implicit val keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                                             val valueSerializer: evt.Serializer[S, V])
+    extends Impl[S, K, V, ElemImpl[S, K, V, U], U] {
     map =>
 
-    private type Elem = Pair[S, K, V, U]
+    private type Elem = ElemImpl[S, K, V, U]
 
-    implicit def valueSerializer: evt.Serializer[S, V]
+    final protected def registerElement  (elem: Elem)(implicit tx: S#Tx): Unit = elem.changed ---> elementChanged
+    final protected def unregisterElement(elem: Elem)(implicit tx: S#Tx): Unit = elem.changed -/-> elementChanged
 
-    protected def registerElement  (elem: Elem)(implicit tx: S#Tx): Unit = elem.changed ---> elementChanged
-    protected def unregisterElement(elem: Elem)(implicit tx: S#Tx): Unit = elem.changed -/-> elementChanged
+    final protected def reader: evt.Reader[S, Map[S, K, V, U]] = activeSerializer[S, K, V, U]
 
-    protected def reader: evt.Reader[S, Map[S, K, V, U]] = activeSerializer[S, K, V, U]
+    implicit object keyOrdering extends data.Ordering[S#Tx, K] {
+      def compare(a: K, b: K)(implicit tx: S#Tx): Int = {
+        val ah = a.##
+        val bh = b.##
+        if (ah < bh) -1 else if (ah > bh) 1 else 0
+      }
+    }
 
     object elemSerializer extends Serializer[S#Tx, S#Acc, Elem] with evt.Reader[S, Elem] {
       def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Elem = {
         val key   = keySerializer  .read(in, access)
         val value = valueSerializer.read(in, access)
-        new Pair(map, targets, key, value)
+        new ElemImpl(map, targets, key, value)
       }
 
       def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Elem = {
@@ -94,14 +104,15 @@ object MapImpl {
       def write(elem: Elem, out: DataOutput): Unit = elem.write(out)
     }
 
-    protected def mkElem(key: K, value: V)(implicit tx: S#Tx): Elem = {
+    final protected def mkElem(key: K, value: V)(implicit tx: S#Tx): Elem = {
       val targets = evt.Targets[S]
-      new Pair(map, targets, key, value)
+      new ElemImpl(map, targets, key, value)
     }
 
-    protected def elemValue(elem: Elem): V = elem.value
+    final protected def elemKey  (elem: Elem): K = elem.key
+    final protected def elemValue(elem: Elem): V = elem.value
 
-    def select(slot: Int): Event[S, Any, Any] = (slot: @switch) match {
+    final def select(slot: Int): Event[S, Any, Any] = (slot: @switch) match {
       case changed        .slot => changed
       case CollectionEvent.slot => CollectionEvent
       case elementChanged .slot => elementChanged
@@ -138,7 +149,7 @@ object MapImpl {
 
     // ---- abstract ----
 
-    protected def peer: SkipList.Map[S, K, Elem]
+    protected def peer: SkipList.Map[S, K, Vec[Elem]]
 
     protected def registerElement  (elem: Elem)(implicit tx: S#Tx): Unit
     protected def unregisterElement(elem: Elem)(implicit tx: S#Tx): Unit
@@ -151,20 +162,28 @@ object MapImpl {
     protected def reader: evt.Reader[S, Map[S, K, V, U]]
 
     protected def mkElem(key: K, value: V)(implicit tx: S#Tx): Elem
+    protected def elemKey  (elem: Elem): K
     protected def elemValue(elem: Elem): V
 
     // ---- implemented ----
 
-    final def contains(key: K)(implicit tx: S#Tx): Boolean    = peer.contains(key)
-    final def get     (key: K)(implicit tx: S#Tx): Option[V]  = peer.get     (key).map(elemValue)
-
-    final def iterator      (implicit tx: S#Tx): Iterator[S#Tx, (K, V)] = peer.iterator.map {
-      case (key, elem) => key -> elemValue(elem)
+    final def contains(key: K)(implicit tx: S#Tx): Boolean    = peer.get(key).exists(vec => vec.exists(elemKey(_) == key))
+    final def get     (key: K)(implicit tx: S#Tx): Option[V]  = peer.get(key).flatMap { vec =>
+      vec.find(elemKey(_) == key).map(elemValue)
     }
-    final def keysIterator  (implicit tx: S#Tx): Iterator[S#Tx,  K    ] = peer.keysIterator
-    final def valuesIterator(implicit tx: S#Tx): Iterator[S#Tx,     V ] = peer.valuesIterator.map(elemValue)
 
-    final def size    (implicit tx: S#Tx): Int      = peer.size
+    final def iterator      (implicit tx: S#Tx): Iterator[S#Tx, (K, V)] = peer.iterator.flatMap {
+      case (key, vec) => vec.map(key -> elemValue(_))
+    }
+    final def keysIterator  (implicit tx: S#Tx): Iterator[S#Tx,  K    ] = peer.valuesIterator.flatMap(_.map(elemKey  ))
+    final def valuesIterator(implicit tx: S#Tx): Iterator[S#Tx,     V ] = peer.valuesIterator.flatMap(_.map(elemValue))
+
+    final def size(implicit tx: S#Tx): Int = {
+      // XXX TODO: poco ugly...
+      var res = 0
+      peer.valuesIterator.foreach(res += _.size)
+      res
+    }
     final def nonEmpty(implicit tx: S#Tx): Boolean  = peer.nonEmpty
     final def isEmpty (implicit tx: S#Tx): Boolean  = peer.isEmpty
 
@@ -179,7 +198,7 @@ object MapImpl {
     final protected def isConnected(implicit tx: S#Tx) = targets.nonEmpty
 
     final protected def foreach(fun: Elem => Unit)(implicit tx: S#Tx): Unit =
-      peer.valuesIterator.foreach(fun)
+      peer.valuesIterator.foreach(_.foreach(fun))
 
     protected object CollectionEvent
       extends evt.impl.TriggerImpl[S, Map.Update[S, K, V, U], Map[S, K, V, U]]
@@ -214,7 +233,7 @@ object MapImpl {
 
       private[lucre] def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Map.Update[S, K, V, U]] = {
         val collOpt = if (pull.contains(CollectionEvent)) pull(CollectionEvent) else None
-        val elemOpt = if (pull.contains(elementChanged   )) pull(elementChanged   ) else None
+        val elemOpt = if (pull.contains(elementChanged )) pull(elementChanged ) else None
 
         (collOpt, elemOpt) match {
           case (Some(_), None) => collOpt
@@ -243,22 +262,43 @@ object MapImpl {
     }
 
     final def put(key: K, value: V)(implicit tx: S#Tx): Option[V] = {
-      val elem  = mkElem(key, value)
-      val old = peer.add(key -> elem)
+      val elem      = mkElem(key, value)
+      val oldVec    = peer.get(key).getOrElse(Vec.empty)
+      val idx       = oldVec.indexWhere(elemKey(_) == key)
+      val found     = idx >= 0
+      val newVec    = if (found) oldVec.updated(idx, elem) else oldVec :+ elem
+      peer.add(key -> newVec)
       if (isConnected) {
-        old.foreach(unregisterElement)
+        if (found) {
+          val oldElem = oldVec(idx)
+          unregisterElement(oldElem)
+          fireRemoved(key, elemValue(oldElem))
+        }
         registerElement(elem)
         fireAdded(key, value)
       }
-      old.map(elemValue)
+      if (found) Some(elemValue(oldVec(idx))) else None
     }
 
     final def remove(key: K)(implicit tx: S#Tx): Option[V] = {
-      val valueOpt = peer.remove(key).map(elemValue)
-      if (isConnected) valueOpt.foreach { value =>
+      val oldVec  = peer.get(key).getOrElse(Vec.empty)
+      val idx     = oldVec.indexWhere(elemKey(_) == key)
+      if (idx < 0) return None
+
+      val elem    = oldVec(idx)
+      val value   = elemValue(elem)
+      val newVec  = oldVec.patch(idx, Nil, 1)
+      if (newVec.isEmpty) {
+        peer.remove(key)
+      } else {
+        peer.add(key -> newVec)
+      }
+
+      if (isConnected) {
+        unregisterElement(elem)
         fireRemoved(key, value)
       }
-      valueOpt
+      Some(value)
     }
   }
 }
