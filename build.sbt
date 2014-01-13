@@ -3,12 +3,12 @@ name := "LucreEvent"
 // ---- base settings ----
 
 lazy val commonSettings = Project.defaultSettings ++ Seq(
-  version         := "2.4.1-SNAPSHOT",
+  version         := "2.5.0-SNAPSHOT",
   organization    := "de.sciss",
   description     := "Reactive event-system for LucreSTM",
   homepage        := Some(url("https://github.com/Sciss/" + name.value)),
   licenses        := Seq("GPL v2+" -> url("http://www.gnu.org/licenses/gpl-2.0.txt")),
-  scalaVersion    := "2.10.2",
+  scalaVersion    := "2.10.3",
   resolvers       += "Oracle Repository" at "http://download.oracle.com/maven",  // required for sleepycat
   retrieveManaged := true,
   scalacOptions  ++= Seq(
@@ -31,7 +31,7 @@ lazy val commonSettings = Project.defaultSettings ++ Seq(
 
 lazy val stmVersion    = "2.0.+"
 
-lazy val dataVersion   = "2.2.+"
+lazy val dataVersion   = "2.2.1+"
 
 lazy val modelVersion  = "0.3.1+"
 

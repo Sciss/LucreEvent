@@ -1,7 +1,7 @@
 package de.sciss
 package lucre
 
-import collection.immutable.{IndexedSeq => IIdxSeq}
+import collection.immutable.{IndexedSeq => Vec}
 import annotation.elidable
 import annotation.elidable.CONFIG
 import java.util.{Locale, Date}
@@ -9,10 +9,10 @@ import java.text.SimpleDateFormat
 
 package object event {
   type Reaction = () => () => Unit
-  // private[event] type Children[S <: stm.Sys[S]] = IIdxSeq[(Int, Selector[S])]
-  private[event] type Children[S <: stm.Sys[S]] = IIdxSeq[(Byte, Selector[S])]
+  // private[event] type Children[S <: stm.Sys[S]] = Vec[(Int, Selector[S])]
+  private[event] type Children[S <: stm.Sys[S]] = Vec[(Byte, Selector[S])]
 
-  private val emptySeq = IIdxSeq.empty[Nothing]
+  private val emptySeq = Vec.empty[Nothing]
 
   //   private[lucre] def NoSources[ S <: Sys[ S ]]  : Sources[ S ]   = emptySeq
   private[lucre] def NoChildren[S <: stm.Sys[S]]: Children[S] = emptySeq

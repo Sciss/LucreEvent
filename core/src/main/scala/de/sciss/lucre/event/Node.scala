@@ -2,7 +2,7 @@
  *  Node.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -27,14 +27,12 @@ package de.sciss
 package lucre
 package event
 
-import collection.immutable.{IndexedSeq => IIdxSeq}
+import collection.immutable.{IndexedSeq => Vec}
 import stm.Mutable
 import annotation.switch
 import de.sciss.serial.{Writable, DataInput, DataOutput}
 
-/**
- * An abstract trait uniting invariant and mutating readers.
- */
+/** An abstract trait uniting invariant and mutating readers. */
 trait Reader[S <: stm.Sys[S], +Repr] {
   def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Repr with Node[S]
 }
@@ -51,17 +49,6 @@ trait NodeSerializer[S <: Sys[S], Repr <: Writable]
 }
 
 object Targets {
-  //   private type I = InMemory
-  //
-  //   private implicit def childrenSer[ S <: Sys[ S ]] : stm.Serializer[ S#Tx, S#Acc, Children[ S ]] =
-  //      anyChildrenSer.asInstanceOf[ stm.Serializer[ S#Tx, S#Acc, Children[ S ]]]
-  //
-  //   private val anyChildrenSer = stm.Serializer.indexedSeq[ I#Tx, I#Acc, (Int, Selector[ I ])](
-  //      stm.Serializer.tuple2[ I#Tx, I#Acc, Int, Selector[ I ]](
-  //         stm.Serializer.Int, Selector.serializer[ I ]
-  //      )
-  //   )
-
   private implicit def childrenSerializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Children[S]] =
     anyChildrenSer.asInstanceOf[ChildrenSer[S]]
 
@@ -185,7 +172,7 @@ object Targets {
       }
     }
 
-    private[event] def observers(implicit tx: S#Tx): IIdxSeq[ObserverKey[S]] =
+    private[event] def observers(implicit tx: S#Tx): Vec[ObserverKey[S]] =
       children.flatMap(_._2.toObserverKey)
 
     def isEmpty (implicit tx: S#Tx): Boolean = children.isEmpty   // XXX TODO this is expensive
@@ -195,100 +182,66 @@ object Targets {
 
     private[event] def isInvalid(implicit tx: S#Tx): Boolean = !valid() // !invalidVar.isFresh || (invalidVar.getOrElse(0) != 0)
 
-    //    private[event] def isInvalid(slot: Int)(implicit tx: S#Tx): Boolean =
-    //      !invalidVar.isFresh || ((invalidVar.getOrElse(0) & (1 << slot)) != 0)
-
-    //    private[event] def validated(slot: Int)(implicit tx: S#Tx): Unit = {
-    //      val mask = ~(1 << slot)
-    //      if (invalidVar.isFresh) {
-    //        invalidVar.transform(0)(_ & mask)
-    //      } else {
-    //        invalidVar() = mask
-    //      }
-    //    }
-
-    //    private[event] def invalidate(slot: Int)(implicit tx: S#Tx): Unit = {
-    //      if (invalidVar.isFresh) {
-    //        invalidVar.transform(0)(_ | (1 << slot))
-    //      } else {
-    //        invalidVar() = 0xFFFFFFFF
-    //      }
-    //    }
-
     private[event] def validated()(implicit tx: S#Tx): Unit = valid.update()
-
-    //    private[event] def invalidate()(implicit tx: S#Tx): Unit = {
-    //      invalidVar() = 0xFFFFFFFF
-    //    }
   }
 }
 
-/**
- * An abstract trait unifying invariant and mutating targets. This object is responsible
- * for keeping track of the dependents of an event source which is defined as the outer
- * object, sharing the same `id` as its targets. As a `Reactor`, it has a method to
- * `propagate` a fired event.
- */
+/** An abstract trait unifying invariant and mutating targets. This object is responsible
+  * for keeping track of the dependents of an event source which is defined as the outer
+  * object, sharing the same `id` as its targets. As a `Reactor`, it has a method to
+  * `propagate` a fired event.
+  */
 sealed trait Targets[S <: stm.Sys[S]] extends Reactor[S] /* extends Writable with Disposable[ S#Tx ] */ {
   private[event] def children(implicit tx: S#Tx): Children[S]
 
   private[lucre] def isPartial: Boolean
 
-  /**
-   * Adds a dependant to this node target.
-   *
-   * @param slot the slot for this node to be pushing to the dependant
-   * @param sel  the target selector to which an event at slot `slot` will be pushed
-   *
-   * @return  `true` if this was the first dependant registered with the given slot, `false` otherwise
-   */
+  /** Adds a dependant to this node target.
+    *
+    * @param slot the slot for this node to be pushing to the dependant
+    * @param sel  the target selector to which an event at slot `slot` will be pushed
+    *
+    * @return  `true` if this was the first dependant registered with the given slot, `false` otherwise
+    */
   private[event] def add(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Boolean
 
-  /**
-   * This method should be invoked when the targets are invalid for the given slot. It resets the children
-   * for that slot to the single selector, and clears the invalid flag for the slot.
-   *
-   * @param slot the slot for this node to be pushing to the dependant
-   * @param sel  the target selector to which an event at slot `slot` will be pushed
-   */
+  /** This method should be invoked when the targets are invalid for the given slot. It resets the children
+    * for that slot to the single selector, and clears the invalid flag for the slot.
+    *
+    * @param slot the slot for this node to be pushing to the dependant
+    * @param sel  the target selector to which an event at slot `slot` will be pushed
+    */
   private[event] def resetAndValidate(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Unit
 
   def isEmpty (implicit tx: S#Tx): Boolean
   def nonEmpty(implicit tx: S#Tx): Boolean
 
-  /**
-   * Removes a dependant from this node target.
-   *
-   * @param slot the slot for this node which is currently pushing to the dependant
-   * @param sel  the target selector which was registered with the slot
-   *
-   * @return  `true` if this was the last dependant unregistered with the given slot, `false` otherwise
-   */
+  /** Removes a dependant from this node target.
+    *
+    * @param slot the slot for this node which is currently pushing to the dependant
+    * @param sel  the target selector which was registered with the slot
+    *
+    * @return  `true` if this was the last dependant unregistered with the given slot, `false` otherwise
+    */
   private[event] def remove(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Boolean
 
-  private[event] def observers(implicit tx: S#Tx): IIdxSeq[ObserverKey[S]]
+  private[event] def observers(implicit tx: S#Tx): Vec[ObserverKey[S]]
 
   private[event] def isInvalid   (implicit tx: S#Tx): Boolean
   private[event] def validated ()(implicit tx: S#Tx): Unit
-  // private[event] def invalidate()(implicit tx: S#Tx): Unit
-
-  //  private[event] def isInvalid (slot: Int)(implicit tx: S#Tx): Boolean
-  //  private[event] def validated (slot: Int)(implicit tx: S#Tx): Unit
-  //  private[event] def invalidate(slot: Int)(implicit tx: S#Tx): Unit
 }
 
-/**
- * An `Event.Node` is most similar to EScala's `EventNode` class. It represents an observable
- * object and can also act as an observer itself. It adds the `Reactor` functionality in the
- * form of a proxy, forwarding to internally stored `Targets`. It also provides a final
- * implementation of the `Writable` and `Disposable` traits, asking sub classes to provide
- * methods `writeData` and `disposeData`. That way it is ensured that the sealed `Reactor` trait
- * is written first as the `Targets` stub, providing a means for partial deserialization during
- * the push phase of event propagation.
- *
- * This trait also implements `equals` and `hashCode` in terms of the `id` inherited from the
- * targets.
- */
+/** An `Event.Node` is most similar to EScala's `EventNode` class. It represents an observable
+  * object and can also act as an observer itself. It adds the `Reactor` functionality in the
+  * form of a proxy, forwarding to internally stored `Targets`. It also provides a final
+  * implementation of the `Writable` and `Disposable` traits, asking sub classes to provide
+  * methods `writeData` and `disposeData`. That way it is ensured that the sealed `Reactor` trait
+  * is written first as the `Targets` stub, providing a means for partial deserialization during
+  * the push phase of event propagation.
+  *
+  * This trait also implements `equals` and `hashCode` in terms of the `id` inherited from the
+  * targets.
+  */
 trait Node[S <: stm.Sys[S]] extends /* Reactor[ S ] with */ VirtualNode[S] /* with Dispatcher[ S, A ] */ {
   override def toString = "Node" + id
 
@@ -319,12 +272,11 @@ trait Node[S <: stm.Sys[S]] extends /* Reactor[ S ] with */ VirtualNode[S] /* wi
   }
 }
 
-/**
- * The `Reactor` trait encompasses the possible targets (dependents) of an event. It defines
- * the `propagate` method which is used in the push-phase (first phase) of propagation. A `Reactor` is
- * either a persisted event `Node` or a registered `ObserverKey` which is resolved through the transaction
- * as pointing to a live view.
- */
+/** The `Reactor` trait encompasses the possible targets (dependents) of an event. It defines
+  * the `propagate` method which is used in the push-phase (first phase) of propagation. A `Reactor` is
+  * either a persisted event `Node` or a registered `ObserverKey` which is resolved through the transaction
+  * as pointing to a live view.
+  */
 sealed trait Reactor[S <: stm.Sys[S]] extends Mutable[S#ID, S#Tx] {
   private[event] def _targets: Targets[S]
 

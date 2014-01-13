@@ -2,7 +2,7 @@
 //package lucre
 //package expr
 //
-//import collection.immutable.{IndexedSeq => IIdxSeq}
+//import collection.immutable.{IndexedSeq => Vec}
 //import java.io.File
 //import stm.store.BerkeleyDB
 //import lucre.{event => evt}
@@ -104,7 +104,7 @@
 //      sealed trait Collection extends Update { def l: Sorted; def region: EventRegion }
 //      final case class Added(   l: Sorted, region: EventRegion ) extends Collection
 //      final case class Removed( l: Sorted, region: EventRegion ) extends Collection
-//      final case class Element( l: Sorted, changes: IIdxSeq[ EventRegion.Update ]) extends Update
+//      final case class Element( l: Sorted, changes: Vec[ EventRegion.Update ]) extends Update
 //
 //      declare[ Collection ]( _.collectionChanged )
 //      declare[ Element    ]( _.elementChanged    )
@@ -116,7 +116,7 @@
 //            new Read( in, access, targets, tx )
 //      }
 //
-//      private type RegionSeq = IIdxSeq[ EventRegion ]
+//      private type RegionSeq = Vec[ EventRegion ]
 //
 //      private sealed trait Impl extends Sorted {
 //         protected def seq : S#Var[ RegionSeq ]
@@ -167,7 +167,7 @@
 //            // Obviously we'd have at least a binary search here in a real application...
 //            val idx0       = es.indexWhere( _.span.value.start > newStart )
 //            val idx        = if( idx0 >= 0 ) idx0 else es.size
-//            val esNew      = es.patch( idx, IIdxSeq( elem ), 0 )
+//            val esNew      = es.patch( idx, Vec( elem ), 0 )
 //            seq()         = esNew
 ////            collectionChanged( Added( this, elem ))
 //         }
@@ -176,7 +176,7 @@
 //            val es         = seq()
 //            val idx        = es.indexOf( elem )
 //            if( idx < 0 ) return
-//            val esNew      = es.patch( idx, IIdxSeq.empty, 1 )
+//            val esNew      = es.patch( idx, Vec.empty, 1 )
 //            seq()         = esNew
 //         }
 //
@@ -195,7 +195,7 @@
 //
 //      private final class New( tx0: Tx, protected val unsorted: RegionList ) extends Impl {
 //         protected val targets   = evt.Targets[ S ]( tx0 )
-//         protected val seq       = tx0.newVar[ RegionSeq ]( id, IIdxSeq.empty )
+//         protected val seq       = tx0.newVar[ RegionSeq ]( id, Vec.empty )
 //
 ////         // ---- constructor ----
 //         // XXX not so nice having to handle this explicitly

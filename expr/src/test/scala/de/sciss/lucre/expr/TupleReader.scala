@@ -2,8 +2,7 @@ package de.sciss
 package lucre
 package expr
 
-import stm.Sys
-import event.{Targets, Node}
+import event.{Targets, Node, Sys}
 import serial.DataInput
 
 trait TupleReader[S <: Sys[S], A] {

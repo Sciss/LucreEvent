@@ -1,15 +1,41 @@
+/*
+ *  TypeLike.scala
+ *  (LucreEvent)
+ *
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
+ *
+ *  This software is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either
+ *  version 2, june 1991 of the License, or (at your option) any later version.
+ *
+ *  This software is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public
+ *  License (gpl.txt) along with this software; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *
+ *  For further information, please contact Hanns Holger Rutz at
+ *  contact@sciss.de
+ */
+
 package de.sciss
 package lucre
 package expr
 
 import lucre.{event => evt}
+import evt.Sys
 import serial.{DataInput, DataOutput, Serializer}
 import language.higherKinds
 
-trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
-  protected type ReprVar  [S <: stm.Sys[S]] = Repr[S] with Expr.Var[S, A]
-  protected type ReprConst[S <: stm.Sys[S]] = Repr[S] with Expr.Const[S, A]
-  protected type ReprNode [S <: stm.Sys[S]] = Repr[S] with evt.Node[S]
+trait TypeLike[A, Repr[S <: Sys[S]] <: Expr[S, A]] {
+  protected type ReprVar  [S <: Sys[S]] = Repr[S] with Expr.Var[S, A]
+  protected type ReprConst[S <: Sys[S]] = Repr[S] with Expr.Const[S, A]
+  protected type ReprNode [S <: Sys[S]] = Repr[S] with evt.Node[S]
 
   // ---- abstract ----
 
@@ -19,38 +45,38 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
 
   // ---- public ----
 
-  def newConst[S <: stm.Sys[S]](value: A): Repr[S] with Expr.Const[S, A]
+  def newConst[S <: Sys[S]](value: A): Repr[S] with Expr.Const[S, A]
 
-  def newVar[S <: evt.Sys[S]](init: Repr[S])(implicit tx: S#Tx): ReprVar[S]
+  def newVar[S <: Sys[S]](init: Repr[S])(implicit tx: S#Tx): ReprVar[S]
 
-  def newConfluentVar[S <: evt.Sys[S]](init: Repr[S])(implicit tx: S#Tx): ReprVar[S]
+  def newConfluentVar[S <: Sys[S]](init: Repr[S])(implicit tx: S#Tx): ReprVar[S]
 
-  def readConst[S <: stm.Sys[S]](in: DataInput): ReprConst[S]
+  def readConst[S <: Sys[S]](in: DataInput): ReprConst[S]
 
-  def readVar[S <: evt.Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): ReprVar[S]
+  def readVar[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): ReprVar[S]
 
-  final def readExpr[S <: evt.Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr[S] =
+  final def readExpr[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr[S] =
     serializer.read(in, access)
 
-  implicit final def serializer[S <: evt.Sys[S]]: evt.EventLikeSerializer[S, Repr[S]] =
+  implicit final def serializer[S <: Sys[S]]: evt.EventLikeSerializer[S, Repr[S]] =
     anySer.asInstanceOf[Ser[S]]
 
-  implicit final def varSerializer[S <: evt.Sys[S]]: Serializer[S#Tx, S#Acc, ReprVar[S]] =
+  implicit final def varSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, ReprVar[S]] =
     anyVarSer.asInstanceOf[VarSer[S]]
 
-  final def change[S <: stm.Sys[S]](before: A, now: A): Option[model.Change[A]] =
+  final def change[S <: Sys[S]](before: A, now: A): Option[model.Change[A]] =
     new model.Change(before, now).toOption
 
-  private val anySer    = new Ser   [event.InMemory]
-  private val anyVarSer = new VarSer[event.InMemory]
+  private val anySer    = new Ser   [evt.InMemory]
+  private val anyVarSer = new VarSer[evt.InMemory]
 
-  private final class VarSer[S <: evt.Sys[S]] extends Serializer[S#Tx, S#Acc, ReprVar[S]] {
+  private final class VarSer[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, ReprVar[S]] {
     def write(v: ReprVar[S], out: DataOutput): Unit = v.write(out)
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): ReprVar[S] = readVar[S](in, access)
   }
 
-  private final class Ser[S <: evt.Sys[S]] extends evt.EventLikeSerializer[S, Repr[S]] {
+  private final class Ser[S <: Sys[S]] extends evt.EventLikeSerializer[S, Repr[S]] {
     def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): ReprNode[S] = {
       // 0 = var, 1 = op
       in.readByte() match {
@@ -62,10 +88,10 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
     def readConstant(in: DataInput)(implicit tx: S#Tx): Repr[S] = newConst(readValue(in))
   }
 
-  protected def readTuple[S <: evt.Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
+  protected def readTuple[S <: Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                           (implicit tx: S#Tx): ReprNode[S]
 
-  protected def readVar[S <: evt.Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+  protected def readVar[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                         (implicit tx: S#Tx): ReprVar[S] with evt.Node[S]
 
   sealed trait TupleOp { def id: Int }
@@ -73,15 +99,15 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
   trait Tuple1Op[T1] extends TupleOp {
     def value(a: T1): A
 
-    final def unapply[S <: evt.Sys[S]](ex: Expr[S, A])(implicit tx: S#Tx): Option[Expr[S, T1]] = ex match {
+    final def unapply[S <: Sys[S]](ex: Expr[S, A])(implicit tx: S#Tx): Option[Expr[S, T1]] = ex match {
       case tup: Tuple1[_, _] if tup.op == this => Some(tup._1.asInstanceOf[Expr[S, T1]])
       case _ => None
     }
 
-    def toString[S <: evt.Sys[S]](_1: Expr[S, T1]): String
+    def toString[S <: Sys[S]](_1: Expr[S, T1]): String
   }
 
-  final class Tuple1[S <: evt.Sys[S], T1](typeID: Int, val op: Tuple1Op[T1],
+  final class Tuple1[S <: Sys[S], T1](typeID: Int, val op: Tuple1Op[T1],
                                           protected val targets: evt.Targets[S],
                                           val _1: Expr[S, T1])
     extends impl.NodeImpl[S, A] {
@@ -113,17 +139,17 @@ trait TypeLike[A, Repr[S <: stm.Sys[S]] <: Expr[S, A]] {
 
     final protected def writeTypes(out: DataOutput) = ()
 
-    final def unapply[S <: evt.Sys[S]](ex: Expr[S, A])(implicit tx: S#Tx): Option[(Expr[S, T1], Expr[S, T2])] =
+    final def unapply[S <: Sys[S]](ex: Expr[S, A])(implicit tx: S#Tx): Option[(Expr[S, T1], Expr[S, T2])] =
       ex match {
         case tup: Tuple2[_, _, _] if tup.op == this =>
           Some((tup._1.asInstanceOf[Expr[S, T1]], tup._2.asInstanceOf[Expr[S, T2]]))
         case _ => None
       }
 
-    def toString[S <: stm.Sys[S]](_1: Expr[S, T1], _2: Expr[S, T2]): String
+    def toString[S <: Sys[S]](_1: Expr[S, T1], _2: Expr[S, T2]): String
   }
 
-  final class Tuple2[S <: evt.Sys[S], T1, T2](typeID: Int, val op: Tuple2Op[T1, T2],
+  final class Tuple2[S <: Sys[S], T1, T2](typeID: Int, val op: Tuple2Op[T1, T2],
                                               protected val targets: evt.Targets[S],
                                               val _1: Expr[S, T1], val _2: Expr[S, T2])
     extends impl.NodeImpl[S, A] {

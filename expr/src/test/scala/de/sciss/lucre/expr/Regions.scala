@@ -5,7 +5,7 @@
 //import stm.Mutable
 //import serial.{DataInput, DataOutput}
 //import annotation.tailrec
-//import collection.immutable.{IndexedSeq => IIdxSeq}
+//import collection.immutable.{IndexedSeq => Vec}
 //import lucre.{event => evt}
 //import evt.{Targets, NodeSerializer, Event, Compound, Decl}
 //import language.implicitConversions
@@ -112,7 +112,7 @@
 //
 //         final lazy val changed = renamed | moved
 //
-////            final protected def sources( implicit tx: S#Tx ) = IIdxSeq( (name_#, 1 << 0), (span_#, 1 << 1) )   // OUCH XXX
+////            final protected def sources( implicit tx: S#Tx ) = Vec( (name_#, 1 << 0), (span_#, 1 << 1) )   // OUCH XXX
 //         final protected def reader = serializer
 //         final protected def decl   = EventRegion
 //      }
@@ -155,7 +155,7 @@
 //      sealed trait Collection extends Update { def l: RegionList; def idx: Int; def region: EventRegion }
 //      final case class Added(   l: RegionList, idx: Int, region: EventRegion ) extends Collection
 //      final case class Removed( l: RegionList, idx: Int, region: EventRegion ) extends Collection
-//      final case class Element( l: RegionList, changes: IIdxSeq[ EventRegion.Update ]) extends Update
+//      final case class Element( l: RegionList, changes: Vec[ EventRegion.Update ]) extends Update
 //
 //      declare[ Collection ]( _.collectionChanged )
 ////         declare[ Update ]( _.changed )

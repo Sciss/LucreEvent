@@ -2,7 +2,7 @@
  *  Event.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -64,27 +64,10 @@ object Selector {
   }
 
   private sealed trait TargetsSelector[S <: Sys[S]] extends VirtualNodeSelector[S] {
-    //      override protected def reactor: Targets[ S ]
-    //      override private[event] def reactor: Targets[ S ]
-    //      protected def data: Array[ Byte ]
-    //      protected def access: S#Acc
     override private[lucre] def node: VirtualNode.Raw[S]
 
-    //      final private[event] def nodeSelectorOption: Option[ NodeSelector[ S, Any ]] = None
-
-    //      final protected def writeVirtualNode( out: DataOutput ): Unit = {
-    //         reactor.write( out )
-    //         out.write( data )
-    //      }
-
-    //      final def devirtualize( reader: Reader[ S, Node[ S ]])( implicit tx: S#Tx ) : NodeSelector[ S, Any ] = {
-    //         node.devirtualize( reader ).select( slot, cookie == 0 )
-    //      }
-
-    //      final def devirtualize[ Evt <: Event[ S, Any, Any ]]( reader: Reader[ S, Any ])( implicit tx: S#Tx ) : Evt =
-    final def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]] = {
-      node.devirtualize(reader).select(slot /*, cookie == 0 */).asInstanceOf[Event[S, A, Repr with Node[S]]] // .asInstanceOf[ Evt ]
-    }
+    final def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]] =
+      node.devirtualize(reader).select(slot /*, cookie == 0 */)    .asInstanceOf[Event[S, A, Repr with Node[S]]]
   }
 
   private final case class InvariantTargetsSelector[S <: Sys[S]](slot: Int, node: VirtualNode.Raw[S])
@@ -94,7 +77,7 @@ object Selector {
   //    extends TargetsSelector[S] with MutatingSelector[S]
 }
 
-sealed trait Selector[S <: stm.Sys[S]] /* extends Writable */ {
+sealed trait Selector[S <: stm.Sys[S]] {
   protected def cookie: Int
 
   final def writeSelector(out: DataOutput): Unit = {
@@ -106,19 +89,16 @@ sealed trait Selector[S <: stm.Sys[S]] /* extends Writable */ {
 
   private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit
 
-  // ( implicit tx: S#Tx ) : Unit
-  private[event] def toObserverKey: Option[ObserverKey[S]] // Option[ Int ]
+  private[event] def toObserverKey: Option[ObserverKey[S]]
 }
 
 /** The serializable form of events. */
 sealed trait VirtualNodeSelector[S <: stm.Sys[S]] extends Selector[S] {
-  //   private[event] def reactor: Reactor[ S ]
 
   private[lucre] def node: VirtualNode[S]
 
   private[event] def slot: Int
 
-  //   private[event] def nodeSelectorOption: Option[ NodeSelector[ S, Any ]]
   final protected def writeSelectorData(out: DataOutput): Unit = {
     // out.writeInt(slot)
     out.writeByte(slot)
@@ -133,15 +113,7 @@ sealed trait VirtualNodeSelector[S <: stm.Sys[S]] extends Selector[S] {
     out.position = stop
   }
 
-  //   private[lucre] def devirtualize( reader: Reader[ S, Node[ S ]])( implicit tx: S#Tx ) : NodeSelector[ S, Any ]
-  //def devirtualize[ Evt <: Event[ S, Any, Any ]]( reader: Reader[ S, Any ])( implicit tx: S#Tx ) : Evt
   def devirtualize[A, Repr](reader: Reader[S, Repr])(implicit tx: S#Tx): Event[S, A, Repr with Node[S]]
-
-  // MMM
-  //   final protected def writeSelectorData( out: DataOutput ): Unit = {
-  //      out.writeInt( slot )
-  //      reactor.id.write( out )
-  //   }
 
   override def hashCode: Int = {
     import MurmurHash3._
@@ -187,82 +159,56 @@ trait InvariantSelector[S <: stm.Sys[S]] extends VirtualNodeSelector[S] {
 //  }
 //}
 
-/**
- * Instances of `ObserverKey` are provided by methods in `Txn`, when a live `Observer` is registered. Since
- * the observing function is not persisted, the slot will be used for lookup (again through the transaction)
- * of the reacting function during the first reaction gathering phase of event propagation.
- */
+/** Instances of `ObserverKey` are provided by methods in `Txn`, when a live `Observer` is registered. Since
+  * the observing function is not persisted, the slot will be used for lookup (again through the transaction)
+  * of the reacting function during the first reaction gathering phase of event propagation.
+  */
 final case class ObserverKey[S <: stm.Sys[S]] private[lucre](id: Int) extends /* MMM Expanded */ Selector[S] {
   protected def cookie: Int = 2
 
   private[event] def toObserverKey: Option[ObserverKey[S]] = Some(this)
 
-  private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit = {
-    //      val reader  = push
-    //      val nParent = parent.devirtualize( reader )
-    ////
-    ////      val nParent = parent.nodeSelectorOption.getOrElse(
-    ////         sys.error( "Orphan observer " + this + " - no expanded node selector" )
-    ////      )
+  private[event] def pushUpdate(parent: VirtualNodeSelector[S], push: Push[S]): Unit =
     push.addLeaf(this, parent)
-  }
-
-  // MMM
-  //   private[event] def writeValue()( implicit tx: S#Tx ) = ()  // we are light weight, nothing to do here
 
   def dispose()(implicit tx: S#Tx) = () // XXX really?
 
   protected def writeSelectorData(out: DataOutput): Unit = out.writeInt(id)
 }
 
-trait EventLike[S <: stm.Sys[S], +A] {
-  /**
-   * Connects the given selector to this event. That is, this event will
-   * adds the selector to its propagation targets.
-   */
-  /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Unit
+trait EventLike[S <: stm.Sys[S], +A] extends Observable[S#Tx, A] {
+  /** Connects the given selector to this event. That is, this event will
+    * adds the selector to its propagation targets.
+    */
+  def --->(r: Selector[S])(implicit tx: S#Tx): Unit
 
-  /**
-   * Disconnects the given selector from this event. That is, this event will
-   * remove the selector from its propagation targets.
-   */
-  /*private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Unit
+  /** Disconnects the given selector from this event. That is, this event will
+    * remove the selector from its propagation targets.
+    */
+  def -/->(r: Selector[S])(implicit tx: S#Tx): Unit
 
-  /**
-   * Registers a live observer with this event. The method is called with the
-   * observing function which receives the event's update messages, and the
-   * method generates an opaque `Disposable` instance, which may be used to
-   * remove the observer eventually (through the `dispose` method).
-   */
+  /** Registers a live observer with this event. The method is called with the
+    * observing function which receives the event's update messages, and the
+    * method generates an opaque `Disposable` instance, which may be used to
+    * remove the observer eventually (through the `dispose` method).
+    */
   def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] // Observer[S, A1, Repr]
 
-  // def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr]
-
-  //  /**
-  //   * Tests whether this event participates in a pull. That is, whether the
-  //   * event was visited during the push phase.
-  //   */
-  //  def isSource(pull: Pull[S]): Boolean
-
-  /**
-   * Called when the first target is connected to the underlying dispatcher node. This allows
-   * the event to be lazily added to its sources. A lazy event (most events should be lazy)
-   * should call invoke `source ---> this` for each event source. A strict event, an event
-   * without sources, or a collection event may simply ignore this method by providing a
-   * no-op implementation.
-   */
+  /** Called when the first target is connected to the underlying dispatcher node. This allows
+    * the event to be lazily added to its sources. A lazy event (most events should be lazy)
+    * should call invoke `source ---> this` for each event source. A strict event, an event
+    * without sources, or a collection event may simply ignore this method by providing a
+    * no-op implementation.
+    */
   private[lucre] def connect()(implicit tx: S#Tx): Unit
 
-  /**
-   * The counterpart to `connect` -- called when the last target is disconnected from the
-   * underlying dispatcher node. Events participating in lazy source registration should use
-   * this call to detach themselves from their sources, e.g. call `source -/-> this` for
-   * each event source. All other events may ignore this method by providing a
-   * no-op implementation.
-   */
+  /** The counterpart to `connect` -- called when the last target is disconnected from the
+    * underlying dispatcher node. Events participating in lazy source registration should use
+    * this call to detach themselves from their sources, e.g. call `source -/-> this` for
+    * each event source. All other events may ignore this method by providing a
+    * no-op implementation.
+    */
   private[lucre] def disconnect()(implicit tx: S#Tx): Unit
-
-  //   private[lucre] def reconnect()( implicit tx: S#Tx ) : Unit
 
   /** Involves this event in the pull-phase of event delivery. The event should check
     * the source of the originally fired event, and if it identifies itself with that
@@ -293,18 +239,8 @@ object Dummy {
 trait Dummy[S <: stm.Sys[S], +A] extends EventLike[S, A] {
   import Dummy._
 
-  final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) = ()
-  final /* private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx) = ()
-
-  //   final private[lucre] def select() : NodeSelector[ S ] = opNotSupported
-
-  //  /**
-  //   * Returns `false`, as a dummy is never a source event.
-  //   */
-  //  final def isSource(pull: Pull[S]) = false
-
-  // final def react[A1 >: A](fun: A1 => Unit)(implicit tx: S#Tx): Observer[S, A1, Repr] =
-  //   Observer.dummy[S, A1, Repr]
+  final def --->(r: Selector[S])(implicit tx: S#Tx) = ()
+  final def -/->(r: Selector[S])(implicit tx: S#Tx) = ()
 
   final def react(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = Observer.dummy[S]
 
@@ -314,24 +250,20 @@ trait Dummy[S <: stm.Sys[S], +A] extends EventLike[S, A] {
   final private[lucre] def disconnect()(implicit tx: S#Tx) = ()
 }
 
-/**
- * `Event` is not sealed in order to allow you define traits inheriting from it, while the concrete
- * implementations should extend either of `Event.Constant` or `Event.Node` (which itself is sealed and
- * split into `Event.Invariant` and `Event.Mutating`.
- */
+/** `Event` is not sealed in order to allow you define traits inheriting from it, while the concrete
+  * implementations should extend either of `Event.Constant` or `Event.Node` (which itself is sealed and
+  * split into `Event.Invariant` and `Event.Mutating`.
+  */
 trait Event[S <: stm.Sys[S], +A, +Repr] extends EventLike[S, A] with VirtualNodeSelector[S] {
-  // with NodeSelector[ S, A ]
-  /* private[lucre] */ def node: Repr with Node[S]
 
-  //   final def devirtualize[ Evt <: Event[ S, Any, Any ]]( reader: Reader[ S, Any ])( implicit tx: S#Tx ) : Evt =
+  def node: Repr with Node[S]
+
   final def devirtualize[A1, R1](reader: Reader[S, R1])(implicit tx: S#Tx): Event[S, A1, R1 with Node[S]] =
     this.asInstanceOf[Event[S, A1, R1 with Node[S]]]
-
-  //   final private[lucre] def devirtualize( reader: Reader[ S, Node[ S ]])( implicit tx: S#Tx ) : Event[ S, A, Repr ] = this
 }
 
 trait InvariantEvent[S <: stm.Sys[S], +A, +Repr] extends InvariantSelector[S] with Event[S, A, Repr] {
-  final /* private[lucre] */ def --->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Unit = {
+  final def --->(r: Selector[S])(implicit tx: S#Tx): Unit = {
     val t = node._targets
     //      if( t.add( slot, r )) {
     //         log( this.toString + " connect" )
@@ -353,7 +285,7 @@ trait InvariantEvent[S <: stm.Sys[S], +A, +Repr] extends InvariantSelector[S] wi
     }
   }
 
-  final /* private[lucre] */ def -/->(r: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Unit =
+  final def -/->(r: Selector[S])(implicit tx: S#Tx): Unit =
     if (node._targets.remove(slot, r)) disconnect()
 }
 

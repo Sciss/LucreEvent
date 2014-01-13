@@ -2,7 +2,7 @@
  *  Observer.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -39,15 +39,8 @@ object Observer {
 
   private final class Impl[S <: Sys[S], A, Repr](event: Event[S, A, Repr], key: ObserverKey[S])
     extends Disposable[S#Tx] {
+
     override def toString = "Observer<" + key.id + ">"
-
-    // def add[R1 >: Repr /* <: Node[ S ] */ ](event: EventLike[S, A, R1])(implicit tx: S#Tx): Unit = {
-    //  event ---> key
-    // }
-
-    // def remove[R1 >: Repr /* <: Node[ S ] */ ](event: EventLike[S, A, R1])(implicit tx: S#Tx): Unit = {
-    //   event -/-> key
-    // }
 
     def dispose()(implicit tx: S#Tx): Unit = {
       event -/-> key
@@ -55,9 +48,7 @@ object Observer {
     }
   }
 
-  /**
-   * This method is cheap.
-   */
+  /** This method is cheap. */
   def dummy[S <: stm.Sys[S]]: Disposable[S#Tx] = dummyVal.asInstanceOf[Disposable[S#Tx]]
 
   private val dummyVal = new Dummy[stm.InMemory]
@@ -68,12 +59,3 @@ object Observer {
     def dispose()(implicit tx: S#Tx) = ()
   }
 }
-
-///**
-// * `Observer` instances are returned by the `observe` method of classes implementing
-// * `Observable`. The observe can be registered and unregistered with events.
-// */
-//sealed trait Observer[ S <: stm.Sys[ S ], -A, +Repr ] extends Disposable[ S#Tx ] {
-//   def add[    R1 >: Repr /* <: Node[ S ] */]( event: EventLike[ S, A, R1 ])( implicit tx: S#Tx ) : Unit
-//   def remove[ R1 >: Repr /* <: Node[ S ] */]( event: EventLike[ S, A, R1 ])( implicit tx: S#Tx ) : Unit
-//}

@@ -1,5 +1,5 @@
 /*
- *  ReactionMap.scala
+ *  Observable.scala
  *  (LucreEvent)
  *
  *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
@@ -23,20 +23,15 @@
  *  contact@sciss.de
  */
 
-package de.sciss.lucre
-package event
+package de.sciss.lucre.event
 
-import impl.{ReactionMapImpl => Impl}
+import de.sciss.lucre.stm.Disposable
 
-object ReactionMap {
-  def apply[S <: stm.Sys[S]](): ReactionMap[S] = Impl[S]
-}
-
-trait ReactionMap[S <: stm.Sys[S]] {
-  def addEventReaction[A, Repr](reader: event.Reader[S, Repr], fun: S#Tx => A => Unit)
-                               (implicit tx: S#Tx): ObserverKey[S]
-
-  def removeEventReaction(key: ObserverKey[S])(implicit tx: S#Tx): Unit
-
-  def processEvent(leaf: ObserverKey[S], parent: VirtualNodeSelector[S], push: Push[S])(implicit tx: S#Tx): Unit
+trait Observable[Tx, +A] {
+  /** Registers a live observer with this observable. The method is called with the
+    * observing function which receives the observable's update message of type `A`, and the
+    * method generates an opaque `Disposable` instance, which may be used to
+    * remove the observer eventually (through the `dispose` method).
+    */
+  def react(fun: Tx => A => Unit)(implicit tx: Tx): Disposable[Tx]
 }

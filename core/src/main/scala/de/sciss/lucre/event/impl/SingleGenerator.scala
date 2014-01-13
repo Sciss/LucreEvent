@@ -2,7 +2,7 @@
  *  SingleGenerator.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -36,7 +36,7 @@ package impl
   * @tparam Repr  the representation type. This type mixin in this trait must conform to this (self-)type.
   */
 trait SingleGenerator[S <: Sys[S], A, +Repr]
-  extends Generator[S, A, Repr] with Root[S, A] with StandaloneLike[S, A, Repr] {
+  extends Generator[S, A, Repr] with Root[S, A] with StandaloneLike[S, A, Repr] with Publisher[S, A] {
   _: Repr =>
 
   def changed: Event[S, A, Repr] = this

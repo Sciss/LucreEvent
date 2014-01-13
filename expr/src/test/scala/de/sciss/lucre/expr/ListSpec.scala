@@ -9,7 +9,7 @@ import scala.concurrent.stm.TxnLocal
 import de.sciss.lucre.stm
 import de.sciss.model.Change
 
-class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
+class ListSpec extends fixture.FlatSpec with ShouldMatchers {
   final type S = Durable
   final type FixtureParam = Durable
 
@@ -47,8 +47,8 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
     def obs1(ll: LL)(implicit tx: S#Tx): Unit
     def obs2(ll: LL)(implicit tx: S#Tx): Unit
 
-    def update(ll: LL, ch: LinkedList.Change[S, Expr[S, Int], Change[Int]]) =
-      LinkedList.Update[S, Expr[S, Int], Change[Int]](ll, Vector(ch))
+    def update(ll: LL, ch: List.Change[S, Expr[S, Int], Change[Int]]) =
+      List.Update[S, Expr[S, Int], Change[Int]](ll, Vector(ch))
 
     def observationPoint(ll: LL, id: Int)(implicit tx: S#Tx): Unit =
       id match {
@@ -57,29 +57,29 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
         case 3 =>
           val vr = vh()
           obs.assertEquals(
-            update(ll, LinkedList.Element(vr, Change(5678, 8765))),
-            update(ll, LinkedList.Removed(0, cn)),
-            update(ll, LinkedList.Removed(0, vr)),
-            update(ll, LinkedList.Added  (0, cn2)),
-            update(ll, LinkedList.Added  (0, cn2)),
-            update(ll, LinkedList.Added  (2, cn2)),
-            update(ll, LinkedList.Added  (3, cn2)),
-            update(ll, LinkedList.Removed(3, cn2)),
-            update(ll, LinkedList.Removed(2, cn2)),
-            update(ll, LinkedList.Removed(1, cn2)),
-            update(ll, LinkedList.Removed(0, cn2))
+            update(ll, List.Element(vr, Change(5678, 8765))),
+            update(ll, List.Removed(0, cn)),
+            update(ll, List.Removed(0, vr)),
+            update(ll, List.Added  (0, cn2)),
+            update(ll, List.Added  (0, cn2)),
+            update(ll, List.Added  (2, cn2)),
+            update(ll, List.Added  (3, cn2)),
+            update(ll, List.Removed(3, cn2)),
+            update(ll, List.Removed(2, cn2)),
+            update(ll, List.Removed(1, cn2)),
+            update(ll, List.Removed(0, cn2))
           )
           obs.clear()
 
         case 4 =>
           obs.assertEquals(
-            update(ll, LinkedList.Added  (0, vh()))
+            update(ll, List.Added  (0, vh()))
           )
           obs.clear()
 
         case 5 =>
           obs.assertEquals(
-            update(ll, LinkedList.Element(vh(), Change(8765, 666)))
+            update(ll, List.Element(vh(), Change(8765, 666)))
           )
           obs.clear()
       }
@@ -92,8 +92,8 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
 
     def obs2(ll: LL)(implicit tx: S#Tx): Unit = {
       obs.assertEquals(
-        update(ll, LinkedList.Added(0, cn)),
-        update(ll, LinkedList.Added(1, vh()))
+        update(ll, List.Added(0, cn)),
+        update(ll, List.Added(1, vh()))
       )
       obs.clear()
     }
@@ -108,7 +108,7 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
   }
 
   abstract class Body {
-    type LL = LinkedList.Expr.Modifiable[S, Int]
+    type LL = List.Modifiable[S, Expr[S, Int], Change[Int]]
 
     def situation: String
     def observationPoint(ll: LL, id: Int)(implicit tx: S#Tx): Unit
@@ -119,8 +119,10 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
 
     "A linked list" should s"behave as advertised in $situation" in { cursor =>
       val lh = cursor.step { implicit tx =>
-        val ll = LinkedList.Expr.Modifiable[S, Int]
-        implicit val ser = LinkedList.Expr.Modifiable.serializer[S, Int]
+        import Ints.serializer
+        val ll = List.Modifiable[S, Expr[S, Int], Change[Int]]
+        // XXX TODO: why isn't this constructed automatically?
+        implicit val ser = List.Modifiable.serializer[S, Expr[S, Int], Change[Int]]
         tx.newHandle(ll)
       }
       cursor.step { implicit tx =>
@@ -156,7 +158,7 @@ class LinkedListSpec extends fixture.FlatSpec with ShouldMatchers {
         assert(ll.indexOf(vr) === 1)
         cn2 = Ints.newConst[S](999)
         assert(ll.indexOf(cn2) === -1)
-        assert(ll.iterator.toList === List(cn, vr))
+        assert(ll.iterator.toList === scala.List(cn, vr))
 
         vr() = Ints.newConst(8765)
 

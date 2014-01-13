@@ -2,7 +2,7 @@
  *  Push.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@
 package de.sciss.lucre
 package event
 
-import collection.immutable.{IndexedSeq => IIdxSeq}
+import collection.immutable.{IndexedSeq => Vec}
 import annotation.elidable
 import elidable.CONFIG
 
@@ -49,7 +49,7 @@ object Push {
     log("pull end")
   }
 
-  private val NoReactions = IIdxSeq.empty[Reaction]
+  private val NoReactions = Vec.empty[Reaction]
   //   private val emptySet = Set.empty[ Nothing ]
   //   private val emptyMap = Map.empty[ Nothing, Nothing ]
   type Parents[S <: stm.Sys[S]] = Set[VirtualNodeSelector[S]]

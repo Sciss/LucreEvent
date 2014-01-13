@@ -1,8 +1,8 @@
 /*
  *  Expr.scala
- *  (LucreExpr)
+ *  (LucreEvent)
  *
- *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -27,8 +27,8 @@ package de.sciss
 package lucre
 package expr
 
-import stm.{Disposable, Var => _Var, Sys}
-import event.{EventLike, Dummy, Event}
+import stm.{Disposable, Var => _Var}
+import de.sciss.lucre.event.{Publisher, Dummy, Event, Sys}
 import serial.Writable
 import de.sciss.model.Change
 
@@ -49,7 +49,7 @@ object Expr {
 
   object Const {
     def unapply[S <: Sys[S], A](expr: Expr[S, A]): Option[A] = {
-      if (expr.isInstanceOf[Const[_, _]]) {
+      if (expr   .isInstanceOf[Const[_, _]]) {
         Some(expr.asInstanceOf[Const[S, A]].constValue)
       } else None
     }
@@ -69,9 +69,7 @@ object Expr {
   def isConst(expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const[_, _]]
 }
 
-trait Expr[S <: Sys[S], +A] extends Writable with Disposable[S#Tx] {
-  def changed: EventLike[S, Change[A]]
-
+trait Expr[S <: Sys[S], +A] extends Writable with Disposable[S#Tx] with Publisher[S, Change[A]] {
   def value(implicit tx: S#Tx): A
 
   final def observe(fun: A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] =

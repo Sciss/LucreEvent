@@ -2,7 +2,7 @@
  *  MappingGenerator.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@ package impl
 /** A trait which combined external input events with self generated events. */
 trait MappingGenerator[S <: Sys[S], A, B, +Repr]
   extends Generator  [S, A, Repr]
-  with StandaloneLike[S, A, Repr] {
+  with StandaloneLike[S, A, Repr] with Publisher[S, A] {
   _: Repr =>
 
   protected def inputEvent: EventLike[S, B]

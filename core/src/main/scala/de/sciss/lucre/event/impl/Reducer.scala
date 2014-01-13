@@ -2,7 +2,7 @@
  *  Reducer.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -34,12 +34,11 @@ package impl
   * @tparam B     the input event type
   * @tparam Repr  the self-type (implementing instance must conform to this)
   */
-trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] {
+trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] with Publisher[S, A] {
   self: Repr =>
 
   /** A list of all input events. */
   protected def events: Traversable[Event[S, B, Repr]]
-  // protected def events: IIdxSeq[Event[S, B, Repr]]
 
   protected def changedSlot: Int
 
@@ -50,14 +49,6 @@ trait Reducer[S <: Sys[S], A, B, Repr] extends Node[S] {
 
   object changed extends impl.EventImpl[S, A, Repr] with InvariantEvent[S, A, Repr] {
     def node: Repr with Node[S] = self
-
-    //    def --->(r: Selector[S])(implicit tx: S#Tx): Unit = {
-    //      events.foreach(_ ---> r)
-    //    }
-    //
-    //    def -/->(r: Selector[S])(implicit tx: S#Tx): Unit = {
-    //      events.foreach(_ -/-> r)
-    //    }
 
     override def toString = s"$node.changed"
     def slot: Int = changedSlot // events.size // throw new UnsupportedOperationException

@@ -1,8 +1,8 @@
 /*
  *  Type.scala
- *  (LucreExpr)
+ *  (LucreEvent)
  *
- *  Copyright (c) 2011-2013 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -28,11 +28,12 @@ package lucre
 package expr
 
 import de.sciss.lucre.{event => evt}
+import evt.Sys
 import serial.{DataInput, DataOutput}
 
-trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] {
-  final protected type Ex [S <: stm.Sys[S]] = Expr[S, A]
-  final protected type ExN[S <: stm.Sys[S]] = Expr[S, A] with event.Node[S]
+trait Type[A] extends TypeLike[A, ({type λ[~ <: Sys[~]] = Expr[~, A]})#λ] {
+  final protected type Ex [S <: Sys[S]] = Expr[S, A]
+  final protected type ExN[S <: Sys[S]] = Expr[S, A] with evt.Node[S]
   final protected type Change = model.Change[A]
 
   // ---- abstract ----
@@ -42,27 +43,27 @@ trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] 
 
   // ---- public ----
 
-  final def newConst[S <: stm.Sys[S]](value: A): Expr.Const[S, A] = new Const(value)
+  final def newConst[S <: Sys[S]](value: A): Expr.Const[S, A] = new Const(value)
 
-  final def newVar[S <: evt.Sys[S]](init: Ex[S])(implicit tx: S#Tx): Expr.Var[S, A] = {
+  final def newVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): Expr.Var[S, A] = {
     val targets = evt.Targets.partial[S]
     val ref = tx.newPartialVar[Ex[S]](targets.id, init)
     new Var(ref, targets)
   }
 
-  final def newConfluentVar[S <: evt.Sys[S]](init: Ex[S])(implicit tx: S#Tx): Expr.Var[S, A] = {
+  final def newConfluentVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): Expr.Var[S, A] = {
     val targets = evt.Targets[S]
     val ref = tx.newVar[Ex[S]](targets.id, init)
     new Var(ref, targets)
   }
 
-  final def readConst[S <: stm.Sys[S]](in: DataInput): Expr.Const[S, A] = {
+  final def readConst[S <: Sys[S]](in: DataInput): Expr.Const[S, A] = {
     val cookie = in.readByte()
     require(cookie == 3, "Unexpected cookie " + cookie) // XXX TODO cookie should be available in lucre.event
     newConst[S](readValue(in))
   }
 
-  final def readVar[S <: evt.Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Expr.Var[S, A] = {
+  final def readVar[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Expr.Var[S, A] = {
     val targets = evt.Targets.read[S](in, access)
     val cookie = in.readByte()
     require(cookie == 0, "Unexpected cookie " + cookie)
@@ -74,7 +75,7 @@ trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] 
     new Var(ref, targets)
   }
 
-  final protected def readVar[S <: evt.Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
+  final protected def readVar[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                               (implicit tx: S#Tx): ReprVar[S] with evt.Node[S] = {
     val ref = if (targets.isPartial) {
       tx.readPartialVar[Ex[S]](targets.id, in)
@@ -86,14 +87,14 @@ trait Type[A] extends TypeLike[A, ({type λ[~ <: stm.Sys[~]] = Expr[~, A]})#λ] 
 
   // ---- private ----
 
-  private final case class Const[S <: stm.Sys[S]](constValue: A) extends expr.impl.ConstImpl[S, A] {
+  private final case class Const[S <: Sys[S]](constValue: A) extends expr.impl.ConstImpl[S, A] {
     // def react(fun: S#Tx => Change[S] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = evt.Observer.dummy[S]
 
     protected def writeData(out: DataOutput): Unit =
       writeValue(constValue, out)
   }
 
-  private final class Var[S <: evt.Sys[S]](protected val ref: S#Var[Ex[S]], protected val targets: evt.Targets[S])
+  private final class Var[S <: Sys[S]](protected val ref: S#Var[Ex[S]], protected val targets: evt.Targets[S])
     extends impl.VarImpl[S, A] {
     def reader: event.Reader[S, Ex[S]] = serializer[S]
   }
