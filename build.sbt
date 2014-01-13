@@ -20,7 +20,7 @@ lazy val commonSettings = Project.defaultSettings ++ Seq(
   scalacOptions in (Compile, doc) ++= Seq(
     // "-doc-title", name.value,
     // "-diagrams-dot-path", "/usr/local/bin/dot",
-    "-diagrams"
+    // FUCKING NPE: "-diagrams"
     // "-diagrams-dot-timeout", "20", "-diagrams-debug",
   ),
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
