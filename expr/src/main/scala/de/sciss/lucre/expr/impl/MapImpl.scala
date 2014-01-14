@@ -45,10 +45,10 @@ object MapImpl {
   }
 
   def activeRead[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc)
-                                                                   (implicit tx: S#Tx,
-                                                                    keySerializer: Serializer[S#Tx, S#Acc, K],
-                                                                    valueSerializer: evt.Serializer[S, V]): Modifiable[S, K, V, U] =
-    activeRead(in, access)
+                                                         (implicit tx: S#Tx,
+                                                          keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                          valueSerializer: evt.Serializer[S, V]): Map[S, K, V, U] =
+    activeModifiableRead(in, access)  // currently the same
 
   def activeModifiableRead[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc)
                                                          (implicit tx: S#Tx,

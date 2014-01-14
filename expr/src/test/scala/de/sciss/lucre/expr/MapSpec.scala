@@ -170,4 +170,18 @@ class MapSpec extends fixture.FlatSpec with ShouldMatchers {
                        upd(Map.Element(Key(3), c2, Change(4L, 6L))))
     }
   }
+
+  "A reactive map" should "allow serialization" in { cursor =>
+    val longs = Longs[S]
+    import longs.serializer
+    val (mapH0, mapH1) = cursor.step { implicit tx =>
+      val _map = Map.Modifiable[S, Int, Expr[S, Long], Change[Long]]
+      tx.newHandle(_map) -> tx.newHandle(_map: Map[S, Int, Expr[S, Long], Change[Long]])
+    }
+
+    cursor.step { implicit tx =>
+      mapH0()
+      mapH1()
+    }
+  }
 }
