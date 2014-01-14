@@ -28,8 +28,8 @@ package expr
 
 import de.sciss.lucre.{event => evt, data}
 import scala.collection.immutable.{IndexedSeq => Vec}
-import evt.{EventLike, Sys, Publisher}
-import de.sciss.serial.Serializer
+import evt.{Sys, Publisher}
+import de.sciss.serial.{DataInput, Serializer}
 import impl.{MapImpl => Impl}
 
 object Map {
@@ -38,6 +38,16 @@ object Map {
                                                        keySerializer  : Serializer[S#Tx, S#Acc, K],
                                                        valueSerializer: evt.Serializer[S, V]): Modifiable[S, K, V, U] =
       Impl[S, K, V, U]
+
+    def read[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc)(implicit tx: S#Tx,
+                                                       keySerializer  : Serializer[S#Tx, S#Acc, K],
+                                                       valueSerializer: evt.Serializer[S, V]): Modifiable[S, K, V, U] =
+      Impl.activeModifiableRead(in, access)
+
+    implicit def serializer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                                     valueSerializer: evt.Serializer[S, V])
+    : Serializer[S#Tx, S#Acc, Modifiable[S, K, V, U]] =
+      Impl.activeModifiableSerializer
   }
 
   trait Modifiable[S <: Sys[S], K, V, U] extends Map[S, K, V, U] {
@@ -60,6 +70,16 @@ object Map {
 
     def -=(key: K)(implicit tx: S#Tx): this.type
   }
+
+  def read[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc)(implicit tx: S#Tx,
+                                                                                  keySerializer  : Serializer[S#Tx, S#Acc, K],
+                                                                                  valueSerializer: evt.Serializer[S, V]): Map[S, K, V, U] =
+    Impl.activeRead(in, access)
+
+  implicit def serializer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer  : Serializer[S#Tx, S#Acc, K],
+                                                                   valueSerializer: evt.Serializer[S, V])
+  : Serializer[S#Tx, S#Acc, Map[S, K, V, U]] =
+    Impl.activeSerializer
 
   final case class Update[S <: Sys[S], K, V, U](map: Map[S, K, V, U], changes: Vec[Change[S, K, V, U]])
 

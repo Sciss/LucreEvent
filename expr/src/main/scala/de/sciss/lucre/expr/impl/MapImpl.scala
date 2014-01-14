@@ -25,12 +25,39 @@ object MapImpl {
                                                                 valueSerializer: evt.Serializer[S, V])
   : Serializer[S#Tx, S#Acc, Map[S, K, V, U]] with evt.Reader[S, Map[S, K, V, U]] = new ActiveSer[S, K, V, U]
 
+  def activeModifiableSerializer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                                valueSerializer: evt.Serializer[S, V])
+  : Serializer[S#Tx, S#Acc, Modifiable[S, K, V, U]] with evt.Reader[S, Modifiable[S, K, V, U]] =
+    new ActiveModSer[S, K, V, U]
+
   private class ActiveSer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer: Serializer[S#Tx, S#Acc, K],
                                                                    valueSerializer: evt.Serializer[S, V])
     extends NodeSerializer[S, Map[S, K, V, U]] with evt.Reader[S, Map[S, K, V, U]] {
     def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Map[S, K, V, U] =
       MapImpl.activeRead(in, access, targets)
   }
+
+  private class ActiveModSer[S <: Sys[S], K, V <: Publisher[S, U], U](implicit keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                                   valueSerializer: evt.Serializer[S, V])
+    extends NodeSerializer[S, Modifiable[S, K, V, U]] with evt.Reader[S, Modifiable[S, K, V, U]] {
+    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Modifiable[S, K, V, U] =
+      MapImpl.activeRead(in, access, targets)
+  }
+
+  def activeRead[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc)
+                                                                   (implicit tx: S#Tx,
+                                                                    keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                                    valueSerializer: evt.Serializer[S, V]): Modifiable[S, K, V, U] =
+    activeRead(in, access)
+
+  def activeModifiableRead[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc)
+                                                         (implicit tx: S#Tx,
+                                                          keySerializer: Serializer[S#Tx, S#Acc, K],
+                                                          valueSerializer: evt.Serializer[S, V]): Modifiable[S, K, V, U] = {
+    val targets = evt.Targets.read(in, access)
+    activeRead(in, access, targets)
+  }
+
 
   private def activeRead[S <: Sys[S], K, V <: Publisher[S, U], U](in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                                                  (implicit tx: S#Tx,
