@@ -58,10 +58,10 @@ trait TypeLike[A, Repr[S <: Sys[S]] <: Expr[S, A]] {
   final def readExpr[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr[S] =
     serializer.read(in, access)
 
-  implicit final def serializer[S <: Sys[S]]: evt.EventLikeSerializer[S, Repr[S]] =
+  implicit final def serializer[S <: Sys[S]]: evt.Serializer[S, Repr[S]] /* evt.EventLikeSerializer[S, Repr[S]] */ =
     anySer.asInstanceOf[Ser[S]]
 
-  implicit final def varSerializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, ReprVar[S]] =
+  implicit final def varSerializer[S <: Sys[S]]: evt.Serializer[S, ReprVar[S]] /* Serializer[S#Tx, S#Acc, ReprVar[S]] */ =
     anyVarSer.asInstanceOf[VarSer[S]]
 
   final def change[S <: Sys[S]](before: A, now: A): Option[model.Change[A]] =
@@ -70,10 +70,13 @@ trait TypeLike[A, Repr[S <: Sys[S]] <: Expr[S, A]] {
   private val anySer    = new Ser   [evt.InMemory]
   private val anyVarSer = new VarSer[evt.InMemory]
 
-  private final class VarSer[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, ReprVar[S]] {
+  private final class VarSer[S <: Sys[S]] extends Serializer[S#Tx, S#Acc, ReprVar[S]] with evt.Reader[S, ReprVar[S]] {
     def write(v: ReprVar[S], out: DataOutput): Unit = v.write(out)
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): ReprVar[S] = readVar[S](in, access)
+
+    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): ReprVar[S] with evt.Node[S] =
+      readVar[S](in, access, targets)
   }
 
   private final class Ser[S <: Sys[S]] extends evt.EventLikeSerializer[S, Repr[S]] {

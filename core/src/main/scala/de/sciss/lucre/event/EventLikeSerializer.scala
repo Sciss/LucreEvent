@@ -30,6 +30,8 @@ package event
 import annotation.switch
 import serial.{Writable, DataInput, DataOutput}
 
+// XXX TODO: should be in package `impl`
+
 /** A trait to serialize events which can be both constants and immutable nodes.
   * An implementation mixing in this trait just needs to implement methods
   * `readConstant` to return the constant instance, and `read` with the
