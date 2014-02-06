@@ -3,7 +3,7 @@ name := "LucreEvent"
 // ---- base settings ----
 
 lazy val commonSettings = Project.defaultSettings ++ Seq(
-  version         := "2.5.0-SNAPSHOT",
+  version         := "2.5.0",
   organization    := "de.sciss",
   description     := "Reactive event-system for LucreSTM",
   homepage        := Some(url("https://github.com/Sciss/" + name.value)),
@@ -29,7 +29,7 @@ lazy val commonSettings = Project.defaultSettings ++ Seq(
 
 // ---- dependencies ----
 
-lazy val stmVersion    = "2.0.+"
+lazy val stmVersion    = "2.0.1+"
 
 lazy val dataVersion   = "2.2.1+"
 
@@ -42,7 +42,7 @@ lazy val root: Project = Project(
   base          = file("."),
   aggregate     = Seq(core, expr),
   dependencies  = Seq(core, expr), // i.e. root = full sub project. if you depend on root, will draw all sub modules.
-  settings      = Project.defaultSettings ++ Seq(
+  settings      = commonSettings ++ Seq(
     publishArtifact in (Compile, packageBin) := false, // there are no binaries
     publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
     publishArtifact in (Compile, packageSrc) := false  // there are no sources
@@ -78,7 +78,7 @@ lazy val expr = Project(
       "de.sciss" %% "lucredata-core" % dataVersion,
       "de.sciss" %% "model"          % modelVersion,
       "de.sciss" %% "lucrestm-bdb"   % stmVersion % "test",
-      "org.scalatest" %% "scalatest" % "1.9.1" % "test"
+      "org.scalatest" %% "scalatest" % "2.0" % "test"
     )
   )
 )
@@ -87,19 +87,18 @@ lazy val expr = Project(
 
 publishMavenStyle in ThisBuild := true
 
-publishTo in ThisBuild <<= version { v =>
-  Some(if (v endsWith "-SNAPSHOT")
+publishTo in ThisBuild :=
+  Some(if (version.value endsWith "-SNAPSHOT")
     "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
   else
     "Sonatype Releases"  at "https://oss.sonatype.org/service/local/staging/deploy/maven2"
   )
-}
 
 publishArtifact in Test := false
 
 pomIncludeRepository in ThisBuild := { _ => false }
 
-pomExtra in ThisBuild <<= name { n =>
+pomExtra in ThisBuild := { val n = name.value
 <scm>
   <url>git@github.com:Sciss/{n}.git</url>
   <connection>scm:git:git@github.com:Sciss/{n}.git</connection>
@@ -117,8 +116,8 @@ pomExtra in ThisBuild <<= name { n =>
 
 seq(lsSettings :_*)
 
-(LsKeys.tags in LsKeys.lsync) := Seq("stm", "software-transactional-memory", "reactive", "event", "expression")
+(LsKeys.tags   in LsKeys.lsync) := Seq("stm", "software-transactional-memory", "reactive", "event", "expression")
 
 (LsKeys.ghUser in LsKeys.lsync) := Some("Sciss")
 
-(LsKeys.ghRepo in LsKeys.lsync) <<= name(Some(_))
+(LsKeys.ghRepo in LsKeys.lsync) := Some(name.value)

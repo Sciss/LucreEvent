@@ -1,7 +1,6 @@
 package de.sciss.lucre.expr
 
-import org.scalatest.fixture
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Outcome, Matchers, fixture}
 import de.sciss.lucre.event.Durable
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.model.Change
@@ -13,11 +12,11 @@ import de.sciss.serial.{DataInput, DataOutput, ImmutableSerializer}
 test-only de.sciss.lucre.expr.MapSpec
 
  */
-class MapSpec extends fixture.FlatSpec with ShouldMatchers {
+class MapSpec extends fixture.FlatSpec with Matchers {
   type S = Durable
   type FixtureParam = Durable
 
-  def withFixture(test: OneArgTest): Unit = {
+  def withFixture(test: OneArgTest): Outcome = {
     val system = Durable(BerkeleyDB.tmp())
     try {
       test(system)

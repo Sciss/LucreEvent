@@ -1,15 +1,13 @@
 package de.sciss.lucre.expr
 
 import de.sciss.lucre.event.{Targets, Sys, Durable}
-import org.scalatest.fixture
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Outcome, Matchers, fixture}
 import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.serial.{DataOutput, DataInput}
-import scala.concurrent.stm.TxnLocal
 import de.sciss.lucre.stm
 import de.sciss.model.Change
 
-class ListSpec extends fixture.FlatSpec with ShouldMatchers {
+class ListSpec extends fixture.FlatSpec with Matchers {
   final type S = Durable
   final type FixtureParam = Durable
 
@@ -24,7 +22,7 @@ class ListSpec extends fixture.FlatSpec with ShouldMatchers {
                                         (implicit tx: S#Tx) = sys.error(s"Unsupported tuple $cookie")
   }
 
-  final def withFixture(test: OneArgTest): Unit = {
+  final def withFixture(test: OneArgTest): Outcome = {
     val system = Durable(BerkeleyDB.tmp())
     try {
       //         val (_, cursor) = system.cursorRoot( _ => () )( tx => _ => tx.newCursor() )
