@@ -19,10 +19,10 @@ import de.sciss.lucre.{event => evt}
 import evt.Sys
 import serial.{DataInput, DataOutput}
 import language.higherKinds
-import expr.{String => _String}
+import expr.{String => _}
 
 object Type {
-  trait Extension[+Repr[~ <: Sys[~]]] {
+  trait Extension {
     def name: String
 
     /** Lowest id of handled operators */
@@ -30,19 +30,44 @@ object Type {
     /** Highest id of handled operators. Note: This value is _inclusive_ */
     val opHi : Int
 
-    def readExtension[S <: evt.Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                      (implicit tx: S#Tx): Repr[S] with evt.Node[S]
-
     override def toString = s"$name [lo = $opLo, hi = $opHi]"
   }
-}
-trait Type[Repr[~ <: Sys[~]]] {
-  def typeID: Int
 
-  /** This method is not thread-safe. We assume extensions are registered upon application start only! */
-  def registerExtension(ext: Type.Extension[Repr]): Unit
+  trait Extension1[+Repr[~ <: Sys[~]]] extends Extension {
+    def readExtension[S <: evt.Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                      (implicit tx: S#Tx): Repr[S] with evt.Node[S]
+  }
+
+  trait Extension2[+Repr[~ <: Sys[~], _]] extends Extension {
+    def readExtension[S <: evt.Sys[S], T1](opID: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                          (implicit tx: S#Tx): Repr[S, T1] with evt.Node[S]
+  }
+
+  trait Extension3[+Repr[~ <: Sys[~], _, _]] extends Extension {
+    def readExtension[S <: evt.Sys[S], T1, T2](opID: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                          (implicit tx: S#Tx): Repr[S, T1, T2] with evt.Node[S]
+  }
 }
-trait ExprType[A] extends Type[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
+trait Type {
+  def typeID: Int
+}
+
+trait Type1[Repr[~ <: Sys[~]]] extends Type {
+  /** This method is not thread-safe. We assume extensions are registered upon application start only! */
+  def registerExtension(ext: Type.Extension1[Repr]): Unit
+}
+
+trait Type2[Repr[~ <: Sys[~], _]] extends Type {
+  /** This method is not thread-safe. We assume extensions are registered upon application start only! */
+  def registerExtension(ext: Type.Extension2[Repr]): Unit
+}
+
+trait Type3[Repr[~ <: Sys[~], _, _]] extends Type {
+  /** This method is not thread-safe. We assume extensions are registered upon application start only! */
+  def registerExtension(ext: Type.Extension3[Repr]): Unit
+}
+
+trait ExprType[A] extends Type1[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
 
   // ---- abstract ----
 

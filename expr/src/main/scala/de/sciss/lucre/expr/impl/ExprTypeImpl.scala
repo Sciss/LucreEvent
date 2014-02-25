@@ -8,7 +8,7 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 import de.sciss.model
 import expr.{Int => _Int}
 
-trait ExprTypeImpl[A] extends ExprType[A] with TypeImpl[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
+trait ExprTypeImpl[A] extends ExprType[A] with TypeImpl1[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
   final protected type Ex [S <: Sys[S]] = Expr     [S, A]
   final protected type ExN[S <: Sys[S]] = Expr.Node[S, A]
   final protected type ExV[S <: Sys[S]] = Expr.Var [S, A]

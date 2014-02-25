@@ -23,12 +23,14 @@ import data.Iterator
 import collection.immutable.{IndexedSeq => Vec}
 import stm.Disposable
 import language.implicitConversions
-import expr.{Boolean => _Boolean, Int => _Int}
+import expr.{Boolean => _, Int => _}
 
 object List {
-  implicit def Ops[S <: Sys[S], Elem, U](list: List[S, Elem, U]): Ops[S, Elem] = ???
+  val Type: Type3[List] = Impl.TypeImpl
 
-  trait Ops[S <: Sys[S], Elem] {
+  implicit def Ops[S <: Sys[S], Elem, U](list: List[S, Elem, U]): Ops[S, Elem] = new Impl.Ops(list)
+
+  trait Ops[S <: Sys[S], Elem] extends Any {
     def isEmpty_@   (implicit tx: S#Tx): Expr[S, Boolean]
     def nonEmpty_@  (implicit tx: S#Tx): Expr[S, Boolean]
     def size_@      (implicit tx: S#Tx): Expr[S, Int    ]

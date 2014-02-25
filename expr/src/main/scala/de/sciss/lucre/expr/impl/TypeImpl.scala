@@ -6,12 +6,14 @@ import de.sciss.lucre.{event => evt}
 import de.sciss.serial.DataInput
 import evt.Sys
 import language.higherKinds
-import expr.{Int => _Int}
+import expr.{Int => _}
 
-trait TypeImpl[Repr[~ <: Sys[~]]] extends Type[Repr] {
-  private[this] var exts = new Array[Type.Extension[Repr]](0)
+trait TypeImpl[Ext >: Null <: Type.Extension] extends Type {
+  implicit protected def extTag: reflect.ClassTag[Ext]
 
-  final def registerExtension(ext: Type.Extension[Repr]): Unit = {
+  private[this] var exts = new Array[Ext](0)
+
+  final def registerExtension(ext: Ext): Unit = {
     val opLo = ext.opLo
     val opHi = ext.opHi
     require (opLo <= opHi, s"Lo ($opLo) must be less than or equal hi ($opHi)")
@@ -21,10 +23,14 @@ trait TypeImpl[Repr[~ <: Sys[~]]] extends Type[Repr] {
       val pred = exts(idx - 1)
       require(pred.opHi < opLo, s"Extension overlap for $pred versus $ext")
     }
-    exts = exts.patch(idx, ext :: Nil, 0)
+    val len   = exts.length
+    val exts1 = new Array[Ext](len + 1)
+    System.arraycopy(exts, 0, exts1, 0, len)
+    exts1(len) = ext
+    exts = exts1
   }
 
-  private[this] def findExt(op: Int): Int = {
+  final protected def findExt(op: Int): Ext = {
     var index = 0
     var low   = 0
     var high  = exts.size - 1
@@ -34,20 +40,46 @@ trait TypeImpl[Repr[~ <: Sys[~]]] extends Type[Repr] {
     }) {
       val ext = exts(index)
       if (ext.opLo <= op) {
-        if (ext.opHi >= op) return index
+        if (ext.opHi >= op) return ext
         low = index + 1
       } else {
         high = index - 1
       }
     }
-    -1
+    null
   }
+}
+
+trait TypeImpl1[Repr[~ <: Sys[~]]] extends TypeImpl[Type.Extension1[Repr]] with Type1[Repr] {
+  final protected val extTag = reflect.classTag[Type.Extension1[Repr]]
 
   final protected def readExtension[S <: evt.Sys[S]](op: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
                                                     (implicit tx: S#Tx): Repr[S] with evt.Node[S] = {
-    val idx = findExt(op)
-    require(idx >= 0, s"Unknown extension operator $op")
-    val ext = exts(idx)
-    ext.readExtension(op, in, access, targets)
+    val ext = findExt(op)
+    if (ext == null) sys.error(s"Unknown extension operator $op")
+    ext.readExtension[S](op, in, access, targets)
+  }
+}
+
+trait TypeImpl2[Repr[~ <: Sys[~], _]] extends TypeImpl[Type.Extension2[Repr]] with Type2[Repr] {
+  final protected val extTag = reflect.classTag[Type.Extension2[Repr]]
+
+  final protected def readExtension[S <: evt.Sys[S], T1](op: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                                        (implicit tx: S#Tx): Repr[S, T1] with evt.Node[S] = {
+    val ext = findExt(op)
+    if (ext == null) sys.error(s"Unknown extension operator $op")
+    ext.readExtension[S, T1](op, in, access, targets)
+  }
+}
+
+trait TypeImpl3[Repr[~ <: Sys[~], _, _]] extends TypeImpl[Type.Extension3[Repr]] with Type3[Repr] {
+  final protected val extTag = reflect.classTag[Type.Extension3[Repr]]
+
+  final protected def readExtension[S <: evt.Sys[S], T1, T2](op: Int, in: DataInput, access: S#Acc,
+                                                             targets: evt.Targets[S])
+                                                            (implicit tx: S#Tx): Repr[S, T1, T2] with evt.Node[S] = {
+    val ext = findExt(op)
+    if (ext == null) sys.error(s"Unknown extension operator $op")
+    ext.readExtension[S, T1, T2](op, in, access, targets)
   }
 }
