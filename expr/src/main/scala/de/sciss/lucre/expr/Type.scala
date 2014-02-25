@@ -18,11 +18,31 @@ package expr
 import de.sciss.lucre.{event => evt}
 import evt.Sys
 import serial.{DataInput, DataOutput}
+import language.higherKinds
+import expr.{String => _String}
 
-trait Type[A] extends TypeLike[A, ({type λ[~ <: Sys[~]] = Expr[~, A]})#λ] {
-  final protected type Ex [S <: Sys[S]] = Expr[S, A]
-  final protected type ExN[S <: Sys[S]] = Expr.Node[S, A]
-  final protected type Change = model.Change[A]
+object Type {
+  trait Extension[+Repr[~ <: Sys[~]]] {
+    def name: String
+
+    /** Lowest id of handled operators */
+    val opLo : Int
+    /** Highest id of handled operators. Note: This value is _inclusive_ */
+    val opHi : Int
+
+    def readExtension[S <: evt.Sys[S]](opID: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                      (implicit tx: S#Tx): Repr[S] with evt.Node[S]
+
+    override def toString = s"$name [lo = $opLo, hi = $opHi]"
+  }
+}
+trait Type[Repr[~ <: Sys[~]]] {
+  def typeID: Int
+
+  /** This method is not thread-safe. We assume extensions are registered upon application start only! */
+  def registerExtension(ext: Type.Extension[Repr]): Unit
+}
+trait ExprType[A] extends Type[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
 
   // ---- abstract ----
 
@@ -31,59 +51,13 @@ trait Type[A] extends TypeLike[A, ({type λ[~ <: Sys[~]] = Expr[~, A]})#λ] {
 
   // ---- public ----
 
-  final def newConst[S <: Sys[S]](value: A): Expr.Const[S, A] = new Const(value)
+  def newConst[S <: Sys[S]](value: A): Expr.Const[S, A]
 
-  final def newVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): Expr.Var[S, A] = {
-    val targets = evt.Targets.partial[S]
-    val ref = tx.newPartialVar[Ex[S]](targets.id, init)
-    new Var(ref, targets)
-  }
+  def newVar[S <: Sys[S]](init: Expr[S, A])(implicit tx: S#Tx): Expr.Var[S, A]
 
-  final def newConfluentVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): Expr.Var[S, A] = {
-    val targets = evt.Targets[S]
-    val ref = tx.newVar[Ex[S]](targets.id, init)
-    new Var(ref, targets)
-  }
+  def newConfluentVar[S <: Sys[S]](init: Expr[S, A])(implicit tx: S#Tx): Expr.Var[S, A]
 
-  final def readConst[S <: Sys[S]](in: DataInput): Expr.Const[S, A] = {
-    val cookie = in.readByte()
-    require(cookie == 3, "Unexpected cookie " + cookie) // XXX TODO cookie should be available in lucre.event
-    newConst[S](readValue(in))
-  }
+  def readConst[S <: Sys[S]](in: DataInput): Expr.Const[S, A]
 
-  final def readVar[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Expr.Var[S, A] = {
-    val targets = evt.Targets.read[S](in, access)
-    val cookie = in.readByte()
-    require(cookie == 0, "Unexpected cookie " + cookie)
-    val ref = if (targets.isPartial) {
-      tx.readPartialVar[Ex[S]](targets.id, in)
-    } else {
-      tx.readVar[Ex[S]](targets.id, in)
-    }
-    new Var(ref, targets)
-  }
-
-  final protected def readVar[S <: Sys[S]](in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                              (implicit tx: S#Tx): ReprVar[S] with evt.Node[S] = {
-    val ref = if (targets.isPartial) {
-      tx.readPartialVar[Ex[S]](targets.id, in)
-    } else {
-      tx.readVar[Ex[S]](targets.id, in)
-    }
-    new Var(ref, targets)
-  }
-
-  // ---- private ----
-
-  private final case class Const[S <: Sys[S]](constValue: A) extends expr.impl.ConstImpl[S, A] {
-    // def react(fun: S#Tx => Change[S] => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = evt.Observer.dummy[S]
-
-    protected def writeData(out: DataOutput): Unit =
-      writeValue(constValue, out)
-  }
-
-  private final class Var[S <: Sys[S]](protected val ref: S#Var[Ex[S]], protected val targets: evt.Targets[S])
-    extends impl.VarImpl[S, A] {
-    def reader: event.Reader[S, Ex[S]] = serializer[S]
-  }
+  def readVar[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Expr.Var[S, A]
 }

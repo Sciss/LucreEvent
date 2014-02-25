@@ -10,6 +10,7 @@ import de.sciss.serial.{DataInput, Serializer, DataOutput}
 import scala.collection.immutable.{IndexedSeq => Vec}
 import scala.collection.breakOut
 import scala.annotation.switch
+import expr.{Boolean => _Boolean, Int => _Int, String => _String}
 
 object MapImpl {
   def apply[S <: Sys[S], K, V <: Publisher[S, U], U](implicit tx: S#Tx, keySerializer: Serializer[S#Tx, S#Acc, K],

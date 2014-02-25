@@ -31,7 +31,7 @@ object DurableImpl {
 
   private type D[S <: DurableLike[S]] = DurableLike[S]
 
-  private sealed trait DurableSource[S <: D[S], @specialized(Int) A] extends event.Var[S, A] {
+  private sealed trait DurableSource[S <: D[S], /* @specialized(Int) */ A] extends event.Var[S, A] {
     protected def id: Int
 
     final def write(out: DataOutput): Unit = out.writeInt(id)

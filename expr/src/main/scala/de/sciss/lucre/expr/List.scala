@@ -17,12 +17,23 @@ package expr
 
 import de.sciss.lucre.{event => evt}
 import evt.{Publisher, Sys}
-import serial.DataInput
+import serial.{DataInput, Writable}
 import impl.{ListImpl => Impl}
 import data.Iterator
 import collection.immutable.{IndexedSeq => Vec}
+import stm.Disposable
+import language.implicitConversions
+import expr.{Boolean => _Boolean, Int => _Int}
 
 object List {
+  implicit def Ops[S <: Sys[S], Elem, U](list: List[S, Elem, U]): Ops[S, Elem] = ???
+
+  trait Ops[S <: Sys[S], Elem] {
+    def isEmpty_@   (implicit tx: S#Tx): Expr[S, Boolean]
+    def nonEmpty_@  (implicit tx: S#Tx): Expr[S, Boolean]
+    def size_@      (implicit tx: S#Tx): Expr[S, Int    ]
+  }
+
   final case class Update[S <: Sys[S], Elem, U](list: List[S, Elem, U], changes: Vec[Change[S, Elem, U]])
 
   sealed trait Change[S <: Sys[S], Elem, +U]
@@ -45,7 +56,7 @@ object List {
     /** Returns a serializer for a modifiable list. */
     implicit def serializer[S <: Sys[S], Elem <: Publisher[S, U], U](
       implicit elemSerializer: evt.Serializer[S, Elem]): serial.Serializer[S#Tx, S#Acc, Modifiable[S, Elem, U]] =
-      Impl.activeModifiableSerializer
+      Impl.activeModifiableSerializer[S, Elem, U]
 
     def read[S <: Sys[S], Elem <: Publisher[S, U], U](in: DataInput, access: S#Acc)
                                       (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): Modifiable[S, Elem, U] =
@@ -71,7 +82,7 @@ object List {
   /** Modifiable extension of the linked list. Elements can be appended or prepended in O(1).
     * Removal of the head or last element is O(1). Arbitrary removal takes O(N).
     */
-  trait Modifiable[S <: Sys[S], Elem, U] extends List[S, Elem, U] {
+  trait Modifiable[S <: Sys[S], Elem, U] extends List[S, Elem, U] with evt.Node[S] {
     def addLast(elem: Elem)(implicit tx: S#Tx): Unit
     def addHead(elem: Elem)(implicit tx: S#Tx): Unit
 
@@ -86,7 +97,7 @@ object List {
   }
 
   implicit def serializer[S <: Sys[S], Elem <: Publisher[S, U], U](
-    implicit elemSerializer: evt.Serializer[S, Elem]): serial.Serializer[S#Tx, S#Acc, List[S, Elem, U]] =
+      implicit elemSerializer: evt.Serializer[S, Elem]): serial.Serializer[S#Tx, S#Acc, List[S, Elem, U]] =
     Impl.activeSerializer[S, Elem, U]
 
   def read[S <: Sys[S], Elem <: Publisher[S, U], U](in: DataInput, access: S#Acc)
@@ -110,7 +121,7 @@ object List {
   * @tparam Elem      the element type of the list
   * @tparam U         the updates fired by the element type
   */
-trait List[S <: Sys[S], Elem, U] extends evt.Node[S] with Publisher[S, List.Update[S, Elem, U]] {
+trait List[S <: Sys[S], Elem, U] extends Writable with Disposable[S#Tx] with Publisher[S, List.Update[S, Elem, U]] {
   def isEmpty (implicit tx: S#Tx): Boolean
   def nonEmpty(implicit tx: S#Tx): Boolean
   def size    (implicit tx: S#Tx): Int

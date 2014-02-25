@@ -19,6 +19,7 @@ import scala.collection.immutable.{IndexedSeq => Vec}
 import evt.{Sys, Publisher}
 import de.sciss.serial.{DataInput, Serializer}
 import impl.{MapImpl => Impl}
+import expr.{Boolean => _Boolean, Int => _Int}
 
 object Map {
   object Modifiable {

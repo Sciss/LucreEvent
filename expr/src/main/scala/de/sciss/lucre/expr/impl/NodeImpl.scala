@@ -1,8 +1,10 @@
 package de.sciss.lucre
 package expr
 package impl
+
 import event.{impl => eimpl, Event, InvariantSelector}
 import de.sciss.model.Change
+import expr.{String => _String}
 
 trait NodeImpl[S <: event.Sys[S], A] extends Expr.Node[S, A]
 with eimpl.StandaloneLike[S, Change[A], Expr[S, A]] with InvariantSelector[S] {

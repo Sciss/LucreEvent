@@ -19,6 +19,7 @@ import stm.{Disposable, Var => _Var}
 import de.sciss.lucre.event.{Publisher, Dummy, Event, Sys}
 import serial.Writable
 import de.sciss.model.Change
+import expr.{Boolean => _Boolean, String => _String}
 
 object Expr {
   trait Node[S <: Sys[S], +A] extends Expr[S, A] with event.Node[S] {

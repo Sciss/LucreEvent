@@ -19,6 +19,7 @@ package impl
 import event.{Pull, Event, InvariantSelector, impl => evti}
 import serial.DataOutput
 import de.sciss.model.Change
+import expr.{String => _String}
 
 trait VarImpl[S <: event.Sys[S], A]
   extends Expr.Var[S, A] with evti.StandaloneLike[S, Change[A], Expr[S, A]]

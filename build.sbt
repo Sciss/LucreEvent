@@ -12,7 +12,7 @@ lazy val commonSettings = Project.defaultSettings ++ Seq(
   resolvers       += "Oracle Repository" at "http://download.oracle.com/maven",  // required for sleepycat
   // retrieveManaged := true,
   scalacOptions  ++= Seq(
-    "-no-specialization",
+    // "-no-specialization",    // fuck yeah, cannot use this option because of SI-7481 which will be fixed in 2019
     // "-Xelide-below", "INFO", // elide debug logging!
     "-deprecation", "-unchecked", "-feature"
   ),
@@ -29,7 +29,7 @@ lazy val commonSettings = Project.defaultSettings ++ Seq(
 
 // ---- dependencies ----
 
-lazy val stmVersion    = "2.0.1+"
+lazy val stmVersion    = "2.0.2+"
 
 lazy val dataVersion   = "2.2.1+"
 

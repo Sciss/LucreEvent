@@ -25,7 +25,7 @@ object InMemoryImpl {
 
   private def opNotSupported(name: String): Nothing = sys.error("Operation not supported: " + name)
 
-  private sealed trait BasicVar[S <: Sys[S], @specialized(Int) A]
+  private sealed trait BasicVar[S <: Sys[S], /* @specialized(Int) */ A]
     extends Var[S, A] {
 
     override def toString = "event.Var<" + hashCode().toHexString + ">"

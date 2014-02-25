@@ -23,13 +23,15 @@ import data.Iterator
 import scala.annotation.{tailrec, switch}
 import collection.immutable.{IndexedSeq => Vec}
 import collection.breakOut
+import expr.{Boolean => _Boolean, Int => _Int, String => _String}
 
 object ListImpl {
-   import List.Modifiable
+  import List.Modifiable
 
-  def newActiveModifiable[S <: Sys[S], Elem <: Publisher[S, U], U](implicit tx: S#Tx,
-                                                                   elemSerializer: evt.Serializer[S, Elem]): Modifiable[S, Elem, U] = {
+  // private final val SER_VERSION = 0
 
+  def newActiveModifiable[S <: Sys[S], Elem <: Publisher[S, U], U](
+                              implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): Modifiable[S, Elem, U] = {
     new ActiveImpl[S, Elem, U] {
       protected val targets = evt.Targets[S]
       protected val sizeRef = tx.newIntVar(id, 0)
@@ -38,8 +40,8 @@ object ListImpl {
     }
   }
 
-  def newPassiveModifiable[S <: Sys[S], Elem](implicit tx: S#Tx,
-                                                  elemSerializer: Serializer[S#Tx, S#Acc, Elem]): Modifiable[S, Elem, Unit] = {
+  def newPassiveModifiable[S <: Sys[S], Elem](
+                     implicit tx: S#Tx, elemSerializer: Serializer[S#Tx, S#Acc, Elem]): Modifiable[S, Elem, Unit] = {
 
     new PassiveImpl[S, Elem] {
       protected val targets = evt.Targets[S]
@@ -50,14 +52,17 @@ object ListImpl {
   }
 
   def activeSerializer[S <: Sys[S], Elem <: Publisher[S, U], U](
-    implicit elemSerializer: evt.Serializer[S, Elem]):
-  NodeSerializer[S, List[S, Elem, U]] =
+      implicit elemSerializer: evt.Serializer[S, Elem]): NodeSerializer[S, List[S, Elem, U]] =
     new ActiveSer[S, Elem, U]
 
   def activeRead[S <: Sys[S], Elem <: Publisher[S, U], U](in: DataInput, access: S#Acc)
-                                          (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): List[S, Elem, U] = {
+                                    (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): List[S, Elem, U] = {
     val targets = evt.Targets.read(in, access)
-    ListImpl.activeRead(in, access, targets)
+    //    val version = in.readByte()
+    //    require(version == SER_VERSION, s"Unexpected version (required $SER_VERSION, found $version)")
+    val opID = in.readInt()
+    if (opID == 0) ListImpl.activeRead(in, access, targets)
+    else ???
   }
 
   def passiveSerializer[S <: Sys[S], Elem](implicit elemSerializer: Serializer[S#Tx, S#Acc, Elem]):
@@ -65,7 +70,7 @@ object ListImpl {
     new PassiveSer[S, Elem]
 
   def passiveRead[S <: Sys[S], Elem](in: DataInput, access: S#Acc)
-                                        (implicit tx: S#Tx, elemSerializer: Serializer[S#Tx, S#Acc, Elem]): List[S, Elem, Unit] = {
+                          (implicit tx: S#Tx, elemSerializer: Serializer[S#Tx, S#Acc, Elem]): List[S, Elem, Unit] = {
     val targets = evt.Targets.read(in, access)
     ListImpl.passiveRead(in, access, targets)
   }
@@ -75,7 +80,7 @@ object ListImpl {
   NodeSerializer[S, Modifiable[S, Elem, U]] = new ActiveModSer[S, Elem, U]
 
   def activeModifiableRead[S <: Sys[S], Elem <: Publisher[S, U], U](in: DataInput, access: S#Acc)
-                                                    (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): Modifiable[S, Elem, U] = {
+                              (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): Modifiable[S, Elem, U] = {
     val targets = evt.Targets.read(in, access)
     ListImpl.activeRead(in, access, targets)
   }
@@ -85,28 +90,28 @@ object ListImpl {
     new PassiveModSer[S, Elem]
 
   def passiveModifiableRead[S <: Sys[S], Elem](in: DataInput, access: S#Acc)
-                                              (implicit tx: S#Tx,
-                                               elemSerializer: Serializer[S#Tx, S#Acc, Elem]): Modifiable[S, Elem, Unit] = {
+                      (implicit tx: S#Tx, elemSerializer: Serializer[S#Tx, S#Acc, Elem]): Modifiable[S, Elem, Unit] = {
     val targets = evt.Targets.read(in, access)
     ListImpl.passiveRead(in, access, targets)
   }
 
   private class ActiveSer[S <: Sys[S], Elem <: Publisher[S, U], U](implicit elemSerializer: evt.Serializer[S, Elem])
     extends NodeSerializer[S, List[S, Elem, U]] with evt.Reader[S, List[S, Elem, U]] {
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): List[S, Elem, U] = {
-      ListImpl.activeRead(in, access, targets)
-    }
+
+    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])
+            (implicit tx: S#Tx): List[S, Elem, U] with evt.Node[S] = ListImpl.activeRead(in, access, targets)
   }
 
   private class PassiveSer[S <: Sys[S], Elem](implicit elemSerializer: Serializer[S#Tx, S#Acc, Elem])
     extends NodeSerializer[S, List[S, Elem, Unit]] {
-    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): List[S, Elem, Unit] = {
-      ListImpl.passiveRead(in, access, targets)
-    }
+
+    def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])
+            (implicit tx: S#Tx): List[S, Elem, Unit] with evt.Node[S] = ListImpl.passiveRead(in, access, targets)
   }
 
   private class ActiveModSer[S <: Sys[S], Elem <: Publisher[S, U], U](implicit elemSerializer: evt.Serializer[S, Elem])
     extends NodeSerializer[S, Modifiable[S, Elem, U]] {
+
     def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Modifiable[S, Elem, U] = {
       ListImpl.activeRead(in, access, targets)
     }
@@ -114,14 +119,15 @@ object ListImpl {
 
   private class PassiveModSer[S <: Sys[S], Elem](implicit elemSerializer: Serializer[S#Tx, S#Acc, Elem])
     extends NodeSerializer[S, Modifiable[S, Elem, Unit]] {
+
     def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Modifiable[S, Elem, Unit] = {
       ListImpl.passiveRead(in, access, targets)
     }
   }
 
-  private def activeRead[S <: Sys[S], Elem <: Publisher[S, U], U](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
-                                                                 (implicit tx: S#Tx,
-                                                                  elemSerializer: evt.Serializer[S, Elem]): Impl[S, Elem, U] =
+  private def activeRead[S <: Sys[S], Elem <: Publisher[S, U], U](in: DataInput, access: S#Acc,
+                                                                  _targets: evt.Targets[S])
+                                       (implicit tx: S#Tx, elemSerializer: evt.Serializer[S, Elem]): Impl[S, Elem, U] =
     new ActiveImpl[S, Elem, U] {
       protected val targets = _targets
       protected val sizeRef = tx.readIntVar(id, in)
@@ -130,8 +136,8 @@ object ListImpl {
     }
 
   private def passiveRead[S <: Sys[S], Elem](in: DataInput, access: S#Acc, _targets: evt.Targets[S])
-                                                (implicit tx: S#Tx,
-                                                 elemSerializer: Serializer[S#Tx, S#Acc, Elem]): Impl[S, Elem, Unit] =
+                                            (implicit tx: S#Tx,
+                                             elemSerializer: Serializer[S#Tx, S#Acc, Elem]): Impl[S, Elem, Unit] =
     new PassiveImpl[S, Elem] {
       protected val targets = _targets
       protected val sizeRef = tx.readIntVar(id, in)
@@ -140,7 +146,7 @@ object ListImpl {
     }
 
   private final class Cell[S <: Sys[S], Elem](val elem: Elem,
-                                                  val pred: S#Var[Cell[S, Elem]], val succ: S#Var[Cell[S, Elem]])
+                                              val pred: S#Var[Cell[S, Elem]], val succ: S#Var[Cell[S, Elem]])
 
   private final class Iter[S <: Sys[S], Elem](private var cell: Cell[S, Elem]) extends Iterator[S#Tx, Elem] {
     override def toString = if (cell == null) "empty iterator" else "non-empty iterator"
@@ -158,6 +164,7 @@ object ListImpl {
   private abstract class ActiveImpl[S <: Sys[S], Elem <: Publisher[S, U], U](
     implicit protected val elemSerializer: evt.Serializer[S, Elem])
     extends Impl[S, Elem, U] {
+
     list =>
 
     final protected def registerElement(elem: Elem)(implicit tx: S#Tx): Unit =
@@ -170,11 +177,11 @@ object ListImpl {
       extends eimpl.EventImpl[S, List.Update[S, Elem, U], List[S, Elem, U]]
       with evt.InvariantEvent[S, List.Update[S, Elem, U], List[S, Elem, U]] {
 
-      protected def reader: evt.Reader[S, List[S, Elem, U]] = activeSerializer
+      protected def reader: evt.Reader[S, List[S, Elem, U]] = activeSerializer[S, Elem, U]
 
       final val slot = 1
 
-      def node: List[S, Elem, U] = list
+      def node /* : List[S, Elem, U] */ = list
 
       def connect   ()(implicit tx: S#Tx): Unit = foreach(registerElement  )
       def disconnect()(implicit tx: S#Tx): Unit = foreach(unregisterElement)
@@ -190,7 +197,7 @@ object ListImpl {
       }
     }
 
-    final protected def reader: evt.Reader[S, List[S, Elem, U]] = activeSerializer
+    final protected def reader: evt.Reader[S, List[S, Elem, U]] = activeSerializer[S, Elem, U]
 
     final def select(slot: Int /*, invariant: Boolean */): Event[S, Any, Any] = (slot: @switch) match {
       case `changed`        .slot => changed
@@ -269,7 +276,7 @@ object ListImpl {
 
       final val slot = 0
 
-      def node: List[S, Elem, U] = list
+      def node /* : List[S, Elem, U] */ = list
     }
 
     object changed
@@ -280,7 +287,7 @@ object ListImpl {
 
       final val slot = 2
 
-      def node: List[S, Elem, U] = list
+      def node /* : List[S, Elem, U] */ = list
 
       def connect   ()(implicit tx: S#Tx): Unit = {
         CollectionEvent ---> this
@@ -491,7 +498,7 @@ object ListImpl {
     final def clear()(implicit tx: S#Tx): Unit =
       while (nonEmpty) removeLast()
 
-    // unregisters element event. disposes cell contents, but does not unlink, nor fire.
+    // deregisters element event. disposes cell contents, but does not unlink, nor fire.
     private def disposeCell(cell: C)(implicit tx: S#Tx): Unit = {
       unregisterElement(cell.elem)
       cell.pred.dispose()
