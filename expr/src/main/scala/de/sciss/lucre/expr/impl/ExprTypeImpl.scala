@@ -8,7 +8,7 @@ import de.sciss.serial.{DataInput, DataOutput, Serializer}
 import de.sciss.model
 import expr.{Int => _Int}
 
-trait ExprTypeImpl[A] extends ExprType[A] with TypeImpl1[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
+trait ExprTypeImpl[A] extends ExprType[A] /* with TypeImpl1[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] */ {
   final protected type Ex [S <: Sys[S]] = Expr     [S, A]
   final protected type ExN[S <: Sys[S]] = Expr.Node[S, A]
   final protected type ExV[S <: Sys[S]] = Expr.Var [S, A]
@@ -16,19 +16,8 @@ trait ExprTypeImpl[A] extends ExprType[A] with TypeImpl1[({type Repr[~ <: Sys[~]
 
   // ---- abstract ----
 
-  //  protected def readNode[S <: Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
-  //                                     (implicit tx: S#Tx): ExN[S]
-
-  /** The default implementation reads a type `Int` requiring to match `typeID`, followed by an operator id `Int`
-    * which will be resolved using `readOpExtension`.
-    */
-  protected def readNode[S <: evt.Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
-                                         (implicit tx: S#Tx): Ex[S] with evt.Node[S] = {
-    val tpe  = in.readInt()
-    require(tpe == typeID, s"Invalid type id (found $tpe, required $typeID)")
-    val opID = in.readInt()
-    readExtension(/* cookie, */ opID, in, access, targets)
-  }
+  protected def readNode[S <: Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                     (implicit tx: S#Tx): Ex[S] with evt.Node[S]
 
   // ---- public ----
 
@@ -46,11 +35,14 @@ trait ExprTypeImpl[A] extends ExprType[A] with TypeImpl1[({type Repr[~ <: Sys[~]
     new Var[S](ref, targets)
   }
 
-  final def newConfluentVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): ExV[S] = {
-    val targets = evt.Targets[S]
-    val ref     = tx.newVar[Ex[S]](targets.id, init)
-    new Var[S](ref, targets)
-  }
+  //  final def newConfluentVar[S <: Sys[S]](init: Ex[S])(implicit tx: S#Tx): ExV[S] = {
+  //    val targets = evt.Targets[S]
+  //    val ref     = tx.newVar[Ex[S]](targets.id, init)
+  //    new Var[S](ref, targets)
+  //  }
+
+  final def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Ex[S] =
+    serializer[S].read(in, access)
 
   final def readConst[S <: Sys[S]](in: DataInput): Expr.Const[S, A] = {
     val cookie = in.readByte()
@@ -115,5 +107,18 @@ trait ExprTypeImpl[A] extends ExprType[A] with TypeImpl1[({type Repr[~ <: Sys[~]
     }
 
     def readConstant(in: DataInput)(implicit tx: S#Tx): Ex[S] = newConst(readValue(in))
+  }
+}
+
+trait ExprTypeImplA[A] extends ExprTypeImpl[A] with TypeImpl1A[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
+  /** The default implementation reads a type `Int` requiring to match `typeID`, followed by an operator id `Int`
+    * which will be resolved using `readOpExtension`.
+    */
+  protected def readNode[S <: evt.Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: evt.Targets[S])
+                                         (implicit tx: S#Tx): Ex[S] with evt.Node[S] = {
+    val tpe  = in.readInt()
+    require(tpe == typeID, s"Invalid type id (found $tpe, required $typeID)")
+    val opID = in.readInt()
+    readExtension(cookie, opID, in, access, targets)
   }
 }

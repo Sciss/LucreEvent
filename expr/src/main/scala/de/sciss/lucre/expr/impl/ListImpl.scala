@@ -29,38 +29,42 @@ import de.sciss.model.Change
 object ListImpl {
   import List.Modifiable
 
-  object TypeImpl extends TypeImpl3[List] {
-    final val typeID = 0x10004
-  }
-
-  final class Ops[S <: Sys[S], Elem, U](val `this`: List[S, Elem, U]) extends AnyVal with List.Ops[S, Elem] {
-    def size_@    (implicit tx: S#Tx): Expr[S, Int    ] = ???
-    def nonEmpty_@(implicit tx: S#Tx): Expr[S, Boolean] = ???
-    def isEmpty_@ (implicit tx: S#Tx): Expr[S, Boolean] = ???
-  }
-
-  private final val SizeID  = 0
-
-  private final class SizeExpr[S <: Sys[S], Elem, U](protected val targets: evt.Targets[S], list: List[S, Elem, U])
-    extends NodeImpl[S, Int] {
-
-    def value(implicit tx: S#Tx): Int = list.size
-
-    protected def writeData(out: DataOutput): Unit = {
-      out.writeByte(1)  // 'op'
-      out.writeInt(SizeID)
-      list.write(out)
-    }
-
-    // XXX TODO: Hitting a brick wall. While we might still get the `elemSerializer` from `list`,
-    // this does not hold for the (not yet written) `Type.Extension3`
-    protected def reader: Reader[S, Expr[S, Int]] = ???
-
-    def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Change[Int]] = ???
-
-    def connect   ()(implicit tx: S#Tx): Unit = list.changed ---> this
-    def disconnect()(implicit tx: S#Tx): Unit = list.changed -/-> this
-  }
+  //  object TypeImpl extends TypeImpl3[List] {
+  //    final val typeID = 0x10004
+  //  }
+  //
+  //  final class Ops[S <: Sys[S], Elem, U](val `this`: List[S, Elem, U]) extends AnyVal with List.Ops[S, Elem] {
+  //    def size_@    (implicit tx: S#Tx): Expr[S, Int    ] = ???
+  //    def nonEmpty_@(implicit tx: S#Tx): Expr[S, Boolean] = ???
+  //    def isEmpty_@ (implicit tx: S#Tx): Expr[S, Boolean] = ???
+  //  }
+  //
+  //  private final val SizeID  = 0
+  //
+  //  private final class SizeExpr[S <: Sys[S]](protected val targets: evt.Targets[S], list: List[S, _, _])
+  //    extends NodeImpl[S, Int] {
+  //
+  //    def value(implicit tx: S#Tx): Int = list.size
+  //
+  //    protected def writeData(out: DataOutput): Unit = {
+  //      out.writeByte(1)  // 'op'
+  //      out.writeInt(SizeID)
+  //      list.write(out)
+  //    }
+  //
+  //    // Hitting a brick wall. While we might still get the `elemSerializer` from `list`,
+  //    // this does not hold for the (not yet written) `Type.Extension3`.
+  //    // On the other hand... At least with these expressions, the elements do not
+  //    // need to be deserialized ever, so we can get away with a dummy serializer?
+  //    // - answer: NO! because we might get a List.Element event, and we can't filter that
+  //    //   out in advantage, so that would throw up on the invalid element serializer...
+  //    protected def reader: Reader[S, Expr[S, Int]] = Int.serializer
+  //
+  //    def pullUpdate(pull: evt.Pull[S])(implicit tx: S#Tx): Option[Change[Int]] = ???
+  //
+  //    def connect   ()(implicit tx: S#Tx): Unit = list.changed ---> this
+  //    def disconnect()(implicit tx: S#Tx): Unit = list.changed -/-> this
+  //  }
 
   // private final val SER_VERSION = 0
 

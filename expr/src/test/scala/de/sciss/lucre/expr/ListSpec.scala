@@ -6,6 +6,7 @@ import de.sciss.lucre.stm.store.BerkeleyDB
 import de.sciss.serial.{DataOutput, DataInput}
 import de.sciss.lucre.stm
 import de.sciss.model.Change
+import de.sciss.lucre.expr.impl.ExprTypeImpl
 
 class ListSpec extends fixture.FlatSpec with Matchers {
   final type S = Durable
@@ -15,11 +16,13 @@ class ListSpec extends fixture.FlatSpec with Matchers {
   new EarlyObserved
   new LateObserved
 
-  implicit object Ints extends Type[Int] {
+  implicit object Ints extends ExprTypeImpl[Int] {
+    final val typeID = -1
+
     def readValue(in: DataInput) = in.readInt()
     def writeValue(value: Int, out: DataOutput): Unit = out.writeInt(value)
-    protected def readTuple[S <: Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: Targets[S])
-                                        (implicit tx: S#Tx) = sys.error(s"Unsupported tuple $cookie")
+    protected def readNode[S <: Sys[S]](cookie: Int, in: DataInput, access: S#Acc, targets: Targets[S])
+                                       (implicit tx: S#Tx): Expr.Node[S, Int] = sys.error(s"Unsupported tuple $cookie")
   }
 
   final def withFixture(test: OneArgTest): Outcome = {

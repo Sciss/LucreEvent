@@ -26,15 +26,15 @@ import language.implicitConversions
 import expr.{Boolean => _, Int => _}
 
 object List {
-  val Type: Type3[List] = Impl.TypeImpl
-
-  implicit def Ops[S <: Sys[S], Elem, U](list: List[S, Elem, U]): Ops[S, Elem] = new Impl.Ops(list)
-
-  trait Ops[S <: Sys[S], Elem] extends Any {
-    def isEmpty_@   (implicit tx: S#Tx): Expr[S, Boolean]
-    def nonEmpty_@  (implicit tx: S#Tx): Expr[S, Boolean]
-    def size_@      (implicit tx: S#Tx): Expr[S, Int    ]
-  }
+  //  val Type: Type3[List] = Impl.TypeImpl
+  //
+  //  implicit def Ops[S <: Sys[S], Elem, U](list: List[S, Elem, U]): Ops[S, Elem] = new Impl.Ops(list)
+  //
+  //  trait Ops[S <: Sys[S], Elem] extends Any {
+  //    def isEmpty_@   (implicit tx: S#Tx): Expr[S, Boolean]
+  //    def nonEmpty_@  (implicit tx: S#Tx): Expr[S, Boolean]
+  //    def size_@      (implicit tx: S#Tx): Expr[S, Int    ]
+  //  }
 
   final case class Update[S <: Sys[S], Elem, U](list: List[S, Elem, U], changes: Vec[Change[S, Elem, U]])
 

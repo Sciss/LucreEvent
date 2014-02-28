@@ -52,9 +52,23 @@ trait Type {
   def typeID: Int
 }
 
-trait Type1[Repr[~ <: Sys[~]]] extends Type {
+trait Type1Like[Repr[~ <: Sys[~]]] extends Type {
+  implicit def serializer[S <: Sys[S]]: evt.Serializer[S, Repr[S]]
+
+  def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Repr[S]
+}
+
+trait Type1[Repr[~ <: Sys[~]]] extends Type1Like[Repr] {
   /** This method is not thread-safe. We assume extensions are registered upon application start only! */
   def registerExtension(ext: Type.Extension1[Repr]): Unit
+}
+
+/** This is for backwards compatibility: Operators are not just identified by an operator id,
+  * but also by an arity byte which must be 1 or 2. For new implementations, just `Type1` should be used.
+  */
+trait Type1A[Repr[~ <: Sys[~]]] extends Type1Like[Repr] {
+  /** This method is not thread-safe. We assume extensions are registered upon application start only! */
+  def registerExtension(arity: Int, ext: Type.Extension1[Repr]): Unit
 }
 
 trait Type2[Repr[~ <: Sys[~], _]] extends Type {
@@ -67,12 +81,15 @@ trait Type3[Repr[~ <: Sys[~], _, _]] extends Type {
   def registerExtension(ext: Type.Extension3[Repr]): Unit
 }
 
-trait ExprType[A] extends Type1[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
+trait ExprType[A] extends Type /* Type1[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] */ {
 
   // ---- abstract ----
 
   def readValue(in: DataInput): A
   def writeValue(value: A, out: DataOutput): Unit
+
+  implicit def serializer   [S <: Sys[S]]: evt.Serializer[S, Expr    [S, A]]
+  implicit def varSerializer[S <: Sys[S]]: evt.Serializer[S, Expr.Var[S, A]]
 
   // ---- public ----
 
@@ -80,7 +97,7 @@ trait ExprType[A] extends Type1[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr] {
 
   def newVar[S <: Sys[S]](init: Expr[S, A])(implicit tx: S#Tx): Expr.Var[S, A]
 
-  def newConfluentVar[S <: Sys[S]](init: Expr[S, A])(implicit tx: S#Tx): Expr.Var[S, A]
+  // def newConfluentVar[S <: Sys[S]](init: Expr[S, A])(implicit tx: S#Tx): Expr.Var[S, A]
 
   def readConst[S <: Sys[S]](in: DataInput): Expr.Const[S, A]
 

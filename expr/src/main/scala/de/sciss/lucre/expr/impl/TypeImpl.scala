@@ -8,12 +8,10 @@ import evt.Sys
 import language.higherKinds
 import expr.{Int => _}
 
-trait TypeImpl[Ext >: Null <: Type.Extension] extends Type {
+trait TypeImplLike[Ext >: Null <: Type.Extension] extends Type {
   implicit protected def extTag: reflect.ClassTag[Ext]
 
-  private[this] var exts = new Array[Ext](0)
-
-  final def registerExtension(ext: Ext): Unit = {
+  final protected def addExtension(exts: Array[Ext], ext: Ext): Array[Ext] = {
     val opLo = ext.opLo
     val opHi = ext.opHi
     require (opLo <= opHi, s"Lo ($opLo) must be less than or equal hi ($opHi)")
@@ -27,10 +25,10 @@ trait TypeImpl[Ext >: Null <: Type.Extension] extends Type {
     val exts1 = new Array[Ext](len + 1)
     System.arraycopy(exts, 0, exts1, 0, len)
     exts1(len) = ext
-    exts = exts1
+    exts1
   }
 
-  final protected def findExt(op: Int): Ext = {
+  final protected def findExt(exts: Array[Ext], op: Int): Ext = {
     var index = 0
     var low   = 0
     var high  = exts.size - 1
@@ -49,6 +47,13 @@ trait TypeImpl[Ext >: Null <: Type.Extension] extends Type {
     null
   }
 }
+trait TypeImpl[Ext >: Null <: Type.Extension] extends TypeImplLike[Ext] {
+  private[this] var exts = new Array[Ext](0)
+
+  final def registerExtension(ext: Ext): Unit = exts = addExtension(exts, ext)
+
+  final protected def findExt(op: Int): Ext = findExt(exts, op)
+}
 
 trait TypeImpl1[Repr[~ <: Sys[~]]] extends TypeImpl[Type.Extension1[Repr]] with Type1[Repr] {
   final protected val extTag = reflect.classTag[Type.Extension1[Repr]]
@@ -57,6 +62,35 @@ trait TypeImpl1[Repr[~ <: Sys[~]]] extends TypeImpl[Type.Extension1[Repr]] with 
                                                     (implicit tx: S#Tx): Repr[S] with evt.Node[S] = {
     val ext = findExt(op)
     if (ext == null) sys.error(s"Unknown extension operator $op")
+    ext.readExtension[S](op, in, access, targets)
+  }
+}
+
+trait TypeImpl1A[Repr[~ <: Sys[~]]] extends TypeImplLike[Type.Extension1[Repr]] with Type1A[Repr] {
+  final protected val extTag = reflect.classTag[Type.Extension1[Repr]]
+
+  private[this] type Ext = Type.Extension1[Repr]
+
+  private[this] var exts = new Array[Array[Ext]](0)
+
+  final def registerExtension(arity: Int, ext: Ext): Unit = {
+    if (arity <= 0) throw new IllegalArgumentException(s"Arity ($arity) must be positive")
+    if (arity > exts.length) {
+      val exts1 = new Array[Array[Ext]](arity)
+      System.arraycopy(exts, 0, exts1, 0, exts.length)
+      for (i <- exts.length until arity) exts1(i) = new Array[Ext](0)
+      exts = exts1
+    }
+    exts(arity - 1) = addExtension(exts(arity - 1), ext)
+  }
+
+  final protected def readExtension[S <: evt.Sys[S]](arity: Int, op: Int, in: DataInput, access: S#Acc,
+                                                     targets: evt.Targets[S])
+                                                    (implicit tx: S#Tx): Repr[S] with evt.Node[S] = {
+    if (arity <= 0) throw new IllegalArgumentException(s"Arity ($arity) must be positive")
+    if (arity > exts.length) sys.error(s"Unknown extension operator $op of arity $arity")
+    val ext = findExt(exts(arity - 1), op)
+    if (ext == null) sys.error(s"Unknown extension operator $op of arity $arity")
     ext.readExtension[S](op, in, access, targets)
   }
 }
