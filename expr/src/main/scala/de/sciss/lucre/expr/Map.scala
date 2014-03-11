@@ -110,4 +110,6 @@ trait Map[S <: Sys[S], K, V, U] extends evt.Node[S] with Publisher[S, Map.Update
     * @return     the value if it was found at the key, otherwise `None`
     */
   def get(key: K)(implicit tx: S#Tx): Option[V]
+
+  // def viewGet(key: K)(implicit tx: S#Tx): stm.Source[S#Tx, Option[V]]
 }
