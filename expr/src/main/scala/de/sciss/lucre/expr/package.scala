@@ -19,6 +19,8 @@ import de.sciss.lucre.event.Sys
 package object expr {
   private type ExprTypeA[A] = ExprType[A] with Type1A[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr]
 
+  type ExprType1[A] = ExprType[A] with Type1Like[({type Repr[~ <: Sys[~]] = Expr[~, A]})#Repr]
+
   val Int    : ExprTypeA[scala.Int    ] = IntImpl
   val Long   : ExprTypeA[scala.Long   ] = LongImpl
   val Double : ExprTypeA[scala.Double ] = DoubleImpl
