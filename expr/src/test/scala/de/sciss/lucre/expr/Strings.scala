@@ -34,8 +34,7 @@ final class Strings[ S <: evt.Sys[ S ]] private() extends TypeOld[ S, String ] {
    protected def readValue( in: DataInput ) : String = in.readUTF()
 //   type Ops = StringOps
 
-   // for a stupid reason scalac doesn't eat A <% Ex
-   implicit def stringOps[ A <% Expr[ S, String ]]( ex: A ) : StringOps = new StringOps( ex )
+  implicit def stringOps[A](ex: A)(implicit view: A => Expr[S, String]): StringOps = new StringOps(ex)
 
 //   protected def extensions: Extensions[ String ] = Strings
 

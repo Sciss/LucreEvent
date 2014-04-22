@@ -118,7 +118,7 @@ final class Spans[ S <: evt.Sys[ S ]] private( longs: Longs[ S ]) extends TypeOl
       }
    }
 
-   implicit def spanOps[ A <% Expr[ S, Span ]]( ex: A ) : SpanOps = new SpanOps( ex )
+  implicit def spanOps[A](ex: A)(implicit view: A => Expr[S, Span]): SpanOps = new SpanOps(ex)
 
 //   protected def extensions: Extensions[ Span ] = Spans
 

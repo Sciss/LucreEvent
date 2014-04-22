@@ -36,7 +36,7 @@ final class Longs[S <: evt.Sys[S]] extends TypeOld[S, Long] {
   //   type Ops = LongOps
 
   // for a stupid reason scalac doesn't eat A <% Ex
-  implicit def longOps[A <% Expr[S, Long]](ex: A): LongOps = new LongOps(ex)
+  implicit def longOps[A](ex: A)(implicit view: A => Expr[S, Long]): LongOps = new LongOps(ex)
 
   final class LongOps private[Longs]( ex: Ex ) {
       def +( that: Ex )( implicit tx: S#Tx ) : Ex = BinaryOp.Plus( ex, that )

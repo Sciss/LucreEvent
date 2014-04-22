@@ -13,7 +13,7 @@ Further reading:
 
 ## requirements / installation
 
-LucreEvent builds with sbt 0.12 against Scala 2.10. It depends on [LucreSTM](https://github.com/Sciss/LucreSTM) and on [LucreData](https://github.com/Sciss/LucreData) which should be automatically found by sbt.
+LucreEvent builds with sbt 0.13 against Scala 2.11, 2.10. It depends on [LucreSTM](https://github.com/Sciss/LucreSTM) and on [LucreData](https://github.com/Sciss/LucreData) which should be automatically found by sbt.
 
 ## linking
 
@@ -31,7 +31,7 @@ And for the expression layer:
 
     "de.sciss" %% "lucreevent-expr" % v
 
-The current version `v` is `"2.6.+"`.
+The current version `v` is `"2.6.1+"`.
 
 ## documentation
 

@@ -237,8 +237,8 @@ trait Node[S <: stm.Sys[S]] extends /* Reactor[ S ] with */ VirtualNode[S] /* wi
   protected def writeData(out: DataOutput): Unit
   protected def disposeData()(implicit tx: S#Tx): Unit
 
-  final protected def validated() (implicit tx: S#Tx)  { targets.validated() }
-  final protected def isInvalid   (implicit tx: S#Tx): Boolean = targets.isInvalid
+  final protected def validated() (implicit tx: S#Tx): Unit     = targets.validated()
+  final protected def isInvalid   (implicit tx: S#Tx): Boolean  = targets.isInvalid
   // final protected def invalidate()(implicit tx: S#Tx): Unit = targets.invalidate()
 
   final private[event] def _targets: Targets[S] = targets

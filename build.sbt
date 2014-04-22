@@ -3,18 +3,19 @@ name := "LucreEvent"
 // ---- base settings ----
 
 lazy val commonSettings = Project.defaultSettings ++ Seq(
-  version         := "2.6.0",
-  organization    := "de.sciss",
-  description     := "Reactive event-system for LucreSTM",
-  homepage        := Some(url("https://github.com/Sciss/" + name.value)),
-  licenses        := Seq("GPL v2+" -> url("http://www.gnu.org/licenses/gpl-2.0.txt")),
-  scalaVersion    := "2.10.3",
-  resolvers       += "Oracle Repository" at "http://download.oracle.com/maven",  // required for sleepycat
+  version            := "2.6.1",
+  organization       := "de.sciss",
+  description        := "Reactive event-system for LucreSTM",
+  homepage           := Some(url("https://github.com/Sciss/" + name.value)),
+  licenses           := Seq("GPL v2+" -> url("http://www.gnu.org/licenses/gpl-2.0.txt")),
+  scalaVersion       := "2.11.0",
+  crossScalaVersions := Seq("2.11.0", "2.10.4"),
+  resolvers          += "Oracle Repository" at "http://download.oracle.com/maven",  // required for sleepycat
   // retrieveManaged := true,
-  scalacOptions  ++= Seq(
+  scalacOptions     ++= Seq(
     // "-no-specialization",    // fuck yeah, cannot use this option because of SI-7481 which will be fixed in 2019
     // "-Xelide-below", "INFO", // elide debug logging!
-    "-deprecation", "-unchecked", "-feature"
+    "-deprecation", "-unchecked", "-feature", "-Xfuture"
   ),
   // API docs:
   scalacOptions in (Compile, doc) ++= Seq(
@@ -29,11 +30,13 @@ lazy val commonSettings = Project.defaultSettings ++ Seq(
 
 // ---- dependencies ----
 
-lazy val stmVersion    = "2.0.2+"
+lazy val stmVersion       = "2.0.4"
 
-lazy val dataVersion   = "2.2.2+"
+lazy val dataVersion      = "2.2.3"
 
-lazy val modelVersion  = "0.3.1+"
+lazy val modelVersion     = "0.3.2"
+
+lazy val scalaTestVersion = "2.1.3"
 
 // ---- projects ----
 
@@ -78,7 +81,7 @@ lazy val expr = Project(
       "de.sciss" %% "lucredata-core" % dataVersion,
       "de.sciss" %% "model"          % modelVersion,
       "de.sciss" %% "lucrestm-bdb"   % stmVersion % "test",
-      "org.scalatest" %% "scalatest" % "2.0" % "test"
+      "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
     )
   )
 )
