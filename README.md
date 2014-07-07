@@ -4,7 +4,7 @@
 
 LucreEvent provides a reactive event and observer layer for LucreSTM, a software transactional memory and persistence library for the Scala programming language. The reactive system implements event graphs which also can be persistent, along with live observers. A sub module adds an provides an expression tree system.
 
-LucreEvent is (C)opyright 2011&ndash;2014 by Hanns Holger Rutz. All rights reserved. It is released under the [GNU General Public License](https://raw.github.com/Sciss/LucreEvent/master/licenses/LucreEvent-License.txt) and comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
+LucreEvent is (C)opyright 2011&ndash;2014 by Hanns Holger Rutz. All rights reserved. It is released under the [GNU Lesser General Public License](https://raw.github.com/Sciss/LucreEvent/master/licenses/LucreEvent-License.txt) v2.1+ and comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
 
 Further reading:
 
@@ -31,7 +31,7 @@ And for the expression layer:
 
     "de.sciss" %% "lucreevent-expr" % v
 
-The current version `v` is `"2.6.1+"`.
+The current stable version `v` is `"2.6.1"`. Snapshot is `"2.7.0-SNAPSHOT"`.
 
 ## documentation
 

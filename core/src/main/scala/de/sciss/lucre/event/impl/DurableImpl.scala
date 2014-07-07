@@ -4,7 +4,7 @@
  *
  *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU General Public License v2+
+ *  This software is published under the GNU Lesser General Public License v2.1+
  *
  *
  *  For further information, please contact Hanns Holger Rutz at
@@ -55,7 +55,7 @@ object DurableImpl {
     def update(v: A)(implicit tx: S#Tx): Unit =
       tx.system.writeEvent(id)(ser.write(v, _))
 
-    override def toString = "event.Var(" + id + ")"
+    override def toString = s"event.Var($id)"
   }
 
   //  private final class DurableIntVar[S <: D[S]](protected val id: Int)
@@ -88,17 +88,17 @@ object DurableImpl {
     }
 
     private[event] def tryReadEvent[A](id: Int)(valueFun: DataInput => A)(implicit tx: S#Tx): Option[A] = {
-      log("readE  <" + id + ">")
+      log(s"readE  <$id>")
       eventStore.get(_.writeInt(id))(valueFun)
     }
 
     private[event] def writeEvent(id: Int)(valueFun: DataOutput => Unit)(implicit tx: S#Tx): Unit = {
-      log("writE <" + id + ">")
+      log(s"writE <$id>")
       eventStore.put(_.writeInt(id))(valueFun)
     }
 
     private[event] def removeEvent(id: Int)(implicit tx: S#Tx): Unit = {
-      log("remoE <" + id + ">")
+      log(s"remoE <$id>")
       eventStore.remove(_.writeInt(id))
     }
 
@@ -147,7 +147,7 @@ object DurableImpl {
     extends stm.impl.DurableImpl.TxnMixin[Durable] with DurableTxnMixin[Durable] {
     lazy val inMemory: InMemory#Tx = system.inMemory.wrap(peer)
 
-    override def toString = "event.Durable#Tx@" + hashCode.toHexString
+    override def toString = s"event.Durable#Tx@${hashCode.toHexString}"
   }
 
   // OBSOLETE: (( Important: DurableMixin after stm.impl.DurableImpl.Mixin, so that
@@ -157,9 +157,10 @@ object DurableImpl {
 
     private type S = Durable
     val inMemory: InMemory = InMemory()
+    def inMemoryTx(tx: Tx): I#Tx = tx.inMemory
 
     def wrap(peer: InTxn): S#Tx = new TxnImpl(this, peer)
 
-    override def toString = "event.Durable@" + hashCode.toHexString
+    override def toString = s"event.Durable@${hashCode.toHexString}"
   }
 }

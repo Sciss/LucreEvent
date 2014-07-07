@@ -4,7 +4,7 @@
  *
  *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU General Public License v2+
+ *  This software is published under the GNU Lesser General Public License v2.1+
  *
  *
  *  For further information, please contact Hanns Holger Rutz at
@@ -46,13 +46,13 @@ final class Longs[S <: evt.Sys[S]] extends TypeOld[S, Long] {
       def abs( implicit tx: S#Tx ) : Ex = UnaryOp.Abs( ex )
    }
 
-   def readTuple( arity: Int, opID: Int, in: DataInput, access: S#Acc,
-                  targets: evt.Targets[ S ])( implicit tx: S#Tx ) : Ex with event.Node[ S ] = {
-      (arity: @switch) match {
-         case 1 => UnaryOp(  opID ).read( in, access, targets )
-         case 2 => BinaryOp( opID ).read( in, access, targets )
-      }
-   }
+  def readTuple(arity: Int, opID: Int, in: DataInput, access: S#Acc,
+                targets: evt.Targets[S])(implicit tx: S#Tx): Ex with event.Node[S] = {
+    (arity: @switch) match {
+      case 1 => UnaryOp (opID).read(in, access, targets)
+      case 2 => BinaryOp(opID).read(in, access, targets)
+    }
+  }
 
    private object UnaryOp {
       def apply( id: Int ) : UnaryOp = id match {

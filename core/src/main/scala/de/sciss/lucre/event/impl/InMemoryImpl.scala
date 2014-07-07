@@ -4,7 +4,7 @@
  *
  *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
  *
- *  This software is published under the GNU General Public License v2+
+ *  This software is published under the GNU Lesser General Public License v2.1+
  *
  *
  *  For further information, please contact Hanns Holger Rutz at
@@ -23,12 +23,12 @@ import serial.{DataInput, DataOutput}
 object InMemoryImpl {
   def apply(): InMemory = new System
 
-  private def opNotSupported(name: String): Nothing = sys.error("Operation not supported: " + name)
+  private def opNotSupported(name: String): Nothing = sys.error(s"Operation not supported: $name")
 
   private sealed trait BasicVar[S <: Sys[S], /* @specialized(Int) */ A]
     extends Var[S, A] {
 
-    override def toString = "event.Var<" + hashCode().toHexString + ">"
+    override def toString = s"event.Var<${hashCode().toHexString}>"
 
     final def write(out: DataOutput) = ()
 
@@ -104,7 +104,7 @@ object InMemoryImpl {
 
   private final class TxnImpl(val system: InMemory, val peer: InTxn)
     extends STMImpl.TxnMixin[InMemory] with TxnMixin[InMemory] {
-    override def toString = "event.InMemory#Tx@" + hashCode.toHexString
+    override def toString = s"event.InMemory#Tx@${hashCode.toHexString}"
 
     def inMemory: InMemory#Tx = this
   }
@@ -114,7 +114,10 @@ object InMemoryImpl {
 
     def wrap(peer: InTxn): S#Tx = new TxnImpl(this, peer)
 
-    override def toString = "event.InMemory@" + hashCode.toHexString
+    def inMemory: S = this
+    def inMemoryTx(tx: Tx): Tx = tx
+
+    override def toString = s"event.InMemory@${hashCode.toHexString}"
   }
 
 }
