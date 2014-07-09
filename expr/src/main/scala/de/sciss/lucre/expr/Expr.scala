@@ -42,6 +42,11 @@ object Expr {
     }
   }
 
+  /** A constant expression simply acts as a proxy for a constant value of type `A`.
+    * Its event is a dummy (constants never change), and the `value` method does
+    * not need to use the transaction. String representation, hash-code and equality
+    * are defined in terms of the constant peer value.
+    */
   trait Const[S <: Sys[S], +A] extends Expr[S, A] {
     final def changed = Dummy[S, Change[A]]
 
@@ -51,22 +56,32 @@ object Expr {
     override def toString = constValue.toString
 
     final def dispose()(implicit tx: S#Tx) = ()
+
+    override def equals(that: Any): Boolean = that match {
+      case thatConst: Const[_, _] => constValue == thatConst.constValue
+      case _ => super.equals(that)
+    }
+
+    override def hashCode = constValue.hashCode()
   }
 
   def isConst(expr: Expr[_, _]): Boolean = expr.isInstanceOf[Const[_, _]]
 }
 
+/** An expression is a computation that reduces to a single value of type `A`.
+  * Expressions can be understood as dataflow variables. When a tree is
+  * composed, a change in the root of the tree propagates through to the leaves
+  * in the form of an emitted `Change` event that carries the old and new
+  * value (according to the particular node of the tree).
+  *
+  * Basic expression types are `Expr.Const` - it simply wraps a constant value
+  * and thus will never change or fire an event - and `Expr.Var` which can be
+  * thought of as a mutable variable carrying a peer expression. When the variable
+  * assignment changes, the expression currently held is evaluated and propagated
+  * as an event. Intermediate nodes or expressions might modify the value, such
+  * as a binary operator (e.g., an integer expression that sums two input
+  * integer expressions).
+  */
 trait Expr[S <: Sys[S], +A] extends Writable with Disposable[S#Tx] with Publisher[S, Change[A]] {
   def value(implicit tx: S#Tx): A
-
-  //  final def observe(fun: A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] =
-  //    observeTx(_ => fun)
-  //
-  //  final def observeTx(fun: S#Tx => A => Unit)(implicit tx: S#Tx): Disposable[S#Tx] = {
-  //    val o = changed.react { tx => change =>
-  //      fun(tx)(change.now)
-  //    }
-  //    fun(tx)(value)
-  //    o
-  //  }
 }
