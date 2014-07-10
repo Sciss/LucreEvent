@@ -31,7 +31,7 @@ And for the expression layer:
 
     "de.sciss" %% "lucreevent-expr" % v
 
-The current stable version `v` is `"2.6.1"`. Snapshot is `"2.7.0-SNAPSHOT"`.
+The current version `v` is `"2.7.0"`.
 
 ## documentation
 

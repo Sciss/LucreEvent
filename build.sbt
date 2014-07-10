@@ -3,7 +3,7 @@ name := "LucreEvent"
 // ---- base settings ----
 
 lazy val commonSettings = Project.defaultSettings ++ Seq(
-  version            := "2.7.0-SNAPSHOT",
+  version            := "2.7.0",
   organization       := "de.sciss",
   description        := "Reactive event-system for LucreSTM",
   homepage           := Some(url("https://github.com/Sciss/" + name.value)),
@@ -30,9 +30,9 @@ lazy val commonSettings = Project.defaultSettings ++ Seq(
 
 // ---- dependencies ----
 
-lazy val stmVersion       = "2.1.0-SNAPSHOT"
+lazy val stmVersion       = "2.1.0"
 
-lazy val dataVersion      = "2.3.0-SNAPSHOT"
+lazy val dataVersion      = "2.3.0"
 
 lazy val modelVersion     = "0.3.2"
 
