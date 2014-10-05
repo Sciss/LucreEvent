@@ -1,21 +1,27 @@
-name := "LucreEvent"
+def baseName = "LucreEvent"
+
+def projectVersion = "2.7.1"
+
+def baseNameL = baseName.toLowerCase
+
+name := baseName
 
 // ---- base settings ----
 
 lazy val commonSettings = Project.defaultSettings ++ Seq(
-  version            := "2.7.0",
+  version            := projectVersion,
   organization       := "de.sciss",
   description        := "Reactive event-system for LucreSTM",
-  homepage           := Some(url("https://github.com/Sciss/" + name.value)),
+  homepage           := Some(url(s"https://github.com/Sciss/$baseName")),
   licenses           := Seq("LGPL v2.1+" -> url("http://www.gnu.org/licenses/lgpl-2.1.txt")),
-  scalaVersion       := "2.11.1",
-  crossScalaVersions := Seq("2.11.1", "2.10.4"),
+  scalaVersion       := "2.11.2",
+  crossScalaVersions := Seq("2.11.2", "2.10.4"),
   resolvers          += "Oracle Repository" at "http://download.oracle.com/maven",  // required for sleepycat
   // retrieveManaged := true,
   scalacOptions     ++= Seq(
     // "-no-specialization",    // fuck yeah, cannot use this option because of SI-7481 which will be fixed in 2019
     // "-Xelide-below", "INFO", // elide debug logging!
-    "-deprecation", "-unchecked", "-feature", "-Xfuture"
+    "-deprecation", "-unchecked", "-feature", "-encoding", "utf8", "-Xfuture"
   ),
   // API docs:
   scalacOptions in (Compile, doc) ++= Seq(
@@ -36,15 +42,15 @@ lazy val dataVersion      = "2.3.0"
 
 lazy val modelVersion     = "0.3.2"
 
-lazy val scalaTestVersion = "2.2.0"
+lazy val scalaTestVersion = "2.2.2"
 
 // ---- projects ----
 
 lazy val root: Project = Project(
-  id            = "lucreevent",
+  id            = baseNameL,
   base          = file("."),
-  aggregate     = Seq(core, expr),
-  dependencies  = Seq(core, expr), // i.e. root = full sub project. if you depend on root, will draw all sub modules.
+  aggregate     = Seq(core, expr, artifact),
+  dependencies  = Seq(core, expr, artifact), // i.e. root = full sub project. if you depend on root, will draw all sub modules.
   settings      = commonSettings ++ Seq(
     publishArtifact in (Compile, packageBin) := false, // there are no binaries
     publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
@@ -53,7 +59,7 @@ lazy val root: Project = Project(
 )
 
 lazy val core = Project(
-  id        = "lucreevent-core",
+  id        = s"$baseNameL-core",
   base      = file("core"),
   settings  = commonSettings ++ buildInfoSettings ++ Seq(
     libraryDependencies ++= Seq(
@@ -73,7 +79,7 @@ lazy val core = Project(
 )
 
 lazy val expr = Project(
-  id            = "lucreevent-expr",
+  id            = s"$baseNameL-expr",
   base          = file("expr"),
   dependencies  = Seq(core),
   settings      = commonSettings ++ Seq(
@@ -86,12 +92,19 @@ lazy val expr = Project(
   )
 )
 
+lazy val artifact = Project(
+  id            = s"$baseNameL-artifact",
+  base          = file("artifact"),
+  dependencies  = Seq(expr),
+  settings      = commonSettings
+)
+
 // ---- publishing ----
 
 publishMavenStyle in ThisBuild := true
 
 publishTo in ThisBuild :=
-  Some(if (version.value endsWith "-SNAPSHOT")
+  Some(if (isSnapshot.value)
     "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
   else
     "Sonatype Releases"  at "https://oss.sonatype.org/service/local/staging/deploy/maven2"
