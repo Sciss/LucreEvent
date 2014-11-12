@@ -22,6 +22,8 @@ import expr.Expr
 import scala.annotation.tailrec
 
 object Artifact {
+  final val typeID = 0x10008
+
   def read[S <: Sys[S]](in: DataInput, access: S#Acc)(implicit tx: S#Tx): Artifact[S] = Impl.read(in, access)
 
   implicit def serializer[S <: Sys[S]]: Serializer[S#Tx, S#Acc, Artifact[S]] = Impl.serializer
