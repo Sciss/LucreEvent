@@ -1,6 +1,6 @@
 def baseName = "LucreEvent"
 
-def projectVersion = "2.7.2-SNAPSHOT"
+def projectVersion = "2.7.2"
 
 def baseNameL = baseName.toLowerCase
 
