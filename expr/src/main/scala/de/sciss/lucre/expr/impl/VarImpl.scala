@@ -2,7 +2,7 @@
  *  VarImpl.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2015 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -73,5 +73,5 @@ trait VarImpl[S <: event.Sys[S], A]
       pull(this().changed)
     }
 
-  override def toString = "Expr.Var" + id
+  override def toString = s"Expr.Var$id"
 }

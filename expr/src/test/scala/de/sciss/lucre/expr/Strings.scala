@@ -15,20 +15,20 @@ package de.sciss
 package lucre
 package expr
 
-import annotation.switch
-import lucre.{event => evt}
-import stm.Cursor
-import serial.{DataInput, DataOutput}
-import language.implicitConversions
+import de.sciss.lucre.stm.Cursor
+import de.sciss.lucre.{event => evt}
+import de.sciss.serial.{DataInput, DataOutput}
+
+import scala.language.implicitConversions
 
 object Strings {
-   def apply[ S <: evt.Sys[ S ]] : Strings[ S ] = new Strings[ S ]
+  def apply[S <: evt.Sys[S]]: Strings[S] = new Strings[S]
 }
 
-final class Strings[ S <: evt.Sys[ S ]] private() extends TypeOld[ S, String ] {
-   tpe =>
+final class Strings[S <: evt.Sys[S]] private() extends TypeOld[S, String] {
+  tpe =>
 
-   val id = 8
+  val id = 8
 
    protected def writeValue( v: String, out: DataOutput ): Unit = out.writeUTF( v )
    protected def readValue( in: DataInput ) : String = in.readUTF()
@@ -45,24 +45,23 @@ final class Strings[ S <: evt.Sys[ S ]] private() extends TypeOld[ S, String ] {
       def toUpperCase( implicit tx: S#Tx ) : Ex = UnaryOp.Upper( ex )
    }
 
-   def readTuple( arity: Int, opID: Int, in: DataInput, access: S#Acc,
-                  targets: evt.Targets[ S ])( implicit tx: S#Tx ) : Ex with event.Node[ S ] = {
-      (arity: @switch) match {
-         case 1 => UnaryOp(  opID ).read( in, access, targets )
-         case 2 => BinaryOp( opID ).read( in, access, targets )
-      }
-   }
+  def readTuple(arity: Int, opID: Int, in: DataInput, access: S#Acc,
+                targets: evt.Targets[S])(implicit tx: S#Tx): Ex with event.Node[S] =
+    arity match {
+      case 1 => UnaryOp(opID).read(in, access, targets)
+      case 2 => BinaryOp(opID).read(in, access, targets)
+    }
 
 //   protected def readLiteral( in: DataInput, access: S#Acc, targets: Targets[ S ])( implicit tx: S#Tx ) : Ex =
 //      sys.error( "Strings doesn't define a literal type" )
 //
 //   protected def unaryOp( id: Int ) = UnaryOp( id )
 
-   private object UnaryOp {
-      def apply( id: Int ) : UnaryOp = (id: @switch) match {
-         case 0 => Reverse
-         case 1 => Upper
-      }
+  private object UnaryOp {
+    def apply(id: Int): UnaryOp = id match {
+      case 0 => Reverse
+      case 1 => Upper
+    }
 
       sealed trait Basic extends UnaryOp {
          final def apply( _1: Ex )( implicit tx: S#Tx ) : Ex =
@@ -89,11 +88,11 @@ final class Strings[ S <: evt.Sys[ S ]] private() extends TypeOld[ S, String ] {
 
 //   protected def binaryOp( id: Int ) = BinaryOp( id )
 
-   private object BinaryOp {
-      def apply( id: Int ) : BinaryOp = (id: @switch) match {
-         case 0 => Append
-         case 1 => Prepend
-      }
+  private object BinaryOp {
+    def apply(id: Int): BinaryOp = id match {
+      case 0 => Append
+      case 1 => Prepend
+    }
 
       sealed trait Basic extends BinaryOp {
          final def apply( _1: Ex, _2: Ex )( implicit tx: S#Tx ) : Ex =
@@ -127,7 +126,7 @@ object StringsTests extends App {
 class StringTests[ S <: evt.Sys[ S ] with Cursor[ S ]]( system: S ) {
    val strings = Strings[ S ]
    import strings._
-   import system.{ step => ◊ }
+   import system.{step => ◊}
 
    val s    = ◊ { implicit tx => Var( "hallo" )}
    val s1   = ◊ { implicit tx => s.append( "-welt" )}

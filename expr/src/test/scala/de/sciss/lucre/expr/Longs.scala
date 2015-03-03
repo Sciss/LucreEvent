@@ -47,12 +47,11 @@ final class Longs[S <: evt.Sys[S]] extends TypeOld[S, Long] {
    }
 
   def readTuple(arity: Int, opID: Int, in: DataInput, access: S#Acc,
-                targets: evt.Targets[S])(implicit tx: S#Tx): Ex with event.Node[S] = {
-    (arity: @switch) match {
+                targets: evt.Targets[S])(implicit tx: S#Tx): Ex with event.Node[S] =
+    arity match {
       case 1 => UnaryOp (opID).read(in, access, targets)
       case 2 => BinaryOp(opID).read(in, access, targets)
     }
-  }
 
    private object UnaryOp {
       def apply( id: Int ) : UnaryOp = id match {

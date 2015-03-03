@@ -2,7 +2,7 @@
  *  NodeImpl.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2015 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -27,5 +27,5 @@ trait NodeImpl[S <: event.Sys[S], A]
 
   final def disposeData()(implicit tx: S#Tx) = ()
 
-  override def toString = "Expr" + id
+  override def toString = s"Expr$id"
 }

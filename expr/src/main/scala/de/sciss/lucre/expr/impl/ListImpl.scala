@@ -2,7 +2,7 @@
  *  ListImpl.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2015 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -16,18 +16,18 @@ package lucre
 package expr
 package impl
 
-import serial.{DataInput, DataOutput, Serializer}
-import lucre.{event => evt}
+import de.sciss.lucre.data.Iterator
 import de.sciss.lucre.event.{impl => eimpl, _}
-import data.Iterator
-import scala.annotation.{tailrec, switch}
-import collection.immutable.{IndexedSeq => Vec}
-import collection.breakOut
-import expr.{Boolean => _Boolean, Int => _Int, String => _String}
-import de.sciss.model.Change
+import de.sciss.lucre.expr.{Boolean => _Boolean, Int => _Int, String => _String}
+import de.sciss.lucre.{event => evt}
+import de.sciss.serial.{DataInput, DataOutput, Serializer}
+
+import scala.annotation.{switch, tailrec}
+import scala.collection.breakOut
+import scala.collection.immutable.{IndexedSeq => Vec}
 
 object ListImpl {
-  import List.Modifiable
+  import de.sciss.lucre.expr.List.Modifiable
 
   //  object TypeImpl extends TypeImpl3[List] {
   //    final val typeID = 0x10004
@@ -100,7 +100,7 @@ object ListImpl {
     //    require(version == SER_VERSION, s"Unexpected version (required $SER_VERSION, found $version)")
     val opID = in.readInt()
     if (opID == 0) ListImpl.activeRead(in, access, targets)
-    else ???
+    else sys.error(s"Expected opID 0 -- found $opID")
   }
 
   def passiveSerializer[S <: Sys[S], Elem](implicit elemSerializer: Serializer[S#Tx, S#Acc, Elem]):
@@ -255,7 +255,7 @@ object ListImpl {
 
     final protected def reader: evt.Reader[S, List[S, Elem, Unit]] = passiveSerializer
 
-    final def select(slot: Int /* , invariant: Boolean */): Event[S, Any, Any] = (slot: @switch) match {
+    final def select(slot: Int /* , invariant: Boolean */): Event[S, Any, Any] = slot match {
       case `changed`      .slot => changed
       case CollectionEvent.slot => CollectionEvent
     }
@@ -290,17 +290,16 @@ object ListImpl {
           out.writeByte(0)
         }
 
-      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): C = {
+      def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): C =
         (in.readByte: @switch) match {
           case 1 =>
             val elem = elemSerializer.read(in, access)
             val pred = tx.readVar[C](id, in)
             val succ = tx.readVar[C](id, in)
-            new Cell(elem, pred, succ)
+            new Cell[S, Elem](elem, pred, succ)
           case 0 => null
-          case cookie => sys.error("Unexpected cookie " + cookie)
+          case cookie => sys.error(s"Unexpected cookie $cookie")
         }
-      }
     }
 
     protected def reader: evt.Reader[S, List[S, Elem, U]]
@@ -408,7 +407,7 @@ object ListImpl {
     private def insert(elem: Elem, pred: C, succ: C, idx: Int)(implicit tx: S#Tx): Unit = {
       val recPred   = tx.newVar[C](id, pred)
       val recSucc   = tx.newVar[C](id, succ)
-      val rec       = new Cell(elem, recPred, recSucc)
+      val rec       = new Cell[S, Elem](elem, recPred, recSucc)
       val predSucc  = if (pred == null) headRef else pred.succ
       val succPred  = if (succ == null) lastRef else succ.pred
       predSucc()    = rec

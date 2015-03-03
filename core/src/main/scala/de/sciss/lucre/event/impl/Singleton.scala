@@ -2,7 +2,7 @@
  *  Singleton.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2015 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -18,10 +18,9 @@ package impl
 
 import serial.DataOutput
 
-/**
- * A `Singleton` event is one which doesn't carry any state. This is a utility trait
- * which provides no-op implementations for `writeData` and `disposeData`.
- */
+/** A `Singleton` event is one which doesn't carry any state. This is a utility trait
+  * which provides no-op implementations for `writeData` and `disposeData`.
+  */
 trait Singleton[S <: stm.Sys[S] /* , A, Repr */ ] extends InvariantSelector[S] {
   final protected def disposeData()(implicit tx: S#Tx) = ()
   final protected def writeData(out: DataOutput) = ()

@@ -2,7 +2,7 @@
  *  StandaloneLike.scala
  *  (LucreEvent)
  *
- *  Copyright (c) 2011-2014 Hanns Holger Rutz. All rights reserved.
+ *  Copyright (c) 2011-2015 Hanns Holger Rutz. All rights reserved.
  *
  *  This software is published under the GNU Lesser General Public License v2.1+
  *
@@ -17,16 +17,15 @@ package impl
 
 import util.hashing.MurmurHash3
 
-/**
- * Standalone events unite a node and one particular event.
- *
- * WARNING: the implementations of `equals` are really tricky right now. `EventImpl` is more specific in that
- * `VirtualNodeSelector` checks if the compared object is another `VirtualNodeSelector` whose reactor has the
- * same id and whose slot is the same. On the other hand `Invariant` inherits `equals` from `Reactor`
- * which checks for another reactor and then compares their ids.
- *
- * I don't know if `Reactor` still needs the `equals` implementation?
- */
+/** Standalone events unite a node and one particular event.
+  *
+  * WARNING: the implementations of `equals` are really tricky right now. `EventImpl` is more specific in that
+  * `VirtualNodeSelector` checks if the compared object is another `VirtualNodeSelector` whose reactor has the
+  * same id and whose slot is the same. On the other hand `Invariant` inherits `equals` from `Reactor`
+  * which checks for another reactor and then compares their ids.
+  *
+  * I don't know if `Reactor` still needs the `equals` implementation?
+  */
 trait StandaloneLike[S <: Sys[S], +A, +Repr]
   extends Node[S] with impl.EventImpl[S, A, Repr]
   with InvariantEvent[S, A, Repr] {

@@ -20,92 +20,87 @@ import de.sciss.lucre.{event => evt}
 import serial.{DataInput, DataOutput}
 import language.implicitConversions
 
-final case class Span( start: Long, stop: Long ) {
-   def length: Long = stop - start
+final case class Span(start: Long, stop: Long) {
+  def length: Long = stop - start
 
-   // where overlapping results in negative spacing
-   def spacing( b: Span ) : Long = {
-      val bStart = b.start
-      if( start < bStart ) {
-         bStart - stop
-      } else {
-         start - b.stop
-      }
-   }
+  // where overlapping results in negative spacing
+  def spacing(b: Span): Long = {
+    val bStart = b.start
+    if (start < bStart) {
+      bStart - stop
+    } else {
+      start - b.stop
+    }
+  }
 
-   /**
-    *  Checks if a position lies within the span.
+  /** Checks if a position lies within the span.
     *
-    *  @return		<code>true</code>, if <code>start <= pos < stop</code>
+    * @return		<code>true</code>, if <code>start <= pos < stop</code>
     */
-   def contains( pos: Long ) : Boolean = pos >= start && pos < stop
+  def contains(pos: Long): Boolean = pos >= start && pos < stop
 
-   /**
-    *  Checks if another span lies within the span.
+  /** Checks if another span lies within the span.
     *
-    *	@param	aSpan	second span, may be <code>null</code> (in this case returns <code>false</code>)
-    *  @return		<code>true</code>, if <code>aSpan.start >= this.span &&
-    *				aSpan.stop <= this.stop</code>
+    * @param	aSpan	second span, may be <code>null</code> (in this case returns <code>false</code>)
+    * @return		<code>true</code>, if <code>aSpan.start >= this.span &&
+    *            aSpan.stop <= this.stop</code>
     */
-    def contains( aSpan: Span ) : Boolean = aSpan.start >= this.start && aSpan.stop <= this.stop
+  def contains(aSpan: Span): Boolean = aSpan.start >= this.start && aSpan.stop <= this.stop
 
-   /**
-    *  Checks if a two spans overlap each other.
+  /** Checks if a two spans overlap each other.
     *
-    *	@param	aSpan	second span
-    *  @return		<code>true</code>, if the spans
-    *				overlap each other
+    * @param	aSpan	second span
+    * @return		<code>true</code>, if the spans
+    *            overlap each other
     */
-    def overlaps( aSpan: Span ) : Boolean = aSpan.start < this.stop && aSpan.stop > this.start
+  def overlaps(aSpan: Span): Boolean = aSpan.start < this.stop && aSpan.stop > this.start
 
-   /**
-    *  Checks if a two spans overlap or touch each other.
+  /** Checks if a two spans overlap or touch each other.
     *
-    *	@param	aSpan	second span
-    *  @return		<code>true</code>, if the spans
-    *				overlap each other
+    * @param	aSpan	second span
+    * @return		<code>true</code>, if the spans
+    *            overlap each other
     */
-    def touches( aSpan: Span ) : Boolean =
-      if( start <= aSpan.start ) {
-         stop >= aSpan.start
-      } else {
-         aSpan.stop >= start
-      }
+  def touches(aSpan: Span): Boolean =
+    if (start <= aSpan.start) {
+      stop >= aSpan.start
+    } else {
+      aSpan.stop >= start
+    }
 
-   /**
-    *  Checks if the span is empty.
+  /** Checks if the span is empty.
     *
-    *  @return		<code>true</code>, if <code>start == stop</code>
+    * @return		<code>true</code>, if <code>start == stop</code>
     */
-   def isEmpty : Boolean = start == stop
+  def isEmpty: Boolean = start == stop
 
-   def nonEmpty : Boolean = start != stop
+  def nonEmpty: Boolean = start != stop
 
-   def unite( aSpan: Span )      = Span( math.min( start, aSpan.start ), math.max( stop, aSpan.stop ))
-   def intersect( aSpan: Span )  = Span( math.max( start, aSpan.start ), math.min( stop, aSpan.stop ))
+  def unite    (aSpan: Span) = Span(math.min(start, aSpan.start), math.max(stop, aSpan.stop))
+  def intersect(aSpan: Span) = Span(math.max(start, aSpan.start), math.min(stop, aSpan.stop))
 
-   def clip( pos: Long ) : Long = math.max( start, math.min( stop, pos ))
+  def clip(pos: Long): Long = math.max(start, math.min(stop, pos))
 
-   def shift( delta: Long ) = Span( start + delta, stop + delta )
+  def shift(delta: Long) = Span(start + delta, stop + delta)
 }
 
 object Spans {
-   def apply[ S <: evt.Sys[ S ]]( longs: Longs[ S ]) /* ( implicit tx: S#Tx ) */ : Spans[ S ] =
-      new Spans[ S ]( longs )
+  def apply[S <: evt.Sys[S]](longs: Longs[S]) /* ( implicit tx: S#Tx ) */ : Spans[S] =
+    new Spans[S](longs)
 }
 
-final class Spans[ S <: evt.Sys[ S ]] private( longs: Longs[ S ]) extends TypeOld[ S, Span ] {
-   tpe =>
+final class Spans[S <: evt.Sys[S]] private(longs: Longs[S]) extends TypeOld[S, Span] {
+  tpe =>
 
-   val id = 100
+  val id = 100
 
-   private type LongEx = Expr[ S, Long ]
+  private type LongEx = Expr[S, Long]
 
-   def init()( implicit tx: S#Tx ): Unit = {
-      implicit val itx = tx.peer
-      // 'Span'
-      longs.addExtension( this, LongExtensions )
-   }
+  def init()(implicit tx: S#Tx): Unit = {
+    implicit val itx = tx.peer
+    // 'Span'
+    longs.addExtension(this, LongExtensions)
+  }
 
    private object LongExtensions extends TupleReader[ S, Long ] {
       def readTuple( arity: Int, opID: Int, in: DataInput, access: S#Acc, targets: evt.Targets[ S ])
@@ -162,36 +157,35 @@ final class Spans[ S <: evt.Sys[ S ]] private( longs: Longs[ S ]) extends TypeOl
       new Tuple2( tpe.id, Literal, targets, start, stop )
    }
 
-   def readTuple( arity: Int, opID: Int, in: DataInput, access: S#Acc,
-                  targets: evt.Targets[ S ])( implicit tx: S#Tx ) : Ex with event.Node[ S ] = {
-      arity match {
-//         case 1 => UnaryOp( opID ).read( in, access, targets )
-         case 2 => {
-            if( opID == 0 ) { // Literal
-               Literal.read( in, access, targets )
-            } else {
-               BinaryOp( opID ).read( in, access, targets )
-            }
-         }
-      }
-   }
+  def readTuple(arity: Int, opID: Int, in: DataInput, access: S#Acc,
+                targets: evt.Targets[S])(implicit tx: S#Tx): Ex with event.Node[S] =
+    arity match {
+      //         case 1 => UnaryOp( opID ).read( in, access, targets )
+      case 2 =>
+        if (opID == 0) {
+          // Literal
+          Literal.read(in, access, targets)
+        } else {
+          BinaryOp(opID).read(in, access, targets)
+        }
+    }
 
-   private object BinaryOp {
-      def apply( id: Int ) : BinaryOp = (id: @switch) match {
-         case 1 => Union
-         case 2 => Intersection
-      }
+  private object BinaryOp {
+    def apply(id: Int): BinaryOp = id match {
+      case 1 => Union
+      case 2 => Intersection
+    }
 
-      sealed trait Basic extends BinaryOp {
-         final def apply( _1: Ex, _2: Ex )( implicit tx: S#Tx ) : Ex =
-            new Tuple2( tpe.id, this, evt.Targets[ S ], _1, _2 )
+    sealed trait Basic extends BinaryOp {
+      final def apply(_1: Ex, _2: Ex)(implicit tx: S#Tx): Ex =
+        new Tuple2(tpe.id, this, evt.Targets[S], _1, _2)
 
-         def read( in: DataInput, access: S#Acc, targets: evt.Targets[ S ])( implicit tx: S#Tx ) : Ex with event.Node[ S ] = {
-            val _1 = readExpr( in, access )
-            val _2 = readExpr( in, access )
-            new Tuple2( tpe.id, this, targets, _1, _2 )
-         }
+      def read(in: DataInput, access: S#Acc, targets: evt.Targets[S])(implicit tx: S#Tx): Ex with event.Node[S] = {
+        val _1 = readExpr(in, access)
+        val _2 = readExpr(in, access)
+        new Tuple2(tpe.id, this, targets, _1, _2)
       }
+    }
 
       object Union extends Basic {
          val id = 1

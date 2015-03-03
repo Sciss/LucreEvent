@@ -1,10 +1,14 @@
 # LucreEvent
 
+[![Flattr this](http://api.flattr.com/button/flattr-badge-large.png)](https://flattr.com/submit/auto?user_id=sciss&url=https%3A%2F%2Fgithub.com%2FSciss%2FLucreEvent&title=LucreEvent%20Library&language=Scala&tags=github&category=software)
+[![Build Status](https://travis-ci.org/Sciss/LucreEvent.svg?branch=master)](https://travis-ci.org/Sciss/LucreEvent)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucreevent_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.sciss/lucreevent_2.11)
+
 ## statement
 
 LucreEvent provides a reactive event and observer layer for LucreSTM, a software transactional memory and persistence library for the Scala programming language. The reactive system implements event graphs which also can be persistent, along with live observers. A sub module adds an provides an expression tree system.
 
-LucreEvent is (C)opyright 2011&ndash;2014 by Hanns Holger Rutz. All rights reserved. It is released under the [GNU Lesser General Public License](https://raw.github.com/Sciss/LucreEvent/master/LICENSE) v2.1+ and comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
+LucreEvent is (C)opyright 2011&ndash;2015 by Hanns Holger Rutz. All rights reserved. It is released under the [GNU Lesser General Public License](https://raw.github.com/Sciss/LucreEvent/master/LICENSE) v2.1+ and comes with absolutely no warranties. To contact the author, send an email to `contact at sciss.de`
 
 Further reading:
 
@@ -31,7 +35,7 @@ Note that `expr` requires the following additional resolver:
 
     resolvers += "Oracle Repository" at "http://download.oracle.com/maven"
 
-The current version `v` is `"2.7.2"`.
+The current version `v` is `"2.7.3"`.
 
 ## documentation
 
