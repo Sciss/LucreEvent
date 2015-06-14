@@ -41,7 +41,7 @@ object Selector {
       val id = in.readInt()
       new ObserverKey[S](id)
     } else {
-      sys.error("Unexpected cookie " + cookie)
+      sys.error(s"Unexpected cookie $cookie")
     }
   }
 
@@ -263,12 +263,12 @@ trait InvariantEvent[S <: stm.Sys[S], +A, +Repr] extends InvariantSelector[S] wi
     //         t.validated( slot )
     //      }
     if (t.isInvalid) { // (slot)
-      log(this.toString + " re-connect")
+      log(s"$this re-connect")
       disconnect()
       t.resetAndValidate(slot, r)   // XXX TODO: doesn't this add r twice, becaues connect() will also add it?
       connect()
     } else if (t.add(slot, r)) {
-      log(this.toString + " connect")
+      log(s"$this connect")
       connect()
     }
   }

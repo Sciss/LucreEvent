@@ -1,14 +1,10 @@
-def baseName = "LucreEvent"
-
-def projectVersion = "2.7.3"
-
-def baseNameL = baseName.toLowerCase
-
-name := baseName
+lazy val baseName       = "LucreEvent"
+lazy val baseNameL      = baseName.toLowerCase
+lazy val projectVersion = "2.8.0-SNAPSHOT"
 
 // ---- base settings ----
 
-lazy val commonSettings = Project.defaultSettings ++ Seq(
+lazy val commonSettings = Seq(
   version            := projectVersion,
   organization       := "de.sciss",
   description        := "Reactive event-system for LucreSTM",
@@ -36,36 +32,30 @@ lazy val commonSettings = Project.defaultSettings ++ Seq(
 
 // ---- dependencies ----
 
-lazy val stmVersion       = "2.1.1"
-
-lazy val dataVersion      = "2.3.0"
-
+lazy val stmVersion       = "2.2.0-SNAPSHOT"
+lazy val dataVersion      = "2.4.0-SNAPSHOT"
 lazy val modelVersion     = "0.3.2"
-
-lazy val scalaTestVersion = "2.2.4"
+lazy val scalaTestVersion = "2.2.5"
 
 // ---- projects ----
 
-lazy val root: Project = Project(
-  id            = baseNameL,
-  base          = file("."),
-  aggregate     = Seq(core, expr, artifact),
-  dependencies  = Seq(core, expr, artifact), // i.e. root = full sub project. if you depend on root, will draw all sub modules.
-  settings      = commonSettings ++ Seq(
+lazy val root = Project(id = baseNameL, base = file(".")).
+  aggregate(core, expr, artifact).
+  dependsOn(core, expr, artifact). // i.e. root = full sub project. if you depend on root, will draw all sub modules.
+  settings(commonSettings).
+  settings(
     publishArtifact in (Compile, packageBin) := false, // there are no binaries
     publishArtifact in (Compile, packageDoc) := false, // there are no javadocs
     publishArtifact in (Compile, packageSrc) := false  // there are no sources
   )
-)
 
-lazy val core = Project(
-  id        = s"$baseNameL-core",
-  base      = file("core"),
-  settings  = commonSettings ++ buildInfoSettings ++ Seq(
+lazy val core = Project(id = s"$baseNameL-core", base = file("core")).
+  enablePlugins(BuildInfoPlugin).
+  settings(commonSettings).
+  settings(
     libraryDependencies ++= Seq(
       "de.sciss" %% "lucrestm-core" % stmVersion
     ),
-    sourceGenerators in Compile <+= buildInfo,
     buildInfoKeys := Seq(name, organization, version, scalaVersion, description,
       BuildInfoKey.map(homepage) {
         case (k, opt) => k -> opt.get
@@ -76,13 +66,11 @@ lazy val core = Project(
     ),
     buildInfoPackage := "de.sciss.lucre.event"
   )
-)
 
-lazy val expr = Project(
-  id            = s"$baseNameL-expr",
-  base          = file("expr"),
-  dependencies  = Seq(core),
-  settings      = commonSettings ++ Seq(
+lazy val expr = Project(id = s"$baseNameL-expr", base = file("expr")).
+  dependsOn(core).
+  settings(commonSettings).
+  settings(
     libraryDependencies ++= Seq(
       "de.sciss" %% "lucredata-core" % dataVersion,
       "de.sciss" %% "model"          % modelVersion,
@@ -90,34 +78,28 @@ lazy val expr = Project(
       "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
     )
   )
-)
 
-lazy val artifact = Project(
-  id            = s"$baseNameL-artifact",
-  base          = file("artifact"),
-  dependencies  = Seq(expr),
-  settings      = commonSettings
-)
+lazy val artifact = Project(id = s"$baseNameL-artifact", base = file("artifact")).
+  dependsOn(expr).
+  settings(commonSettings)
 
 // ---- publishing ----
 
-publishMavenStyle in ThisBuild := true
-
-publishTo in ThisBuild :=
-  Some(if (isSnapshot.value)
-    "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-  else
-    "Sonatype Releases"  at "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-  )
-
-publishArtifact in Test := false
-
-pomIncludeRepository in ThisBuild := { _ => false }
-
-pomExtra in ThisBuild := { val n = name.value
+lazy val publishSettings = Seq(
+  publishMavenStyle := true,
+  publishTo := {
+    Some(if (isSnapshot.value)
+      "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+    else
+      "Sonatype Releases"  at "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+    )
+  },
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ => false },
+  pomExtra := {
 <scm>
-  <url>git@github.com:Sciss/{n}.git</url>
-  <connection>scm:git:git@github.com:Sciss/{n}.git</connection>
+  <url>git@github.com:Sciss/{baseName}.git</url>
+  <connection>scm:git:git@github.com:Sciss/{baseName}.git</connection>
 </scm>
 <developers>
   <developer>
@@ -126,14 +108,12 @@ pomExtra in ThisBuild := { val n = name.value
     <url>http://www.sciss.de</url>
   </developer>
 </developers>
-}
+  }
+)
 
 // ---- ls.implicit.ly ----
 
-seq(lsSettings :_*)
-
-(LsKeys.tags   in LsKeys.lsync) := Seq("stm", "software-transactional-memory", "reactive", "event", "expression")
-
-(LsKeys.ghUser in LsKeys.lsync) := Some("Sciss")
-
-(LsKeys.ghRepo in LsKeys.lsync) := Some(name.value)
+// seq(lsSettings :_*)
+// (LsKeys.tags   in LsKeys.lsync) := Seq("stm", "software-transactional-memory", "reactive", "event", "expression")
+// (LsKeys.ghUser in LsKeys.lsync) := Some("Sciss")
+// (LsKeys.ghRepo in LsKeys.lsync) := Some(name.value)
