@@ -44,8 +44,7 @@ object Targets {
 
   private final class ChildrenSer[S <: Sys[S]] extends serial.Serializer[S#Tx, S#Acc, Children[S]] {
     def write(v: Children[S], out: DataOutput): Unit = {
-      out.writePackedInt(v.size)
-      // out.writeInt(v.size)
+      out./* PACKED */ writeInt(v.size)
       v.foreach { tup =>
         out.writeByte(tup._1)
         tup._2.writeSelector(out) // same as Selector.serializer.write(tup._2)
@@ -53,8 +52,7 @@ object Targets {
     }
 
     def read(in: DataInput, access: S#Acc)(implicit tx: S#Tx): Children[S] = {
-      val sz = in.readPackedInt()
-      // val sz = in.readInt()
+      val sz = in./* PACKED */ readInt()
       if (sz == 0) Vector.empty else Vector.fill(sz) {
         val slot      = in.readByte()
         val selector  = Selector.read(in, access)

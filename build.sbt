@@ -1,6 +1,6 @@
 lazy val baseName       = "LucreEvent"
 lazy val baseNameL      = baseName.toLowerCase
-lazy val projectVersion = "2.8.0-SNAPSHOT"
+lazy val projectVersion = "2.7.4"
 
 // ---- base settings ----
 
@@ -28,12 +28,12 @@ lazy val commonSettings = Seq(
   ),
   testOptions in Test += Tests.Argument("-oDF"),   // ScalaTest: durations and full stack traces
   parallelExecution in Test := false
-)
+) ++ publishSettings
 
 // ---- dependencies ----
 
-lazy val stmVersion       = "2.2.0-SNAPSHOT"
-lazy val dataVersion      = "2.4.0-SNAPSHOT"
+lazy val stmVersion       = "2.1.2"
+lazy val dataVersion      = "2.3.2"
 lazy val modelVersion     = "0.3.2"
 lazy val scalaTestVersion = "2.2.5"
 
