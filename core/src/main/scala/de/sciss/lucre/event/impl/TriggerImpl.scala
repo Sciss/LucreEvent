@@ -16,7 +16,7 @@ package lucre
 package event
 package impl
 
-import serial.DataInput
+import de.sciss.serial.DataInput
 
 object TriggerImpl {
   def apply[S <: Sys[S], A](implicit tx: S#Tx): Trigger.Standalone[S, A] = new Standalone[S, A] {

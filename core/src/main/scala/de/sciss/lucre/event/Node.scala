@@ -15,10 +15,11 @@ package de.sciss
 package lucre
 package event
 
-import collection.immutable.{IndexedSeq => Vec}
-import stm.Mutable
-import annotation.switch
-import de.sciss.serial.{Writable, DataInput, DataOutput}
+import de.sciss.lucre.stm.Mutable
+import de.sciss.serial.{DataInput, DataOutput, Writable}
+
+import scala.annotation.switch
+import scala.collection.immutable.{IndexedSeq => Vec}
 
 /** An abstract trait uniting invariant and mutating readers. */
 trait Reader[S <: stm.Sys[S], +Repr] {
@@ -109,7 +110,7 @@ object Targets {
     private[lucre] def isPartial : Boolean = cookie == 1
 
     def dispose()(implicit tx: S#Tx): Unit = {
-      require( children.isEmpty, "Disposing a event reactor which is still being observed" )
+      if (children.nonEmpty) throw new IllegalStateException("Disposing a event reactor which is still being observed")
       id         .dispose()
       childrenVar.dispose()
       valid      .dispose()
@@ -117,7 +118,7 @@ object Targets {
 
     private[event] def children(implicit tx: S#Tx): Children[S] = childrenVar.getOrElse(NoChildren)
 
-    override def toString = "Targets" + id
+    override def toString = s"Targets$id"
 
     private[event] def add(slot: Int, sel: /* MMM Expanded */ Selector[S])(implicit tx: S#Tx): Boolean = {
       log(s"$this.add($slot, $sel)")
@@ -231,7 +232,7 @@ sealed trait Targets[S <: stm.Sys[S]] extends Reactor[S] /* extends Writable wit
   * targets.
   */
 trait Node[S <: stm.Sys[S]] extends /* Reactor[ S ] with */ VirtualNode[S] /* with Dispatcher[ S, A ] */ {
-  override def toString = "Node" + id
+  override def toString = s"Node$id"
 
   protected def targets: Targets[S]
   protected def writeData(out: DataOutput): Unit
@@ -305,7 +306,7 @@ object VirtualNode {
 
     def dispose()(implicit tx: S#Tx): Unit = _targets.dispose()
 
-    override def toString = "VirtualNode.Raw" + _targets.id
+    override def toString = s"VirtualNode.Raw${_targets.id}"
   }
 }
 

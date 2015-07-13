@@ -16,9 +16,10 @@ package lucre
 package event
 package impl
 
-import stm.{DataStoreFactory, DataStore}
-import concurrent.stm.InTxn
-import serial.{DataInput, DataOutput}
+import de.sciss.lucre.stm.{DataStore, DataStoreFactory}
+import de.sciss.serial.{DataInput, DataOutput}
+
+import scala.concurrent.stm.InTxn
 
 object DurableImpl {
   def apply(factory: DataStoreFactory[DataStore], mainName: String, eventName: String): Durable = {

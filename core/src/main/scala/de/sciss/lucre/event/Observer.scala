@@ -14,23 +14,32 @@
 package de.sciss.lucre
 package event
 
-import stm.Disposable
+import de.sciss.lucre.stm.Disposable
+import de.sciss.serial.DataInput
 
 object Observer {
   def apply[S <: Sys[S], A, Repr](event: Event[S, A, Repr], reader: Reader[S, Repr], fun: S#Tx => A => Unit)
                                  (implicit tx: S#Tx): Disposable[S#Tx] = {
     val key = tx.reactionMap.addEventReaction[A, Repr](reader, fun)
-    val res = new Impl[S, A, Repr](event, key)
+    val res = new Impl[S, A, Repr](event.node, event.slot, key, reader, tx)
     event ---> key
     res
   }
 
-  private final class Impl[S <: Sys[S], A, Repr](event: Event[S, A, Repr], key: ObserverKey[S])
-    extends Disposable[S#Tx] {
+  private final class Impl[S <: Sys[S], A, Repr](node: Repr with Node[S], slot: Int, key: ObserverKey[S],
+                                                 reader: Reader[S, Repr], tx0: S#Tx)
+    extends Disposable[S#Tx] with NodeSerializer[S, Repr with Node[S]] {
 
-    override def toString = "Observer<" + key.id + ">"
+    override def toString = s"Observer<${key.id}>"
+
+    private[this] val nodeH = tx0.newHandle(node)(this)
+
+    def read(in: DataInput, access: S#Acc, targets: Targets[S])(implicit tx: S#Tx): Repr with Node[S] =
+      reader.read(in, access, targets)
 
     def dispose()(implicit tx: S#Tx): Unit = {
+      val node  = nodeH()
+      val event = node.select(slot)
       event -/-> key
       tx.reactionMap.removeEventReaction(key)
     }

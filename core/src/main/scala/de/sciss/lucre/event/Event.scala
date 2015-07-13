@@ -15,9 +15,10 @@ package de.sciss
 package lucre
 package event
 
-import util.hashing.MurmurHash3
-import serial.{DataInput, DataOutput}
 import de.sciss.lucre.stm.Disposable
+import de.sciss.serial.{DataInput, DataOutput}
+
+import scala.util.hashing.MurmurHash3
 
 object Selector {
   implicit def serializer[S <: Sys[S]]: serial.Serializer[S#Tx, S#Acc, Selector[S]] = anySer.asInstanceOf[Ser[S]]
@@ -221,7 +222,7 @@ object Dummy {
     override def toString = "event.Dummy"
   }
 
-  private def opNotSupported = sys.error("Operation not supported ")
+  private def opNotSupported = sys.error("Operation not supported")
 }
 
 trait Dummy[S <: stm.Sys[S], +A] extends EventLike[S, A] {

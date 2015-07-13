@@ -15,7 +15,7 @@ package de.sciss
 package lucre
 package event
 
-import serial.DataInput
+import de.sciss.serial.DataInput
 
 object Bang {
   def apply[S <: Sys[S]](implicit tx: S#Tx): Bang[S] = new Impl[S](Targets[S])

@@ -13,13 +13,14 @@
 
 package de.sciss.lucre.artifact
 
-import de.sciss.lucre.event.{Publisher, Sys}
 import java.io.File
-import de.sciss.serial.{DataInput, Serializer}
-import de.sciss.model
-import de.sciss.lucre.stm.Mutable
+
+import de.sciss.lucre.artifact.impl.{ArtifactImpl => Impl}
 import de.sciss.lucre.data
-import impl.{ArtifactImpl => Impl}
+import de.sciss.lucre.event.{Publisher, Sys}
+import de.sciss.lucre.stm.Mutable
+import de.sciss.model
+import de.sciss.serial.{DataInput, Serializer}
 
 object ArtifactLocation {
   final val typeID = 0x10003

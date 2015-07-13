@@ -15,7 +15,7 @@ package de.sciss.lucre
 package event
 package impl
 
-import util.hashing.MurmurHash3
+import scala.util.hashing.MurmurHash3
 
 /** Standalone events unite a node and one particular event.
   *
@@ -36,7 +36,7 @@ trait StandaloneLike[S <: Sys[S], +A, +Repr]
   final /* private[lucre] */ def node: Repr with Node[S] = this
 
   final private[event] def select(slot: Int /*, invariant: Boolean */): Event[S, Any, Any] = {
-    require(slot == 0, "Invalid slot " + slot)
+    if (slot != 0) throw new IllegalArgumentException(s"Invalid slot $slot")
     // require(invariant, "Invalid invariant flag. Should be true")
     this
   }
@@ -56,5 +56,5 @@ trait StandaloneLike[S <: Sys[S], +A, +Repr]
     case _ => super.equals(that)
   }
 
-  override def toString = "Node" + id
+  override def toString = s"Node$id"
 }

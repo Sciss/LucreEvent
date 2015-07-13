@@ -16,9 +16,10 @@ package lucre
 package event
 package impl
 
-import concurrent.stm.{Ref, InTxn}
-import stm.impl.{InMemoryImpl => STMImpl}
-import serial.{DataInput, DataOutput}
+import de.sciss.lucre.stm.impl.{InMemoryImpl => STMImpl}
+import de.sciss.serial.{DataInput, DataOutput}
+
+import scala.concurrent.stm.{InTxn, Ref}
 
 object InMemoryImpl {
   def apply(): InMemory = new System

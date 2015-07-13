@@ -15,8 +15,8 @@ package de.sciss
 package lucre
 package event
 
-import stm.Disposable
-import serial.{DataInput, Writable}
+import de.sciss.lucre.stm.Disposable
+import de.sciss.serial.{DataInput, Writable}
 
 trait Sys[S <: Sys[S]] extends stm.Sys[S] {
   type Tx <: Txn[S]

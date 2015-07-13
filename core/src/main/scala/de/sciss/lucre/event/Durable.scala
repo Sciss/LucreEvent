@@ -15,10 +15,11 @@ package de.sciss
 package lucre
 package event
 
-import stm.{DataStoreFactory, DataStore}
-import serial.{DataInput, DataOutput}
-import impl.{DurableImpl => Impl}
-import language.implicitConversions
+import de.sciss.lucre.event.impl.{DurableImpl => Impl}
+import de.sciss.lucre.stm.{DataStore, DataStoreFactory}
+import de.sciss.serial.{DataInput, DataOutput}
+
+import scala.language.implicitConversions
 
 object Durable {
    private type S = Durable

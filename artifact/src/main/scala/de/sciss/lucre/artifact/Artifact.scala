@@ -13,12 +13,14 @@
 
 package de.sciss.lucre.artifact
 
-import impl.{ArtifactImpl => Impl}
-import de.sciss.serial.{Serializer, DataInput}
-import de.sciss.lucre.expr
 import java.io.File
+
+import de.sciss.lucre.artifact.impl.{ArtifactImpl => Impl}
 import de.sciss.lucre.event.Sys
-import expr.Expr
+import de.sciss.lucre.expr
+import de.sciss.lucre.expr.Expr
+import de.sciss.serial.{DataInput, Serializer}
+
 import scala.annotation.tailrec
 
 object Artifact {

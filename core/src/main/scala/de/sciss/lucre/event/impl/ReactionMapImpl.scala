@@ -15,7 +15,7 @@ package de.sciss.lucre
 package event
 package impl
 
-import concurrent.stm.{Ref, TMap}
+import scala.concurrent.stm.{Ref, TMap}
 
 object ReactionMapImpl {
   private val noOpEval = () => ()
@@ -39,7 +39,7 @@ object ReactionMapImpl {
   }
 
    private final class Impl[ S <: stm.Sys[ S ]] extends Mixin[ S ] {
-      override def toString = "ReactionMap@" + hashCode.toHexString
+      override def toString = s"ReactionMap@${hashCode.toHexString}"
    }
 
   trait Mixin[S <: stm.Sys[S]] extends ReactionMap[S] {

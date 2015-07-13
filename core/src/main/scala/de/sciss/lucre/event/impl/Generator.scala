@@ -17,7 +17,7 @@ package impl
 
 trait Generator[S <: Sys[S], A, +Repr] extends Event[S, A, Repr] {
   final protected def fire(update: A)(implicit tx: S#Tx): Unit = {
-    log(this.toString + " fire " + update)
+    log(s"$this fire $update")
     Push(this /* select() */ , update)
   }
 }

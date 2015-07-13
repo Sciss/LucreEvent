@@ -15,8 +15,9 @@ package de.sciss
 package lucre
 package event
 
-import annotation.switch
-import serial.{Writable, DataInput, DataOutput}
+import de.sciss.serial.{DataInput, DataOutput, Writable}
+
+import scala.annotation.switch
 
 // XXX TODO: should be in package `impl`
 
@@ -42,7 +43,7 @@ trait EventLikeSerializer[S <: Sys[S], Repr <: Writable /* Node[ S ] */ ]
       case 1 =>
         val targets = Targets.readIdentifiedPartial[S](in, access)
         read(in, access, targets)
-      case cookie => sys.error("Unexpected cookie " + cookie)
+      case cookie => sys.error(s"Unexpected cookie $cookie")
     }
   }
 

@@ -14,9 +14,9 @@
 package de.sciss.lucre
 package event
 
-import collection.immutable.{IndexedSeq => Vec}
-import annotation.elidable
-import elidable.CONFIG
+import scala.annotation.elidable
+import scala.annotation.elidable.CONFIG
+import scala.collection.immutable.{IndexedSeq => Vec}
 
 object Push {
   private[event] def apply[S <: Sys[S], A](origin: Event[S, A, Any], update: A)(implicit tx: S#Tx): Unit = {

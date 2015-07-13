@@ -14,11 +14,12 @@
 package de.sciss
 package lucre
 
-import collection.immutable.{IndexedSeq => Vec}
-import annotation.elidable
-import annotation.elidable.CONFIG
-import java.util.{Locale, Date}
 import java.text.SimpleDateFormat
+import java.util.{Date, Locale}
+
+import scala.annotation.elidable
+import scala.annotation.elidable.CONFIG
+import scala.collection.immutable.{IndexedSeq => Vec}
 
 package object event {
   type Reaction = () => () => Unit
