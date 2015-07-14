@@ -35,7 +35,7 @@ Note that `expr` requires the following additional resolver:
 
     resolvers += "Oracle Repository" at "http://download.oracle.com/maven"
 
-The current version `v` is `"2.7.4"`.
+The current version `v` is `"2.7.5"`.
 
 ## documentation
 

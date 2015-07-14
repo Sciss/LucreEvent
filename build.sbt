@@ -1,6 +1,6 @@
 lazy val baseName       = "LucreEvent"
 lazy val baseNameL      = baseName.toLowerCase
-lazy val projectVersion = "2.7.5-SNAPSHOT"
+lazy val projectVersion = "2.7.5"
 
 // ---- base settings ----
 
